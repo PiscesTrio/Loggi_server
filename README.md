@@ -2,7 +2,9 @@
 
 Loggi Server is the REST API backend for a logistics management system. It provides endpoints for warehouse management, inventory tracking, distribution orders, fleet management, sales, and system administration.
 
-> This is the **backend** part of a personal graduation project (2023).
+> **Personal Graduation Project (2023) — Backend**
+>
+> Frontend repository: https://github.com/PiscesTrio/Loggi_app
 
 ## Tech Stack
 
