@@ -15,8 +15,12 @@ jobs:
           cache: maven
       # 注：本 workflow 位于 Loggi_server 仓库内，checkout 根目录即后端项目根，故无需 working-directory。
       # 用 ./mvnw 而非 setup-java 自带的 mvn：wrapper 把 Maven 版本锁在 3.9.6，保证可复现。
+      # -Dapi.version=1.44：Docker Engine 29+ 拒绝 API < 1.44，而 Testcontainers 1.20.x 里的
+      # docker-java 默认仍发 1.32，会报 "client version 1.32 is too old"。ubuntu-latest 目前的
+      # Docker 还接受 1.32，但 runner 一旦升级本条就会变红——提前钉住。对旧 Docker 无副作用。
+      # 注意属性名是 api.version，docker-java 不认 DOCKER_API_VERSION 环境变量。
       - name: Build & verify (单测 + *IT 集成测试[Testcontainers] + JaCoCo 门禁)
-        run: ./mvnw -B verify
+        run: ./mvnw -B verify -Dapi.version=1.44
       - name: Upload JaCoCo report
         if: always()
         uses: actions/upload-artifact@v4
