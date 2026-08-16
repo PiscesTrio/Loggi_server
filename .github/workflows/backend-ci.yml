@@ -1,0 +1,25 @@
+name: backend-ci
+on:
+  push:
+    branches: [ master, "slice/**" ]
+  pull_request:
+jobs:
+  build:
+    runs-on: ubuntu-latest   # 自带 Docker，Testcontainers 可用
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '11'   # 本 Slice 锁 11；SB3 升级 Slice 时改 17
+          cache: maven
+      # 注：本 workflow 位于 Loggi_server 仓库内，checkout 根目录即后端项目根，故无需 working-directory。
+      # 用 ./mvnw 而非 setup-java 自带的 mvn：wrapper 把 Maven 版本锁在 3.9.6，保证可复现。
+      - name: Build & verify (单测 + *IT 集成测试[Testcontainers] + JaCoCo 门禁)
+        run: ./mvnw -B verify
+      - name: Upload JaCoCo report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jacoco-report
+          path: target/site/jacoco/
