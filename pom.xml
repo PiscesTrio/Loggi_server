@@ -18,7 +18,28 @@
         <mybatis-plus.version>3.4.2</mybatis-plus.version>
         <fastjson.version>1.2.73</fastjson.version>
         <mybatis-enhance-actable.version>1.4.7.RELEASE</mybatis-enhance-actable.version>
+        <!-- S00：Testcontainers 版本。1.20.x 是最后一条支持 Java 11 的线（1.21+ 要求 Java 17）。 -->
+        <testcontainers.version>1.20.6</testcontainers.version>
     </properties>
+
+    <!--
+      S00：显式导入 Testcontainers BOM。
+      spring-boot-dependencies 2.7.2 并不管理 org.testcontainers（实测该 BOM 里 "testcontainers"
+      出现 0 次），不写版本会直接构建失败：
+        'dependencies.dependency.version' for org.testcontainers:junit-jupiter:jar is missing
+      Spring Boot 自 3.1 起才纳管 testcontainers，故 S01(升 SB3.3) 时应删除本段，改回由父 BOM 管理。
+    -->
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>org.testcontainers</groupId>
+                <artifactId>testcontainers-bom</artifactId>
+                <version>${testcontainers.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
 
     <dependencies>
 
@@ -113,6 +134,30 @@
             <artifactId>jackson-databind</artifactId>
         </dependency>
 
+        <!-- ===== S00 安全网：测试依赖（仅 test scope，不进入生产产物） ===== -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
+            <!-- 自带 JUnit5(Jupiter) + Mockito + AssertJ + Hamcrest + JSONassert -->
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.security</groupId>
+            <artifactId>spring-security-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <!-- 版本由上方显式导入的 testcontainers-bom 管理（父 BOM 并不管这块，见注释） -->
+        <dependency>
+            <groupId>org.testcontainers</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.testcontainers</groupId>
+            <artifactId>mysql</artifactId>
+            <scope>test</scope>
+        </dependency>
+
     </dependencies>
 
     <build>
@@ -128,6 +173,66 @@
                         </exclude>
                     </excludes>
                 </configuration>
+            </plugin>
+
+            <!-- ===== S00 安全网：让 *IT 集成测试在 verify 阶段运行（需 Docker / Testcontainers） ===== -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-failsafe-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>integration-test</goal>
+                            <goal>verify</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <!-- ===== S00 安全网：JaCoCo 覆盖率报告 + 门禁机制（阈值起步设 0，后续 Slice 逐步抬高） ===== -->
+            <plugin>
+                <groupId>org.jacoco</groupId>
+                <artifactId>jacoco-maven-plugin</artifactId>
+                <version>0.8.11</version>
+                <executions>
+                    <execution>
+                        <id>prepare-agent</id>
+                        <goals><goal>prepare-agent</goal></goals>
+                    </execution>
+                    <execution>
+                        <id>report</id>
+                        <phase>verify</phase>
+                        <goals><goal>report</goal></goals>
+                    </execution>
+                    <execution>
+                        <id>check</id>
+                        <phase>verify</phase>
+                        <goals><goal>check</goal></goals>
+                        <configuration>
+                            <rules>
+                                <rule>
+                                    <element>BUNDLE</element>
+                                    <limits>
+                                        <limit>
+                                            <counter>LINE</counter>
+                                            <value>COVEREDRATIO</value>
+                                            <!--
+                                              实测值，非拍脑袋。两种跑法都测过：
+                                                ./mvnw verify -DskipITs -> 139/761 = 18.27%（仅 11 个单测）
+                                                ./mvnw verify           -> 151/761 = 19.84%（+2 个 Testcontainers IT）
+                                              failsafe 会继承 jacoco 的 argLine，故 *IT 确实计入覆盖率。
+                                              门禁取两者的下限 0.18，本地跳过 IT 与 CI 全量跑都能过 ——
+                                              S00.md:142 写的 0.20 是未经测量的估计值，直接设会让首次 CI 就红。
+                                              棘轮：每个后续 Slice 上调一档，只增不减。
+                                            -->
+                                            <minimum>0.18</minimum>
+                                        </limit>
+                                    </limits>
+                                </rule>
+                            </rules>
+                        </configuration>
+                    </execution>
+                </executions>
             </plugin>
         </plugins>
     </build>
