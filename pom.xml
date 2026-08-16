@@ -175,7 +175,14 @@
                 </configuration>
             </plugin>
 
-            <!-- ===== S00 安全网：让 *IT 集成测试在 verify 阶段运行（需 Docker / Testcontainers） ===== -->
+            <!--
+              ===== S00 安全网：让 *IT 集成测试在 verify 阶段运行（需 Docker / Testcontainers） =====
+              机制：spring-boot-starter-parent 已在 <pluginManagement> 里给 failsafe 绑好了
+              integration-test / verify 两个 goal，但 pluginManagement 只提供默认配置、不激活插件，
+              所以项目必须在这里"声明"它，*IT 才会跑。实测：把下面的 <executions> 整段删掉，
+              AdminRepositoryIT 仍会执行（走父 pom 的 default execution）——保留显式写法只是为了
+              自文档化、不依赖父 pom 的默认值。
+            -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-failsafe-plugin</artifactId>
