@@ -25,7 +25,10 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(value = Exception.class)
     public Object handleException(Exception e) {
-        if (e.getClass().equals(AccessDeniedException.class)) {
+        // 必须是 instanceof 而不是 getClass().equals()：新版 Spring Security 的 @PreAuthorize
+        // 拒绝时抛的是 AccessDeniedException 的**子类** AuthorizationDeniedException，
+        // 精确类比较会漏掉它，于是「无权限」会从 403 静默变成 400（实测 S01 升级后触发）。
+        if (e instanceof AccessDeniedException) {
             return new ResponseResult<>(403, "你没有访问权限");
         }
         logger.warn(e.getMessage());

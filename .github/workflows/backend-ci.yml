@@ -11,13 +11,17 @@ jobs:
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: '11'   # 本 Slice 锁 11；SB3 升级 Slice 时改 17
+          # 必须与 pom 的 <java.version> 保持一致：CI 拿旧 JDK 编译新基线会直接失败，
+          # 这是框架升级最常见的「本地绿、CI 红」。两处要一起改，不要只改一边。
+          java-version: '21'
+          # 注：Testcontainers 2.0 起 docker-java 的默认 API 版本已不是当年那个问题版本，
+          # -Dapi.version=1.44 现在只是一层无副作用的保险，见下方 run 行。
           cache: maven
       # 注：本 workflow 位于 Loggi_server 仓库内，checkout 根目录即后端项目根，故无需 working-directory。
       # 用 ./mvnw 而非 setup-java 自带的 mvn：wrapper 把 Maven 版本锁在 3.9.6，保证可复现。
-      # -Dapi.version=1.44：Docker Engine 29+ 拒绝 API < 1.44，而 Testcontainers 1.20.x 里的
-      # docker-java 默认仍发 1.32，会报 "client version 1.32 is too old"。ubuntu-latest 目前的
-      # Docker 还接受 1.32，但 runner 一旦升级本条就会变红——提前钉住。对旧 Docker 无副作用。
+      # -Dapi.version=1.44：原为 Testcontainers 1.20.x 的坑——其 docker-java 默认发 API 1.32，
+      # 而 Docker Engine 29+ 最低只接受 1.44，会报 "client version 1.32 is too old"。
+      # S01 升到 Testcontainers 2.0 后该默认值已提高，本参数退化为无副作用的保险，故保留。
       # 注意属性名是 api.version，docker-java 不认 DOCKER_API_VERSION 环境变量。
       - name: Build & verify (单测 + *IT 集成测试[Testcontainers] + JaCoCo 门禁)
         run: ./mvnw -B verify -Dapi.version=1.44

@@ -9,37 +9,19 @@
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
-        <version>2.7.2</version>
+        <version>4.1.0</version>
     </parent>
 
     <properties>
-        <java.version>11</java.version>
+        <java.version>21</java.version>
         <jwt.version>0.9.1</jwt.version>
-        <mybatis-plus.version>3.4.2</mybatis-plus.version>
         <fastjson.version>1.2.73</fastjson.version>
-        <mybatis-enhance-actable.version>1.4.7.RELEASE</mybatis-enhance-actable.version>
-        <!-- S00：Testcontainers 版本。1.20.x 是最后一条支持 Java 11 的线（1.21+ 要求 Java 17）。 -->
-        <testcontainers.version>1.20.6</testcontainers.version>
     </properties>
 
     <!--
-      S00：显式导入 Testcontainers BOM。
-      spring-boot-dependencies 2.7.2 并不管理 org.testcontainers（实测该 BOM 里 "testcontainers"
-      出现 0 次），不写版本会直接构建失败：
-        'dependencies.dependency.version' for org.testcontainers:junit-jupiter:jar is missing
-      Spring Boot 自 3.1 起才纳管 testcontainers，故 S01(升 SB3.3) 时应删除本段，改回由父 BOM 管理。
+      S00 那段显式导入的 testcontainers-bom 已删除：Spring Boot 自 3.1 起纳管 org.testcontainers，
+      再自行导入 BOM 就是又一个脱离父 BOM 的写死版本（S00 的注释里已预告本 Slice 要删）。
     -->
-    <dependencyManagement>
-        <dependencies>
-            <dependency>
-                <groupId>org.testcontainers</groupId>
-                <artifactId>testcontainers-bom</artifactId>
-                <version>${testcontainers.version}</version>
-                <type>pom</type>
-                <scope>import</scope>
-            </dependency>
-        </dependencies>
-    </dependencyManagement>
 
     <dependencies>
 
@@ -72,10 +54,10 @@
             <artifactId>spring-boot-starter-mail</artifactId>
         </dependency>
 
+        <!-- 版本交给 spring-boot-dependencies BOM：写死会脱离父 BOM，升级时与 Spring Framework 撞车 -->
         <dependency>
             <groupId>org.springframework</groupId>
             <artifactId>spring-context-support</artifactId>
-            <version>5.3.3</version>
         </dependency>
 
         <!--jwt依赖-->
@@ -85,18 +67,38 @@
             <version>${jwt.version}</version>
         </dependency>
 
-        <!--mysql驱动-->
+        <!--
+          ⚠️ 临时支具，随 jjwt 升级一并删除，不要当成正常依赖。
+          jjwt 0.9.1 的 signWith(alg, String) / setSigningKey(String) 走 TextCodec.BASE64
+          → Base64Codec → javax.xml.bind.DatatypeConverter（javap 实测），而新基线的 JDK 与
+          依赖树里都没有 javax.xml.bind 包了，于是 jjwt 在**运行期**抛 NoClassDefFoundError
+          （实测：不加这条，JwtTokenUtilTest 三个用例全灭）。
+
+          必须用 javax.xml.bind:jaxb-api 这个**旧 GAV**，不能靠把 jakarta.xml.bind-api 降级：
+          该 GAV 跨大版本换了命名空间——2.3.x 里是 119 个 javax/xml/bind/*、0 个 jakarta/*，
+          4.0.5（父 BOM 管理）里是 0 个 javax、126 个 jakarta（实测 jar -tf 计数）。
+          降级它会让 Hibernate 7 找不到 jakarta.xml.bind.JAXBException，entityManagerFactory
+          直接创建失败——这正是本次 verify 第一轮红的原因。两个 artifact 提供的包不重叠，可以共存。
+
+          这是本 Slice 唯一保留的 javax 命名空间残留，理由是 jjwt 升级属于后续 Slice。
+        -->
         <dependency>
-            <groupId>mysql</groupId>
-            <artifactId>mysql-connector-java</artifactId>
+            <groupId>javax.xml.bind</groupId>
+            <artifactId>jaxb-api</artifactId>
+            <version>2.3.1</version>
+        </dependency>
+
+        <!--mysql驱动：SB3 起父 BOM 只纳管新 GAV com.mysql:mysql-connector-j，旧的 mysql:mysql-connector-java 已不再管理-->
+        <dependency>
+            <groupId>com.mysql</groupId>
+            <artifactId>mysql-connector-j</artifactId>
             <scope>runtime</scope>
         </dependency>
 
-        <!--lombok-->
+        <!--lombok：版本交给父 BOM（旧的 1.18.24 早于当前 JDK 基线，注解处理器可能报错）-->
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
-            <version>1.18.24</version>
             <optional>true</optional>
         </dependency>
 
@@ -108,53 +110,49 @@
         </dependency>
 
 
-        <!--jdk9以上缺失的jar包-->
-        <dependency>
-            <groupId>javax.xml.bind</groupId>
-            <artifactId>jaxb-api</artifactId>
-            <version>2.3.0</version>
-        </dependency>
-        <dependency>
-            <groupId>com.sun.xml.bind</groupId>
-            <artifactId>jaxb-impl</artifactId>
-            <version>2.3.0</version>
-        </dependency>
-        <dependency>
-            <groupId>com.sun.xml.bind</groupId>
-            <artifactId>jaxb-core</artifactId>
-            <version>2.3.0</version>
-        </dependency>
-        <dependency>
-            <groupId>javax.activation</groupId>
-            <artifactId>activation</artifactId>
-            <version>1.1.1</version>
-        </dependency>
-        <dependency>
-            <groupId>com.fasterxml.jackson.core</groupId>
-            <artifactId>jackson-databind</artifactId>
-        </dependency>
+        <!--
+          原先显式声明的 com.fasterxml.jackson.core:jackson-databind 已删除。
+          SB4 用 Jackson 3，databind 的 groupId 迁到 tools.jackson，父 BOM 不再管理旧 GAV。
+          本项目并没有直接 import databind（只用 com.fasterxml.jackson.annotation.JsonFormat，
+          而 jackson-annotations 正是官方迁移指南里保留旧 groupId 的那个例外），
+          JSON 支持由 spring-boot-starter-web 带入即可。
+        -->
 
         <!-- ===== S00 安全网：测试依赖（仅 test scope，不进入生产产物） ===== -->
+        <!--
+          SB4 把测试切片按技术拆成了独立模块：spring-boot-starter-test 不再自带 @WebMvcTest /
+          @DataJpaTest，改为「用到哪项技术就引哪个 -test starter」，而这些 starter 都会传递带上
+          spring-boot-starter-test，所以后者不必再显式声明。
+          官方原文："you should list the starters of the technologies that are under test for the module"。
+        -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-test</artifactId>
+            <artifactId>spring-boot-starter-webmvc-test</artifactId>
             <scope>test</scope>
-            <!-- 自带 JUnit5(Jupiter) + Mockito + AssertJ + Hamcrest + JSONassert -->
         </dependency>
         <dependency>
-            <groupId>org.springframework.security</groupId>
-            <artifactId>spring-security-test</artifactId>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-data-jpa-test</artifactId>
             <scope>test</scope>
         </dependency>
-        <!-- 版本由上方显式导入的 testcontainers-bom 管理（父 BOM 并不管这块，见注释） -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-security-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <!--
+          Testcontainers 2.0（由 SB4 父 BOM 纳管）重命名了全部模块 artifactId：
+          junit-jupiter -> testcontainers-junit-jupiter，mysql -> testcontainers-mysql。
+          沿用旧名会报 'dependencies.dependency.version' is missing —— 因为新 BOM 里根本没有旧坐标。
+        -->
         <dependency>
             <groupId>org.testcontainers</groupId>
-            <artifactId>junit-jupiter</artifactId>
+            <artifactId>testcontainers-junit-jupiter</artifactId>
             <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.testcontainers</groupId>
-            <artifactId>mysql</artifactId>
+            <artifactId>testcontainers-mysql</artifactId>
             <scope>test</scope>
         </dependency>
 
@@ -243,10 +241,5 @@
             </plugin>
         </plugins>
     </build>
-
-    <!--更换阿里云maven镜像-->
-    <repositories>
-
-    </repositories>
 
 </project>

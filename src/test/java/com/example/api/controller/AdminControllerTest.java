@@ -2,13 +2,15 @@ package com.example.api.controller;
 
 import com.example.api.model.enums.Role;
 import com.example.api.repository.AdminRepository;
+import com.example.api.security.SecurityConfiguration;
 import com.example.api.service.AdminService;
 import com.example.api.service.LoginLogService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.context.annotation.Import;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -24,8 +26,14 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  *  - @WebMvcTest auto-registers @ControllerAdvice (GlobalResponseHandler /
  *    GlobalExceptionHandler), so do NOT @Import GlobalResponseHandler (that would
  *    duplicate the bean and trigger BeanDefinitionOverrideException).
- *  - It also loads the current SecurityConfiguration (WebSecurityConfigurerAdapter)
- *    plus JwtAuthorizationFilter.
+ *  - SecurityConfiguration must be @Import-ed explicitly. Under Spring Boot 2.7 the
+ *    @WebMvcTest slice picked it up on its own (it was a WebSecurityConfigurerAdapter,
+ *    a type the slice filter includes). After S01 it is a plain @Configuration that
+ *    merely DECLARES a SecurityFilterChain bean, which the slice filter does not match,
+ *    so the slice fell back to auto-configured security (anyRequest().authenticated())
+ *    and every unauthenticated request became 401. The @Import restores exactly the
+ *    wiring these assertions were written against — the assertions themselves are
+ *    unchanged.
  *
  * WARNING: this is the highest-risk item in S00 (it depends on the Spring
  * Web/Security slice context loading). On first run, execute
@@ -34,12 +42,13 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * then freeze.
  */
 @WebMvcTest(AdminController.class)
+@Import(SecurityConfiguration.class)
 class AdminControllerTest {
 
     @Autowired MockMvc mockMvc;
-    @MockBean AdminService adminService;
-    @MockBean AdminRepository adminRepository;
-    @MockBean LoginLogService loginLogService;
+    @MockitoBean AdminService adminService;
+    @MockitoBean AdminRepository adminRepository;
+    @MockitoBean LoginLogService loginLogService;
 
     @Test
     @DisplayName("hasInit boolean is wrapped into the {code,status,msg,data} envelope")

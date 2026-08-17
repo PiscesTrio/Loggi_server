@@ -6,7 +6,7 @@ import com.example.api.service.SaleService;
 import com.example.api.utils.DataTimeUtil;
 import org.springframework.stereotype.Service;
 
-import javax.annotation.Resource;
+import jakarta.annotation.Resource;
 import java.util.List;
 
 @Service

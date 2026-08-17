@@ -12,7 +12,7 @@ import com.example.api.utils.DataTimeUtil;
 import com.example.api.utils.JwtTokenUtil;
 import org.springframework.stereotype.Service;
 
-import javax.annotation.Resource;
+import jakarta.annotation.Resource;
 import java.util.Date;
 import java.util.List;
 

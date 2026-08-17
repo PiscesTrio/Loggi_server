@@ -7,7 +7,7 @@ import com.example.api.service.DistributionStatusService;
 import com.example.api.utils.DataTimeUtil;
 import org.springframework.stereotype.Service;
 
-import javax.annotation.Resource;
+import jakarta.annotation.Resource;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.List;
