@@ -40,3 +40,8 @@ dependency-reduced-pom.xml
 ### OS Files ###
 .DS_Store
 Thumbs.db
+
+### Env / secrets (S00) ###
+.env
+.env.*
+!.env.example

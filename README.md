@@ -97,3 +97,41 @@ com.example.api/
 ## Default Admin Setup
 
 Call `POST /api/admin/init` to create the first super-admin account if no admin exists. Check `GET /api/admin/hasInit` first.
+
+## Run with Docker (S00)
+
+A multi-stage `Dockerfile` and a `docker-compose.yml` (app + MySQL 8) are provided for one-command, reproducible startup:
+
+```bash
+cp .env.example .env   # then fill in real values
+docker compose up --build
+```
+
+The API will be available at `http://localhost:8088`. The `app` service waits for MySQL to become healthy before it starts.
+
+## Environment Variables
+
+`.env.example` is the canonical list of every variable this service reads; copy it to `.env` and fill in
+real values. `.env` is gitignored and must never be committed — only `.env.example` is tracked.
+
+The defaults in `src/main/resources/application.yaml` (table above) are deliberately non-functional
+placeholders: `JWT_SECRET` must be replaced with a secret of at least 32 bytes, and `MAIL_PASSWORD`
+expects a QQ-mail authorization code, not the account password. `docker compose` reads `.env`
+automatically; for a bare `mvn spring-boot:run` export the variables yourself.
+
+## Testing (S00 safety net)
+
+```bash
+./mvnw test                 # unit tests only — no Docker required
+./mvnw verify -DskipITs     # unit tests + JaCoCo report and coverage gate, still no Docker
+./mvnw verify               # + *IT integration tests (Testcontainers → requires Docker)
+```
+
+The Maven Wrapper pins Maven 3.9.6, so only a JDK 11 is needed locally.
+
+Integration tests (`*IT`) start a real `mysql:8.0` via Testcontainers, so Docker must be running. Against
+Docker Engine 29+ add `-Dapi.version=1.44` — the docker-java client bundled with Testcontainers 1.20.x
+still defaults to API 1.32, which the daemon rejects.
+
+JaCoCo HTML report: `target/site/jacoco/index.html`. The coverage gate in `pom.xml` is a floor measured
+from a real run rather than a target; each refactor slice ratchets it up, and it only ever goes up.

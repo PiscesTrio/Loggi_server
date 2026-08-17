@@ -1,0 +1,12 @@
+# Normalize line endings so the build is reproducible regardless of the
+# contributor's core.autocrlf setting.
+* text=auto
+
+# The Maven Wrapper is a POSIX shell script executed by the Linux CI runner.
+# CRLF here would break it with "bad interpreter: /bin/sh^M".
+mvnw text eol=lf
+*.sh  text eol=lf
+
+# Windows-only scripts keep CRLF.
+mvnw.cmd text eol=crlf
+*.bat    text eol=crlf
