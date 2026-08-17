@@ -4,7 +4,7 @@ import jakarta.servlet.http.HttpServletRequest;
 
 public class BrowserUtil {
     /**
-     * 获取浏览器版本
+     * Get the browser version.
      *
      * @param request
      * @return
@@ -12,25 +12,25 @@ public class BrowserUtil {
     public static String getBrower(HttpServletRequest request) {
         String browserVersion = null;
         String header = request.getHeader("User-Agent");
-        if (header.equals("") || header == null)// 为空就默认为谷歌
+        if (header.equals("") || header == null)// empty header falls back to Chrome
         {
             browserVersion = "谷歌浏览器";
             return browserVersion;
         }
 
-        if (header.indexOf("Chrome") > 0)// 谷歌
+        if (header.indexOf("Chrome") > 0)// Chrome
         {
             browserVersion = "Chrome";
         }
-        else if (header.indexOf("Safari") > 0)// safari
+        else if (header.indexOf("Safari") > 0)// Safari
         {
             browserVersion = "safari浏览器";
         }
-        if (header.indexOf("MSIE") > 0)// ie浏览器
+        if (header.indexOf("MSIE") > 0)// IE
         {
             browserVersion = "IE浏览器";
         }
-        if (header.indexOf("Firefox") > 0)// 火狐浏览器
+        if (header.indexOf("Firefox") > 0)// Firefox
         {
             browserVersion = "火狐浏览器";
         }
@@ -42,55 +42,55 @@ public class BrowserUtil {
         {
             browserVersion = "konqueror浏览器";
         }
-        if (header.indexOf("Quark") > 0)// 夸克浏览器
+        if (header.indexOf("Quark") > 0)// Quark
         {
             browserVersion = "quark浏览器";
         }
-        if (header.indexOf("baidu") > 0)// 百度浏览器
+        if (header.indexOf("baidu") > 0)// Baidu
         {
             browserVersion = "百度浏览器";
         }
-        if (header.indexOf("Edge") > 0)// edge浏览器
+        if (header.indexOf("Edge") > 0)// Edge
         {
             browserVersion = "edge";
         }
-        if (header.indexOf("TheWorld") > 0)// theworld浏览器
+        if (header.indexOf("TheWorld") > 0)// TheWorld
         {
             browserVersion = "theworld浏览器";
         }
-        if (header.indexOf("QQBrowser") > 0 || header.indexOf("TencentTraveler") > 0 || header.indexOf("QQTheme") > 0)// qq浏览器
+        if (header.indexOf("QQBrowser") > 0 || header.indexOf("TencentTraveler") > 0 || header.indexOf("QQTheme") > 0)// QQ
         {
             browserVersion = "qq浏览器";
         }
-        if (header.indexOf("Avast") > 0)// Avast Secure Browser浏览器
+        if (header.indexOf("Avast") > 0)// Avast Secure Browser
         {
             browserVersion = "avast浏览器";
         }
-        if (header.indexOf("OPR") > 0)// opera浏览器
+        if (header.indexOf("OPR") > 0)// Opera
         {
             browserVersion = "opera浏览器";
         }
-        if (header.indexOf("360") > 0)// 360浏览器
+        if (header.indexOf("360") > 0)// 360
         {
             browserVersion = "360浏览器";
         }
-        if (header.indexOf("LBBROWSER") > 0)// 猎豹浏览器
+        if (header.indexOf("LBBROWSER") > 0)// Liebao
         {
             browserVersion = "猎豹浏览器";
         }
-        if (header.indexOf("Maxthon") > 0)// 遨游浏览器
+        if (header.indexOf("Maxthon") > 0)// Maxthon
         {
             browserVersion = "遨游浏览器";
         }
-        if (header.indexOf("MetaSr") > 0 || header.indexOf("Sogou") > 0)// 搜狗浏览器
+        if (header.indexOf("MetaSr") > 0 || header.indexOf("Sogou") > 0)// Sogou
         {
             browserVersion = "搜狗浏览器";
         }
-        if (header.indexOf("UCWEB") > 0 || header.indexOf("UCBrowser") > 0)// uc浏览器
+        if (header.indexOf("UCWEB") > 0 || header.indexOf("UCBrowser") > 0)// UC
         {
             browserVersion = "uc浏览器";
         }
-        if (browserVersion == null)// 没找到的都默认谷歌浏览器
+        if (browserVersion == null)// anything unrecognized defaults to Chrome
         {
             browserVersion = "谷歌浏览器";
         }

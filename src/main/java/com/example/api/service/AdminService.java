@@ -19,7 +19,7 @@ public interface AdminService {
 
     List<Admin> findAll();
 
-    //生成token
+    //generate token
     String createToken(Admin admin, long exp);
 
     void delete(String id);

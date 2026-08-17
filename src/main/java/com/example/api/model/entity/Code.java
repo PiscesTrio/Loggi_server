@@ -9,7 +9,7 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
 
 /**
- * 验证码
+ * Verification code
  */
 @Data
 @Entity

@@ -12,7 +12,7 @@ import java.time.LocalDateTime;
 import java.util.Date;
 
 /**
- * 配送
+ * Distribution
  */
 @Data
 @Entity
@@ -24,31 +24,31 @@ public class Distribution {
     @GenericGenerator(name = "uuid2", strategy = "org.hibernate.id.UUIDGenerator")
     private String id;
 
-    //司机id
+    //driver id
     private String did;
 
-    //车辆id
+    //vehicle id
     private String vid;
 
     private String wid;
 
-    //司机
+    //driver
     private String driver;
 
-    //车牌号
+    //license plate number
     private String number;
 
-    //客户电话
+    //customer phone
     private String phone;
 
-    //客户地址
+    //customer address
     private String address;
 
-    //加急处理
+    //expedited handling
     private boolean urgent;
 
     private String care;
-    //操作时间
+    //operation time
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd HH:mm:ss", timezone = "GMT+8")
     private LocalDateTime time;
 

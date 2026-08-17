@@ -9,7 +9,7 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
 
 /**
- * 员工
+ * Employee
  */
 @Data
 @Entity
@@ -20,21 +20,21 @@ public class Employee {
     @GeneratedValue(generator = "uuid2")
     @GenericGenerator(name = "uuid2", strategy = "org.hibernate.id.UUIDGenerator")
     private String id;
-    //名字
+    //name
     private String name;
-    //性别
+    //gender
     private String gender;
-    //手机号
+    //mobile number
     private String phone;
-    //家庭住址
+    //home address
     private String address;
-    //身份证号码
+    //ID card number
     private String idCard;
-    //部门
+    //department
     private String department;
-    //创建时间
+    //created at
     private String createAt;
-    //更新时间
+    //updated at
     private String updateAt;
 
 }

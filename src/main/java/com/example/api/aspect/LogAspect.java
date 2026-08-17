@@ -27,24 +27,24 @@ public class LogAspect {
     private SystemLogService logService;
 
     /*
-        表明切点
+        Pointcut declaration
      */
     @Pointcut("@annotation(com.example.api.annotation.Log)")
     public void pt(){}
 
     /*
-       环绕通知
+       Around advice
      */
     @Around("pt()")
     public Object Around(ProceedingJoinPoint point) throws Throwable {
-        //记录开始时间
+        //record the start time
         long beginTime = System.currentTimeMillis();
         Object res = null;
         try {
-            //执行方法
+            //invoke the target method
             res = point.proceed();
         }finally {
-            //计算执行时长
+            //compute the elapsed time
             long time = System.currentTimeMillis() - beginTime;
             recordLog(point);
         }
@@ -52,25 +52,25 @@ public class LogAspect {
     }
 
     private void recordLog(ProceedingJoinPoint point){
-        //获取当前请求对象
+        //get the current request
         ServletRequestAttributes requestAttributes = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
         HttpServletRequest request = requestAttributes.getRequest();
-        //获取目标方法签名
+        //get the target method signature
         MethodSignature signature = (MethodSignature) point.getSignature();
         Method method = signature.getMethod();
         Log annotation = method.getAnnotation(Log.class);
-        //封装日志对象
+        //build the audit log record
         SystemLog systemLog = new SystemLog();
         systemLog.setModule(annotation.moudle());
         systemLog.setBusincessType(annotation.type().getName());
         systemLog.setIp(IpUtil.getIpAddr(request));
         systemLog.setTime(LocalDateTime.now());
-        //获取方法的全路径
+        //get the fully-qualified method path
         systemLog.setMethod((signature.getDeclaringTypeName()+"."+signature.getName()).substring(16));
-        //获取token,并解析token来获取当前账号
+        //read the token and parse it to resolve the current account
         String token = request.getHeader(JwtTokenUtil.TOKEN_HEADER);
         systemLog.setAccount(JwtTokenUtil.getUsername(token));
-        //持久化到数据库
+        //persist to the database
         logService.record(systemLog);
     }
 }

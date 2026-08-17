@@ -9,7 +9,7 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
 
 /**
- * 往来公司
+ * Business partner company
  */
 @Data
 @Entity

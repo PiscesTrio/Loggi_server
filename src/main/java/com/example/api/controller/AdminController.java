@@ -25,7 +25,7 @@ import java.util.Map;
 @RequestMapping("/api/admin")
 @Slf4j
 public class AdminController {
-    //获取日志对象
+    //logger instance
     Logger logger = LoggerFactory.getLogger(AdminController.class);
 
     @Resource

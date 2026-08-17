@@ -14,18 +14,20 @@ import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 /**
- * 为编译通过所做的最小必要适配，**语义与升级前逐行等价**。
+ * Minimal adaptation to make the code compile again; <b>semantics are line-for-line equivalent to
+ * the pre-upgrade config</b>.
  *
- * <p>WebSecurityConfigurerAdapter 与 authenticationManagerBean() 在新版 Spring Security 中已被
- * 物理删除，不改无法编译。这里只把「怎么注册」换成组件式写法，「注册了什么」一个字没动：
- * 同样 disable csrf、开 cors、STATELESS、挂同一个 JwtAuthorizationFilter，同样不声明任何
- * 请求级授权规则（授权全靠 @PreAuthorize）。
+ * <p>WebSecurityConfigurerAdapter and authenticationManagerBean() were removed outright in current
+ * Spring Security, so this could not compile untouched. Only the <b>how</b> of registration changed
+ * — component style instead of the adapter; the <b>what</b> is identical: csrf disabled, cors on,
+ * STATELESS, the same JwtAuthorizationFilter, no request-level rules (authorization still rests
+ * entirely on {@code @PreAuthorize}).
  *
- * <p>真正的语义现代化——lambda 细粒度授权、JWT 过滤器改 OncePerRequestFilter、去 static——
- * 属于 S02，本 Slice 刻意不做。
+ * <p>The real semantic modernization — lambda fine-grained authorization, moving the JWT filter to
+ * OncePerRequestFilter, dropping static — belongs to S02, deliberately out of scope for this slice.
  */
 @Configuration
-@EnableMethodSecurity(prePostEnabled = true)   // 取代已删除的 @EnableGlobalMethodSecurity
+@EnableMethodSecurity(prePostEnabled = true)   // replaces the removed @EnableGlobalMethodSecurity
 public class SecurityConfiguration {
 
     @Bean
@@ -34,8 +36,9 @@ public class SecurityConfiguration {
     }
 
     /**
-     * JwtAuthorizationFilter 继承 BasicAuthenticationFilter，构造器需要一个 AuthenticationManager。
-     * 旧代码从 authenticationManagerBean() 取，该方法已随 adapter 一同删除，改由容器暴露。
+     * JwtAuthorizationFilter extends BasicAuthenticationFilter, whose constructor requires an
+     * AuthenticationManager. The old code pulled it from authenticationManagerBean(), which was
+     * removed along with the adapter, so the container exposes it as a bean instead.
      */
     @Bean
     public AuthenticationManager authenticationManager(AuthenticationConfiguration configuration)
@@ -46,22 +49,23 @@ public class SecurityConfiguration {
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http, AuthenticationManager authenticationManager)
             throws Exception {
-        // 开启跨域
+        // enable CORS
         http.csrf(csrf -> csrf.disable())
-                // 空 lambda 不是笔误：它启用 CORS 并让 Spring 去发现下面的 corsConfigurationSource Bean。
-                // 漏掉这一行等价于不开 CORS，前端会撞 cors error。
+                // The empty lambda is not a typo: it turns CORS on and lets Spring discover the
+                // corsConfigurationSource bean below. Omitting this line means no CORS at all and
+                // the frontend hits a cors error.
                 .cors(cors -> {
                 })
-                // 禁用 session
+                // disable sessions
                 .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                // 添加自定义的 jwt 过滤器
+                // register the custom jwt filter
                 .addFilter(new JwtAuthorizationFilter(authenticationManager));
         return http.build();
     }
 
     /**
-     * SpringSecurity有默认的跨域配置 会无法放行RequestHeader带有"Authorization"请求
-     * 防止前端请求api报出cors error
+     * Spring Security's default CORS configuration blocks requests whose RequestHeader carries
+     * "Authorization"; this bean keeps the frontend from getting a cors error on api calls.
      *
      * @return *
      */

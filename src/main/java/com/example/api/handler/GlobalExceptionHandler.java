@@ -12,9 +12,8 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 /**
- * 捕获controller异常
- * controller抛出异常执行下边的函数
- * 返回Response写入ApiResult
+ * Catches exceptions thrown by controllers and writes the result
+ * into the ApiResult response envelope.
  */
 @ResponseBody
 @RestControllerAdvice
@@ -25,9 +24,10 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(value = Exception.class)
     public Object handleException(Exception e) {
-        // 必须是 instanceof 而不是 getClass().equals()：新版 Spring Security 的 @PreAuthorize
-        // 拒绝时抛的是 AccessDeniedException 的**子类** AuthorizationDeniedException，
-        // 精确类比较会漏掉它，于是「无权限」会从 403 静默变成 400（实测 S01 升级后触发）。
+        // Must be instanceof, not getClass().equals(): recent Spring Security raises
+        // AuthorizationDeniedException — a SUBCLASS of AccessDeniedException — when
+        // @PreAuthorize denies. An exact-class comparison misses it, so "forbidden"
+        // silently turns from 403 into 400 (observed after the S01 upgrade).
         if (e instanceof AccessDeniedException) {
             return new ResponseResult<>(403, "你没有访问权限");
         }

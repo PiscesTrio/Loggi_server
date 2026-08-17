@@ -18,7 +18,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
-//项目启动就执行的任务
+//task executed on application startup
 @Component
 @Order(1)
 public class ConsumeMqTask implements ApplicationRunner {
@@ -26,14 +26,14 @@ public class ConsumeMqTask implements ApplicationRunner {
     private AdminRepository adminRepository;
 
     /**
-     * 日志
+     * Logger
      */
     private static final Logger LOGGER = LoggerFactory.getLogger(ConsumeMqTask.class);
 
     @Override
     public void run(ApplicationArguments args) throws Exception {
         LOGGER.info("start to run ConsumeMqTask.");
-// 项目启动初始化管理员账号逻辑已移除
+// startup logic that bootstrapped the admin account has been removed
         LOGGER.info("end to run ConsumeMqTask.");
     }
 }

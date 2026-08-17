@@ -20,7 +20,7 @@ public class ResponseResult<T> {
         this.data = null;
     }
 
-    //不附带msg返回数据
+    //return data without a msg
     public ResponseResult(T data) {
         this.code = 200;
         this.status = true;
@@ -28,7 +28,7 @@ public class ResponseResult<T> {
         this.data = data;
     }
 
-    //默认附带msg和data
+    //carries msg and data by default
     public ResponseResult(String msg, T data) {
         this.code = 200;
         this.status = true;
@@ -36,7 +36,7 @@ public class ResponseResult<T> {
         this.data = data;
     }
 
-    //默认的错误返回
+    //default error response
     public ResponseResult(Integer code, String msg) {
         this.code = code;
         this.status = false;

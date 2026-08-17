@@ -23,20 +23,20 @@ public class LoginLog {
     @GenericGenerator(name = "uuid2", strategy = "org.hibernate.id.UUIDGenerator")
     private String id;
 
-    //登录邮箱
+    //login email
     private String email;
 
-    //登录状态
+    //login status
     private Integer status;
 
-    //用户的IP地址
+    //user IP address
     private String ip;
 
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd HH:mm:ss", timezone = "GMT+8")
-    //登录时间
+    //login time
     private Date date;
 
-    //浏览器
+    //browser
     private String browser;
 
 }

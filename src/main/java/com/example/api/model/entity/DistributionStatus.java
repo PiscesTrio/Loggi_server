@@ -22,9 +22,9 @@ public class DistributionStatus {
 
     private String disId;
 
-    //緯度
+    //latitude
     private double lat;
-    //經度
+    //longitude
     private  double lng;
 
     private  String location;

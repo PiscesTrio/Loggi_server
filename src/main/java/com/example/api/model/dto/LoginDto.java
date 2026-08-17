@@ -3,7 +3,7 @@ package com.example.api.model.dto;
 import lombok.Data;
 
 /**
- * 登录传输数据
+ * Login request payload.
  */
 @Data
 public class LoginDto {

@@ -15,9 +15,10 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 /**
  * Characterization test for the JWT convention (prefix + HS256 + roles claim).
  *
- * <p>S00 左了一个洞：{@code AdminControllerTest} 只走到「token 为空」的提前返回，jjwt 从未被真正
- * 调用过。于是 {@code JwtTokenUtil} 里唯一会触发 jjwt 编解码的两条路径（签发与解析）在整个安全网上
- * 没有任何覆盖——而 S01 恰恰要动它们脚下的框架。这个类补上这段往返，作为升级前的行为基线。
+ * <p>S00 left a gap: {@code AdminControllerTest} stops at the "token is empty" early return, so
+ * jjwt is never invoked and the only two {@code JwtTokenUtil} paths that encode and decode a
+ * token — issuing and parsing — sit outside the safety net. S01 swaps the framework underneath
+ * them, so this class pins the round trip as a pre-upgrade baseline.
  */
 class JwtTokenUtilTest {
 
@@ -25,7 +26,8 @@ class JwtTokenUtilTest {
 
     @BeforeEach
     void injectSecret() {
-        // APP_SECRET 是 static 字段，由 @PostConstruct 从实例字段拷过去（去 static 留给后续 Slice）
+        // APP_SECRET is static, copied from the instance field by @PostConstruct
+        // (removing static is left to a later slice)
         JwtTokenUtil util = new JwtTokenUtil();
         ReflectionTestUtils.setField(util, "appSecretValue", SECRET);
         util.init();

@@ -4,17 +4,17 @@ import lombok.Getter;
 import lombok.Setter;
 
 /**
- * 配送单状态
+ * Distribution order status
  */
 public enum DistributionStatus {
 
-    //正在审核
+    //Under review
     REVIEWING(0),
 
-    //审核成功
+    //Review passed
     REVIEW_SUCCESS(1),
 
-    //订单完成
+    //Order completed
     END(2);
 
     @Getter

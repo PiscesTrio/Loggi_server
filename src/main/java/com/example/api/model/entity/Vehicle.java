@@ -9,7 +9,7 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
 
 /**
- * 车辆
+ * Vehicle
  */
 @Data
 @Entity
@@ -21,13 +21,13 @@ public class Vehicle {
     @GenericGenerator(name = "uuid2", strategy = "org.hibernate.id.UUIDGenerator")
     private String id;
 
-    //车牌号
+    //license plate number
     private String number;
 
-    //车辆类型
+    //vehicle type
     private String type;
 
-    //是否正在运输
+    //whether it is currently in transit
     private boolean driving;
 
     private String createAt;

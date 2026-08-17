@@ -9,7 +9,7 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
 
 /**
- * 驾驶员
+ * Driver
  */
 @Data
 @Entity
@@ -27,19 +27,19 @@ public class Driver {
 
     private String phone;
 
-    //家庭住址
+    //Home address
     private String address;
 
-    //身份证号码
+    //ID card number
     private String idCard;
 
-    //驾驶证
+    //Driver's license
     private String license;
 
-    //驾驶证分数 12分
+    //License points, out of 12
     private String score;
 
-    //正在驾驶
+    //Currently driving
     private boolean driving;
 
     private String createAt;

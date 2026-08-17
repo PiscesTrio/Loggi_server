@@ -7,17 +7,17 @@ import java.util.List;
 
 public interface InventoryRecordService {
 
-    //出入库排行统计
+    //inbound/outbound ranking statistics
     List<CommodityChartVo> analyzeCommodity(Integer type);
 
     List<InventoryRecord> findAllByWarehouseId(String wid);
 
     List<InventoryRecord> findAllByCommodityId(String cid);
 
-    //出库
+    //outbound
     InventoryRecord out(InventoryRecord record) throws Exception;
 
-    //入库
+    //inbound
     InventoryRecord in(InventoryRecord record) throws Exception;
 
 }
