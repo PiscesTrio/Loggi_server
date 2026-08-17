@@ -70,16 +70,22 @@
         <!--
           ⚠️ 临时支具，随 jjwt 升级一并删除，不要当成正常依赖。
           jjwt 0.9.1 的 signWith(alg, String) / setSigningKey(String) 走 TextCodec.BASE64
-          → Base64Codec → javax.xml.bind.DatatypeConverter（javap 实测）。该包只存在于
-          jakarta.xml.bind-api 的 2.3.x 线；父 BOM 管理的版本已越过这条线，只有
-          jakarta.xml.bind 包，于是 jjwt 在**运行期**抛 NoClassDefFoundError。
-          实测：不加这条，JwtTokenUtilTest 的三个用例全部 NoClassDefFound；加上即恢复。
+          → Base64Codec → javax.xml.bind.DatatypeConverter（javap 实测），而新基线的 JDK 与
+          依赖树里都没有 javax.xml.bind 包了，于是 jjwt 在**运行期**抛 NoClassDefFoundError
+          （实测：不加这条，JwtTokenUtilTest 三个用例全灭）。
+
+          必须用 javax.xml.bind:jaxb-api 这个**旧 GAV**，不能靠把 jakarta.xml.bind-api 降级：
+          该 GAV 跨大版本换了命名空间——2.3.x 里是 119 个 javax/xml/bind/*、0 个 jakarta/*，
+          4.0.5（父 BOM 管理）里是 0 个 javax、126 个 jakarta（实测 jar -tf 计数）。
+          降级它会让 Hibernate 7 找不到 jakarta.xml.bind.JAXBException，entityManagerFactory
+          直接创建失败——这正是本次 verify 第一轮红的原因。两个 artifact 提供的包不重叠，可以共存。
+
           这是本 Slice 唯一保留的 javax 命名空间残留，理由是 jjwt 升级属于后续 Slice。
         -->
         <dependency>
-            <groupId>jakarta.xml.bind</groupId>
-            <artifactId>jakarta.xml.bind-api</artifactId>
-            <version>2.3.3</version>
+            <groupId>javax.xml.bind</groupId>
+            <artifactId>jaxb-api</artifactId>
+            <version>2.3.1</version>
         </dependency>
 
         <!--mysql驱动：SB3 起父 BOM 只纳管新 GAV com.mysql:mysql-connector-j，旧的 mysql:mysql-connector-java 已不再管理-->
