@@ -1,5 +1,6 @@
 package com.example.api.controller;
 
+import com.example.api.model.entity.Admin;
 import com.example.api.model.enums.Role;
 import com.example.api.repository.AdminRepository;
 import com.example.api.security.SecurityConfiguration;
@@ -11,11 +12,15 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.context.annotation.Import;
+import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
 
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 /**
@@ -85,6 +90,27 @@ class AdminControllerTest {
                 .andExpect(jsonPath("$.code").value(403))
                 .andExpect(jsonPath("$.status").value(false))
                 .andExpect(jsonPath("$.msg").value("你没有访问权限"));
+    }
+
+    @Test
+    @DisplayName("login accepts an explicit null for the primitive boolean field")
+    void login_withExplicitNullRemember_isAccepted() throws Exception {
+        // The Flutter client's LoginDto.toJson() always emits every key, so `remember`
+        // arrives as an explicit null rather than being absent. Jackson 2 mapped that
+        // to false; Jackson 3 flipped FAIL_ON_NULL_FOR_PRIMITIVES to true and rejects
+        // it with 400 before the controller is ever reached.
+        //
+        // An omitted field still works, which is why probing the endpoint with curl
+        // did not reveal this — only the real client did.
+        when(adminService.loginByPassword(any())).thenReturn(new Admin());
+        when(adminService.createToken(any(), anyLong())).thenReturn("logistics:stub");
+
+        mockMvc.perform(post("/api/admin/login?type=password")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"email\":\"a@b.c\",\"password\":\"p\",\"code\":null,\"remember\":null}"))
+                .andExpect(status().isOk())
+                // Wrapped by GlobalResponseHandler, so the token sits under data.
+                .andExpect(jsonPath("$.data.token").exists());
     }
 
     @Test

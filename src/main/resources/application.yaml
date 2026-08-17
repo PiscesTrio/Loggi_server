@@ -23,6 +23,16 @@ spring:
     url: jdbc:mysql://${DB_HOST:localhost}:${DB_PORT:3306}/${DB_NAME:test}?characterEncoding=utf8&serverTimezone=Asia/Shanghai
     username: ${DB_USERNAME:root}
     password: ${DB_PASSWORD:your-db-password}
+  jackson:
+    deserialization:
+      # Jackson 3 把 FAIL_ON_NULL_FOR_PRIMITIVES 的默认值从 false 翻成了 true，于是
+      # 请求体里一个**显式的 null** 落到原始类型字段上会被直接 400 掉（Jackson 2 是当默认值处理）。
+      # Flutter 客户端的 toJson() 无条件输出每一个键，所以 `remember` 到达时是 null 而不是缺失——
+      # 登录因此在 S01 升级后全线失败，而 curl 只发 {email,password}（字段缺失）反而正常，
+      # 所以 API 层的手工探测看不见它，是实机端到端跑出来的。
+      # 这不是单个字段的问题：Distribution.urgent、Vehicle.driving、Driver.driving、Sale.pay
+      # 都是原始 boolean，逐个改成包装类型是打地鼠，恢复这一条默认值才是治面。
+      fail-on-null-for-primitives: false
   sql:
     init:
       # 项目此前完全没有数据初始化路径：ddl-auto 只建表，compose 不挂 init 脚本，
