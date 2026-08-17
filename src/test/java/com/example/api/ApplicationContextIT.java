@@ -22,10 +22,13 @@ import static org.assertj.core.api.Assertions.assertThat;
  * 这件事在 S01 之前**没有任何断言看着**：AOP 切面、邮件、后台任务、安全过滤器链，
  * 任何一个在大版本跨越中坏掉都不会让构建变红。
  *
+ * <p>用 RANDOM_PORT 而非默认的 MOCK：这样会**真的启动内嵌 Web 容器**，等价于 S01 验收里
+ * 那条「`spring-boot:run` 能正常启动」的冒烟，而且是每次构建都跑的常驻回归，不是一次性手工确认。
+ *
  * <p>是 *IT 而非 *Test：完整上下文需要真实数据源，走 failsafe + Testcontainers。
  */
 @Testcontainers
-@SpringBootTest
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 class ApplicationContextIT {
 
     @Container
