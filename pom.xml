@@ -15,9 +15,7 @@
     <properties>
         <java.version>11</java.version>
         <jwt.version>0.9.1</jwt.version>
-        <mybatis-plus.version>3.4.2</mybatis-plus.version>
         <fastjson.version>1.2.73</fastjson.version>
-        <mybatis-enhance-actable.version>1.4.7.RELEASE</mybatis-enhance-actable.version>
         <!-- S00：Testcontainers 版本。1.20.x 是最后一条支持 Java 11 的线（1.21+ 要求 Java 17）。 -->
         <testcontainers.version>1.20.6</testcontainers.version>
     </properties>
@@ -72,10 +70,10 @@
             <artifactId>spring-boot-starter-mail</artifactId>
         </dependency>
 
+        <!-- 版本交给 spring-boot-dependencies BOM：写死会脱离父 BOM，升级时与 Spring Framework 撞车 -->
         <dependency>
             <groupId>org.springframework</groupId>
             <artifactId>spring-context-support</artifactId>
-            <version>5.3.3</version>
         </dependency>
 
         <!--jwt依赖-->
@@ -108,27 +106,6 @@
         </dependency>
 
 
-        <!--jdk9以上缺失的jar包-->
-        <dependency>
-            <groupId>javax.xml.bind</groupId>
-            <artifactId>jaxb-api</artifactId>
-            <version>2.3.0</version>
-        </dependency>
-        <dependency>
-            <groupId>com.sun.xml.bind</groupId>
-            <artifactId>jaxb-impl</artifactId>
-            <version>2.3.0</version>
-        </dependency>
-        <dependency>
-            <groupId>com.sun.xml.bind</groupId>
-            <artifactId>jaxb-core</artifactId>
-            <version>2.3.0</version>
-        </dependency>
-        <dependency>
-            <groupId>javax.activation</groupId>
-            <artifactId>activation</artifactId>
-            <version>1.1.1</version>
-        </dependency>
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-databind</artifactId>
@@ -243,10 +220,5 @@
             </plugin>
         </plugins>
     </build>
-
-    <!--更换阿里云maven镜像-->
-    <repositories>
-
-    </repositories>
 
 </project>
