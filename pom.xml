@@ -9,7 +9,7 @@
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
-        <version>3.5.16</version>
+        <version>4.1.0</version>
     </parent>
 
     <properties>
@@ -104,32 +104,49 @@
         </dependency>
 
 
-        <dependency>
-            <groupId>com.fasterxml.jackson.core</groupId>
-            <artifactId>jackson-databind</artifactId>
-        </dependency>
+        <!--
+          原先显式声明的 com.fasterxml.jackson.core:jackson-databind 已删除。
+          SB4 用 Jackson 3，databind 的 groupId 迁到 tools.jackson，父 BOM 不再管理旧 GAV。
+          本项目并没有直接 import databind（只用 com.fasterxml.jackson.annotation.JsonFormat，
+          而 jackson-annotations 正是官方迁移指南里保留旧 groupId 的那个例外），
+          JSON 支持由 spring-boot-starter-web 带入即可。
+        -->
 
         <!-- ===== S00 安全网：测试依赖（仅 test scope，不进入生产产物） ===== -->
+        <!--
+          SB4 把测试切片按技术拆成了独立模块：spring-boot-starter-test 不再自带 @WebMvcTest /
+          @DataJpaTest，改为「用到哪项技术就引哪个 -test starter」，而这些 starter 都会传递带上
+          spring-boot-starter-test，所以后者不必再显式声明。
+          官方原文："you should list the starters of the technologies that are under test for the module"。
+        -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-test</artifactId>
+            <artifactId>spring-boot-starter-webmvc-test</artifactId>
             <scope>test</scope>
-            <!-- 自带 JUnit5(Jupiter) + Mockito + AssertJ + Hamcrest + JSONassert -->
         </dependency>
         <dependency>
-            <groupId>org.springframework.security</groupId>
-            <artifactId>spring-security-test</artifactId>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-data-jpa-test</artifactId>
             <scope>test</scope>
         </dependency>
-        <!-- 版本由上方显式导入的 testcontainers-bom 管理（父 BOM 并不管这块，见注释） -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-security-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <!--
+          Testcontainers 2.0（由 SB4 父 BOM 纳管）重命名了全部模块 artifactId：
+          junit-jupiter -> testcontainers-junit-jupiter，mysql -> testcontainers-mysql。
+          沿用旧名会报 'dependencies.dependency.version' is missing —— 因为新 BOM 里根本没有旧坐标。
+        -->
         <dependency>
             <groupId>org.testcontainers</groupId>
-            <artifactId>junit-jupiter</artifactId>
+            <artifactId>testcontainers-junit-jupiter</artifactId>
             <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.testcontainers</groupId>
-            <artifactId>mysql</artifactId>
+            <artifactId>testcontainers-mysql</artifactId>
             <scope>test</scope>
         </dependency>
 
