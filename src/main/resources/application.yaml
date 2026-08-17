@@ -23,9 +23,17 @@ spring:
     url: jdbc:mysql://${DB_HOST:localhost}:${DB_PORT:3306}/${DB_NAME:test}?characterEncoding=utf8&serverTimezone=Asia/Shanghai
     username: ${DB_USERNAME:root}
     password: ${DB_PASSWORD:your-db-password}
+  sql:
+    init:
+      # 项目此前完全没有数据初始化路径：ddl-auto 只建表，compose 不挂 init 脚本，
+      # 唯一的 ApplicationRunner 是空的——clone 下来跑起来是一个空库。
+      # data.sql 用 `seed-` 前缀做删除再插入，可重复执行且不碰 App 录入的数据。
+      mode: always
   jpa:
     hibernate:
       ddl-auto: update
+    # 必需：不设的话 data.sql 会在 Hibernate 建表**之前**执行，直接报表不存在。
+    defer-datasource-initialization: true
     open-in-view: false
     show-sql: true
 #设置日志级别会给root根节点设置，代表整体应用的级别
