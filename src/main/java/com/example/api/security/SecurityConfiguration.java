@@ -2,18 +2,31 @@ package com.example.api.security;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.security.config.annotation.method.configuration.EnableGlobalMethodSecurity;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
-import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
+/**
+ * 为编译通过所做的最小必要适配，**语义与升级前逐行等价**。
+ *
+ * <p>WebSecurityConfigurerAdapter 与 authenticationManagerBean() 在新版 Spring Security 中已被
+ * 物理删除，不改无法编译。这里只把「怎么注册」换成组件式写法，「注册了什么」一个字没动：
+ * 同样 disable csrf、开 cors、STATELESS、挂同一个 JwtAuthorizationFilter，同样不声明任何
+ * 请求级授权规则（授权全靠 @PreAuthorize）。
+ *
+ * <p>真正的语义现代化——lambda 细粒度授权、JWT 过滤器改 OncePerRequestFilter、去 static——
+ * 属于 S02，本 Slice 刻意不做。
+ */
 @Configuration
-@EnableGlobalMethodSecurity(prePostEnabled = true)
-public class SecurityConfiguration extends WebSecurityConfigurerAdapter {
+@EnableMethodSecurity(prePostEnabled = true)   // 取代已删除的 @EnableGlobalMethodSecurity
+public class SecurityConfiguration {
 
     @Bean
     public BCryptPasswordEncoder bCryptPasswordEncoder() {
@@ -21,23 +34,29 @@ public class SecurityConfiguration extends WebSecurityConfigurerAdapter {
     }
 
     /**
-     * HTTP验证规则
-     *
-     * @param http h
-     * @throws Exception e
+     * JwtAuthorizationFilter 继承 BasicAuthenticationFilter，构造器需要一个 AuthenticationManager。
+     * 旧代码从 authenticationManagerBean() 取，该方法已随 adapter 一同删除，改由容器暴露。
      */
-    @Override
-    protected void configure(HttpSecurity http) throws Exception {
+    @Bean
+    public AuthenticationManager authenticationManager(AuthenticationConfiguration configuration)
+            throws Exception {
+        return configuration.getAuthenticationManager();
+    }
 
-        //开启跨域
-        http.csrf().disable().cors();
-
-        //禁用session
-        http.sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS);
-
-        //添加自定义的jwt过滤器
-        http.addFilter(new JwtAuthorizationFilter(authenticationManagerBean()));
-
+    @Bean
+    public SecurityFilterChain filterChain(HttpSecurity http, AuthenticationManager authenticationManager)
+            throws Exception {
+        // 开启跨域
+        http.csrf(csrf -> csrf.disable())
+                // 空 lambda 不是笔误：它启用 CORS 并让 Spring 去发现下面的 corsConfigurationSource Bean。
+                // 漏掉这一行等价于不开 CORS，前端会撞 cors error。
+                .cors(cors -> {
+                })
+                // 禁用 session
+                .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                // 添加自定义的 jwt 过滤器
+                .addFilter(new JwtAuthorizationFilter(authenticationManager));
+        return http.build();
     }
 
     /**

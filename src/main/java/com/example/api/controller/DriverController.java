@@ -6,7 +6,7 @@ import com.example.api.model.enums.BusincessType;
 import com.example.api.service.DriverService;
 import org.springframework.web.bind.annotation.*;
 
-import javax.annotation.Resource;
+import jakarta.annotation.Resource;
 import java.util.List;
 
 @RestController

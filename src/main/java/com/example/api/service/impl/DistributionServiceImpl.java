@@ -10,7 +10,7 @@ import com.example.api.repository.VehicleRepository;
 import com.example.api.service.DistributionService;
 import org.springframework.stereotype.Service;
 
-import javax.annotation.Resource;
+import jakarta.annotation.Resource;
 import java.util.List;
 import java.util.Optional;
 
