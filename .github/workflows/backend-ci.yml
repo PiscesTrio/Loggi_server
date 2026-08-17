@@ -12,9 +12,8 @@ jobs:
         with:
           distribution: temurin
           # 必须与 pom 的 <java.version> 保持一致：CI 拿旧 JDK 编译新基线会直接失败，
-          # 这是框架升级最常见的「本地绿、CI 红」。S01 尚未升到 backend.java 声明的版本
-          # （本机没有那个 JDK，见 PR 说明），两处要一起改，不要只改一边。
-          java-version: '17'
+          # 这是框架升级最常见的「本地绿、CI 红」。两处要一起改，不要只改一边。
+          java-version: '21'
           # 注：Testcontainers 2.0 起 docker-java 的默认 API 版本已不是当年那个问题版本，
           # -Dapi.version=1.44 现在只是一层无副作用的保险，见下方 run 行。
           cache: maven
