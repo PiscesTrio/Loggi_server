@@ -4,13 +4,14 @@ import com.example.api.annotation.Log;
 import com.example.api.model.entity.SystemLog;
 import com.example.api.service.SystemLogService;
 import com.example.api.utils.IpUtil;
-import com.example.api.utils.JwtTokenUtil;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
 import org.aspectj.lang.annotation.Pointcut;
 import org.aspectj.lang.reflect.MethodSignature;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 import org.springframework.web.context.request.RequestAttributes;
 import org.springframework.web.context.request.RequestContextHolder;
@@ -67,10 +68,26 @@ public class LogAspect {
         systemLog.setTime(LocalDateTime.now());
         //get the fully-qualified method path
         systemLog.setMethod((signature.getDeclaringTypeName()+"."+signature.getName()).substring(16));
-        //read the token and parse it to resolve the current account
-        String token = request.getHeader(JwtTokenUtil.TOKEN_HEADER);
-        systemLog.setAccount(JwtTokenUtil.getUsername(token));
+        systemLog.setAccount(currentAccount());
         //persist to the database
         logService.record(systemLog);
+    }
+
+    /**
+     * Reads the caller from the security context rather than re-parsing the Authorization header.
+     *
+     * <p>By the time an advised method runs, JwtAuthorizationFilter has already verified the
+     * token and stored the result. Parsing it a second time here would repeat the signature
+     * check, duplicate the header format in a second place, and let an audit-logging concern
+     * throw on a request that already succeeded.
+     *
+     * @return the authenticated account, or {@code null} for an unauthenticated request
+     */
+    private String currentAccount() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || !authentication.isAuthenticated()) {
+            return null;
+        }
+        return authentication.getName();
     }
 }

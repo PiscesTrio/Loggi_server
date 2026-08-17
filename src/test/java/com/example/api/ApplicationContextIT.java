@@ -41,6 +41,10 @@ class ApplicationContextIT {
         r.add("spring.datasource.username", MYSQL::getUsername);
         r.add("spring.datasource.password", MYSQL::getPassword);
         r.add("spring.jpa.hibernate.ddl-auto", () -> "update"); // match production
+        // Required, not incidental: JwtTokenUtil refuses to construct on the CHANGE_ME
+        // placeholder, so from S02 on the context cannot start without a real secret. That
+        // this line is necessary IS the fail-fast working.
+        r.add("jwt.secret", () -> "integration-test-secret-at-least-32-bytes");
     }
 
     @Autowired ApplicationContext context;

@@ -45,6 +45,8 @@ class SeedDataIT {
         r.add("spring.datasource.username", MYSQL::getUsername);
         r.add("spring.datasource.password", MYSQL::getPassword);
         r.add("spring.jpa.hibernate.ddl-auto", () -> "update");
+        // The context will not start without one — see ApplicationContextIT.
+        r.add("jwt.secret", () -> "integration-test-secret-at-least-32-bytes");
     }
 
     @Autowired WareHouseRepository warehouseRepository;

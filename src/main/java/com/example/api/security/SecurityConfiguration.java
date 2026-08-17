@@ -1,84 +1,92 @@
 package com.example.api.security;
 
+import com.example.api.utils.JwtTokenUtil;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
+import java.util.List;
+
 /**
- * Minimal adaptation to make the code compile again; <b>semantics are line-for-line equivalent to
- * the pre-upgrade config</b>.
+ * Component-based security configuration.
  *
- * <p>WebSecurityConfigurerAdapter and authenticationManagerBean() were removed outright in current
- * Spring Security, so this could not compile untouched. Only the <b>how</b> of registration changed
- * — component style instead of the adapter; the <b>what</b> is identical: csrf disabled, cors on,
- * STATELESS, the same JwtAuthorizationFilter, no request-level rules (authorization still rests
- * entirely on {@code @PreAuthorize}).
+ * <p>S01 turned the old {@code WebSecurityConfigurerAdapter} into a {@link SecurityFilterChain}
+ * bean as the minimum needed to compile. This finishes the job: the JWT filter no longer borrows
+ * {@code BasicAuthenticationFilter}, so the {@code AuthenticationManager} that existed only to
+ * satisfy its constructor is gone. A stateless JWT application never authenticates a
+ * username/password pair at the filter layer — it only reads tokens it issued earlier — so that
+ * manager had nothing to do.
  *
- * <p>The real semantic modernization — lambda fine-grained authorization, moving the JWT filter to
- * OncePerRequestFilter, dropping static — belongs to S02, deliberately out of scope for this slice.
+ * <p>Request-level authorization stays {@code permitAll}: every endpoint remains guarded by
+ * {@code @PreAuthorize} exactly as before. Building a real authorization matrix is its own slice;
+ * doing it here would hide a behaviour change inside a refactor.
  */
 @Configuration
-@EnableMethodSecurity(prePostEnabled = true)   // replaces the removed @EnableGlobalMethodSecurity
+@EnableMethodSecurity
 public class SecurityConfiguration {
+
+    /** Comma-separated origin patterns; see {@code cors.allowed-origins}. */
+    private final List<String> allowedOrigins;
+
+    public SecurityConfiguration(@Value("${cors.allowed-origins}") List<String> allowedOrigins) {
+        this.allowedOrigins = allowedOrigins;
+    }
 
     @Bean
     public BCryptPasswordEncoder bCryptPasswordEncoder() {
         return new BCryptPasswordEncoder();
     }
 
-    /**
-     * JwtAuthorizationFilter extends BasicAuthenticationFilter, whose constructor requires an
-     * AuthenticationManager. The old code pulled it from authenticationManagerBean(), which was
-     * removed along with the adapter, so the container exposes it as a bean instead.
-     */
     @Bean
-    public AuthenticationManager authenticationManager(AuthenticationConfiguration configuration)
+    public SecurityFilterChain filterChain(HttpSecurity http, JwtTokenUtil jwtTokenUtil)
             throws Exception {
-        return configuration.getAuthenticationManager();
-    }
-
-    @Bean
-    public SecurityFilterChain filterChain(HttpSecurity http, AuthenticationManager authenticationManager)
-            throws Exception {
-        // enable CORS
-        http.csrf(csrf -> csrf.disable())
-                // The empty lambda is not a typo: it turns CORS on and lets Spring discover the
-                // corsConfigurationSource bean below. Omitting this line means no CORS at all and
-                // the frontend hits a cors error.
-                .cors(cors -> {
-                })
-                // disable sessions
+        return http
+                // No cookies and no session, so there is no CSRF vector to protect.
+                .csrf(AbstractHttpConfigurer::disable)
+                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                // register the custom jwt filter
-                .addFilter(new JwtAuthorizationFilter(authenticationManager));
-        return http.build();
+                .authorizeHttpRequests(auth -> auth
+                        // Pre-flight carries no credentials and must never be challenged.
+                        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+                        .anyRequest().permitAll())
+                .addFilterBefore(new JwtAuthorizationFilter(jwtTokenUtil),
+                        UsernamePasswordAuthenticationFilter.class)
+                .build();
     }
 
     /**
-     * Spring Security's default CORS configuration blocks requests whose RequestHeader carries
-     * "Authorization"; this bean keeps the frontend from getting a cors error on api calls.
+     * CORS for a browser-based client.
      *
-     * @return *
+     * <p>Uses {@code allowedOriginPatterns} rather than the previous {@code addAllowedOrigin("*")}:
+     * a wildcard origin is illegal together with credentials and browsers reject that pairing. The
+     * old configuration also listed {@code DELETE} as an allowed *header* — that is a method, so the
+     * entry allowed nothing while giving the impression headers were being restricted.
      */
     @Bean
-    CorsConfigurationSource corsConfigurationSource() {
-        final UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-        final CorsConfiguration corsConfiguration = new CorsConfiguration();
-        corsConfiguration.addAllowedHeader("*");
-        corsConfiguration.addAllowedHeader("DELETE");
-        corsConfiguration.addAllowedMethod("*");
-        corsConfiguration.addAllowedOrigin("*");
-        source.registerCorsConfiguration("/**", corsConfiguration);
+    public CorsConfigurationSource corsConfigurationSource() {
+        CorsConfiguration config = new CorsConfiguration();
+        config.setAllowedOriginPatterns(allowedOrigins);
+        config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
+        config.setAllowedHeaders(
+                List.of("Authorization", "Content-Type", "Accept", "Origin", "X-Requested-With"));
+        config.setExposedHeaders(List.of("Authorization"));
+        // The token travels in a header, not a cookie, so no credentialed request is ever made.
+        config.setAllowCredentials(false);
+        config.setMaxAge(3600L);
+
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/**", config);
         return source;
     }
-
 }

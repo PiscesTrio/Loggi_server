@@ -1,15 +1,23 @@
 server:
   port: 8088
 jwt:
+  # Deliberately left as a placeholder rather than a working default: JwtTokenUtil refuses to
+  # start on CHANGE_ME or on anything shorter than 32 bytes. A default that works is a default
+  # that ships, and a publicly known HS256 secret lets anyone mint an administrator token.
+  # Generate one with: openssl rand -base64 48
   secret: ${JWT_SECRET:CHANGE_ME}
+cors:
+  # Patterns, not literal origins, so the dev server's port may vary. A bare "*" is illegal
+  # together with allow-credentials and browsers reject that pairing outright.
+  allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:*,http://127.0.0.1:*}
 spring:
   mail:
     host: smtp.qq.com
     protocol: smtp
     default-encoding: UTF-8
-    #发件人
+    # sender address
     username: ${MAIL_USERNAME:your-email@example.com}
-    #授权码
+    # app-specific password, not the account password
     password: ${MAIL_PASSWORD:your-mail-password}
     port: 465
     properties:
@@ -25,28 +33,31 @@ spring:
     password: ${DB_PASSWORD:your-db-password}
   jackson:
     deserialization:
-      # Jackson 3 把 FAIL_ON_NULL_FOR_PRIMITIVES 的默认值从 false 翻成了 true，于是
-      # 请求体里一个**显式的 null** 落到原始类型字段上会被直接 400 掉（Jackson 2 是当默认值处理）。
-      # Flutter 客户端的 toJson() 无条件输出每一个键，所以 `remember` 到达时是 null 而不是缺失——
-      # 登录因此在 S01 升级后全线失败，而 curl 只发 {email,password}（字段缺失）反而正常，
-      # 所以 API 层的手工探测看不见它，是实机端到端跑出来的。
-      # 这不是单个字段的问题：Distribution.urgent、Vehicle.driving、Driver.driving、Sale.pay
-      # 都是原始 boolean，逐个改成包装类型是打地鼠，恢复这一条默认值才是治面。
+      # Jackson 3 flipped FAIL_ON_NULL_FOR_PRIMITIVES from false to true, so an *explicit* null
+      # landing on a primitive field is now a 400 where Jackson 2 substituted the default.
+      # The Flutter client's toJson() emits every key unconditionally, so `remember` arrives as
+      # null rather than absent, and login broke on every attempt after the S01 upgrade — while
+      # curl sending {email,password} (field absent) still worked, which is why hand probing the
+      # API never saw it. A physical device did.
+      # This is not one field: Distribution.urgent, Vehicle.driving, Driver.driving and Sale.pay
+      # are all primitive booleans, so changing types one at a time is whack-a-mole. Restoring
+      # the one default treats the cause.
       fail-on-null-for-primitives: false
   sql:
     init:
-      # 项目此前完全没有数据初始化路径：ddl-auto 只建表，compose 不挂 init 脚本，
-      # 唯一的 ApplicationRunner 是空的——clone 下来跑起来是一个空库。
-      # data.sql 用 `seed-` 前缀做删除再插入，可重复执行且不碰 App 录入的数据。
+      # The project had no data initialisation path at all: ddl-auto only creates tables,
+      # compose mounts no init script, and the only ApplicationRunner is empty — a fresh clone
+      # came up against an empty database. data.sql deletes-then-inserts by a `seed-` id prefix,
+      # so it is repeatable and never touches rows created through the app.
       mode: always
   jpa:
     hibernate:
       ddl-auto: update
-    # 必需：不设的话 data.sql 会在 Hibernate 建表**之前**执行，直接报表不存在。
+    # Required: without it data.sql runs *before* Hibernate creates the tables.
     defer-datasource-initialization: true
     open-in-view: false
     show-sql: true
-#设置日志级别会给root根节点设置，代表整体应用的级别
+# Root level, i.e. the level for the application as a whole.
 logging:
   level:
     root: info
