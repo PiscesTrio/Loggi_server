@@ -1,121 +1,127 @@
 package com.example.api.utils;
 
 import io.jsonwebtoken.Claims;
-import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.SignatureAlgorithm;
-
-import java.util.*;
-
+import io.jsonwebtoken.security.Keys;
+import io.jsonwebtoken.security.WeakKeyException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
-import jakarta.annotation.PostConstruct;
+import javax.crypto.SecretKey;
+import java.nio.charset.StandardCharsets;
+import java.util.Date;
+import java.util.List;
+import java.util.Map;
 
+/**
+ * Issues and verifies the application's JWTs.
+ *
+ * <p>Every method is an instance method and the signing key arrives through the
+ * constructor. The previous version kept the secret in a {@code static} field populated
+ * by a {@code @PostConstruct} callback, which meant the class could not be constructed
+ * in a test without booting Spring, and any code path running before that callback
+ * signed with {@code null}.
+ *
+ * <p>Verification is now a single explicit step: {@code parser().verifyWith(key).build()
+ * .parseSignedClaims(token)} either returns verified claims or throws. Previously
+ * verification happened as a side effect of reading a claim, and the caller decided
+ * whether a token was trustworthy by checking that it began with a fixed prefix — a
+ * transport convention standing in for a cryptographic fact.
+ */
 @Component
-public final class JwtTokenUtil {
-    //name of the request header carrying the token
-    public final static String TOKEN_HEADER = "Authorization";
+public class JwtTokenUtil {
 
-    //expires in one week
-    public final static long REMEMBER_EXPIRATION_TIME = 1000 * 60 * 60 * 24 * 7;
+    private static final Logger log = LoggerFactory.getLogger(JwtTokenUtil.class);
 
-    //expires in one day
-    public final static long EXPIRATION_TIME = 1000 * 60 * 60 * 24;
+    /** HS256 needs at least 256 bits of key material; jjwt refuses anything shorter. */
+    private static final int MIN_SECRET_BYTES = 32;
 
-    // application secret (injected from configuration)
-    private static String APP_SECRET;
+    public static final String TOKEN_HEADER = "Authorization";
+    /** Standard scheme. The token itself no longer carries an application prefix. */
+    public static final String BEARER_PREFIX = "Bearer ";
 
-    @Value("${jwt.secret}")
-    private String appSecretValue;
+    public static final long REMEMBER_EXPIRATION_TIME = 1000L * 60 * 60 * 24 * 7;
+    public static final long EXPIRATION_TIME = 1000L * 60 * 60 * 24;
 
-    @PostConstruct
-    public void init() {
-        APP_SECRET = appSecretValue;
-    }
-
-    private static final String PREFIX = "logistics:";
-
-    // role claim key
     private static final String ROLE_CLAIMS = "roles";
 
-    //check whether the token is valid
-    public static boolean checkToken(String token) {
-        if ("null".equals(token) || token == null || "".equals(token)){
-            System.out.println("token为空");
-            return false;
+    private final SecretKey key;
+
+    public JwtTokenUtil(@Value("${jwt.secret}") String secret) {
+        if (secret == null || secret.isBlank() || "CHANGE_ME".equals(secret)) {
+            throw new IllegalStateException(
+                    "jwt.secret is unset or still the CHANGE_ME placeholder. Refusing to start: "
+                            + "a publicly known secret lets anyone mint an administrator token.");
         }
-        return token.startsWith(PREFIX);
+        byte[] bytes = secret.getBytes(StandardCharsets.UTF_8);
+        if (bytes.length < MIN_SECRET_BYTES) {
+            throw new IllegalStateException(
+                    "jwt.secret must be at least " + MIN_SECRET_BYTES + " bytes for HS256, got "
+                            + bytes.length + ". Refusing to start.");
+        }
+        try {
+            this.key = Keys.hmacShaKeyFor(bytes);
+        } catch (WeakKeyException e) {
+            // Belt and braces: the length check above should already have caught this.
+            throw new IllegalStateException("jwt.secret is too weak for HS256", e);
+        }
     }
 
-    /**
-     * Create a token.
-     */
-    public static String createToken(String username, String[] roles, long expiration) {
-        System.out.println("---------------------------");
-        System.out.println("username:"+username);
-        System.out.println("-----------------------");
-        Map<String, Object> map = new HashMap<>();
-        map.put(ROLE_CLAIMS, roles);
-        return PREFIX + Jwts.builder()
-                .setClaims(map)
-                .setIssuedAt(new Date())
-                .setExpiration(new Date(System.currentTimeMillis() + expiration))
-                .signWith(SignatureAlgorithm.HS256, APP_SECRET)
-                .setSubject(username)
+    /** Issues a signed token. The caller decides the lifetime. */
+    public String createToken(String username, List<String> roles, long expirationMillis) {
+        Date now = new Date();
+        return Jwts.builder()
+                .claims(Map.of(ROLE_CLAIMS, roles))
+                .subject(username)
+                .issuedAt(now)
+                .expiration(new Date(now.getTime() + expirationMillis))
+                .signWith(key)
                 .compact();
     }
 
     /**
-     * Get the token body.
+     * Verifies signature and expiry, returning the claims.
+     *
+     * <p>Throws on any problem — expired, forged, malformed. Callers translate that into
+     * a 401 rather than swallowing it: the old code caught only {@code ExpiredJwtException}
+     * and let everything else escape the filter as a 500.
      */
-    private static Claims getTokenClaims(String token) {
-        token = token.substring(PREFIX.length());
-        Claims claims = null;
-        try {
-            claims = Jwts.parser()
-                    .setSigningKey(APP_SECRET)
-                    .parseClaimsJws(token)
-                    .getBody();
-        } catch (ExpiredJwtException e) {
-            e.printStackTrace();
-        }
-        return claims;
+    public Claims parse(String token) {
+        return Jwts.parser()
+                .verifyWith(key)
+                .build()
+                .parseSignedClaims(token)
+                .getPayload();
     }
 
-    /** Extract the username from the token. */
-    public static String getUsername(String token) {
-        System.out.println("----gettoken----");
-        System.out.println(getTokenClaims(token));
-        System.out.println("-------------");
-        System.out.println(getTokenClaims(token).getSubject());
-        System.out.println("-------------");
-        return getTokenClaims(token).getSubject();
+    public String getUsername(String token) {
+        return parse(token).getSubject();
+    }
+
+    /** Roles live as a JSON array under the {@code roles} claim. */
+    public List<String> getRoles(String token) {
+        Object claim = parse(token).get(ROLE_CLAIMS);
+        if (claim instanceof List<?> list) {
+            return list.stream().map(String::valueOf).toList();
+        }
+        log.warn("Token carries no usable roles claim");
+        return List.of();
     }
 
     /**
-     * Extract the user roles from the token.
+     * Strips the {@code Bearer } scheme from an Authorization header value.
+     *
+     * @return the raw token, or {@code null} when the header is absent or uses another
+     *         scheme. A non-null result says nothing about validity — only {@link #parse}
+     *         decides that.
      */
-    public static List<String> getTokenRoles(String token) {
-        List<String> roles = new ArrayList<>();
-        Object object = getTokenClaims(token).get(ROLE_CLAIMS);
-        if (object instanceof ArrayList<?>) {
-            for (Object o : (List<?>) object) {
-                roles.add((String) o);
-            }
+    public String resolveToken(String authorizationHeader) {
+        if (authorizationHeader == null || !authorizationHeader.startsWith(BEARER_PREFIX)) {
+            return null;
         }
-        for (String role : roles) {
-            System.out.println(role);
-        }
-        return roles;
+        String token = authorizationHeader.substring(BEARER_PREFIX.length()).trim();
+        return token.isEmpty() ? null : token;
     }
-
-    /**
-     * Check whether the token has expired.
-     */
-    public static boolean isExpiration(String token) {
-        return getTokenClaims(token).getExpiration().before(new Date());
-    }
-
 }
-

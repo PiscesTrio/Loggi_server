@@ -25,6 +25,9 @@ public class AdminServiceImpl implements AdminService {
     @Resource
     private EmailService emailService;
 
+    @Resource
+    private JwtTokenUtil jwtTokenUtil;
+
     @Override
     public Admin save(Admin admin) throws Exception {
         if (admin.getEmail().length() < 8 || admin.getPassword().length() < 5) throw new Exception("请求参数异常");
@@ -68,8 +71,10 @@ public class AdminServiceImpl implements AdminService {
     @Override
     public String createToken(Admin admin, long exp) {
         String rolesString = admin.getRoles();
-        String[] roles = rolesString != null ? rolesString.split(";") : null;
-        return JwtTokenUtil.createToken(admin.getEmail(), roles, exp);
+        List<String> roles = rolesString == null || rolesString.isBlank()
+                ? List.of()
+                : List.of(rolesString.split(";"));
+        return jwtTokenUtil.createToken(admin.getEmail(), roles, exp);
     }
 
     @Override

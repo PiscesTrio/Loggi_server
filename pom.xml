@@ -14,7 +14,7 @@
 
     <properties>
         <java.version>21</java.version>
-        <jwt.version>0.9.1</jwt.version>
+        <jwt.version>0.13.0</jwt.version>
         <fastjson.version>1.2.73</fastjson.version>
     </properties>
 
@@ -61,32 +61,40 @@
             <artifactId>spring-context-support</artifactId>
         </dependency>
 
-        <!--JWT dependency-->
+        <!--
+          jjwt ships as three artifacts: api on the compile path, impl and jackson at runtime only.
+          Application code therefore sees nothing but the io.jsonwebtoken.* interfaces, and reaching
+          for an internal implementation class fails to compile.
+          The old single-jar jjwt 0.9.1 was last released in 2018, and its signWith(alg, String)
+          accepted a key of any length without complaint — CHANGE_ME, 64 bits, was enough to sign
+          "valid" tokens. The current API takes a SecretKey built by Keys.hmacShaKeyFor(byte[]),
+          which throws WeakKeyException below 256 bits: a weak key becomes a startup failure
+          instead of a silent runtime exposure.
+        -->
         <dependency>
             <groupId>io.jsonwebtoken</groupId>
-            <artifactId>jjwt</artifactId>
+            <artifactId>jjwt-api</artifactId>
             <version>${jwt.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>io.jsonwebtoken</groupId>
+            <artifactId>jjwt-impl</artifactId>
+            <version>${jwt.version}</version>
+            <scope>runtime</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.jsonwebtoken</groupId>
+            <artifactId>jjwt-jackson</artifactId>
+            <version>${jwt.version}</version>
+            <scope>runtime</scope>
         </dependency>
 
         <!--
-          ⚠️ Temporary crutch, dropped with the jjwt upgrade — do not treat it as a normal dependency.
-          jjwt 0.9.1's signWith(alg, String) / setSigningKey(String) go through TextCodec.BASE64 ->
-          Base64Codec -> javax.xml.bind.DatatypeConverter (javap-verified), absent from the new JDK
-          baseline and the dependency tree, so jjwt throws NoClassDefFoundError **at runtime**
-          (measured: without this entry all three JwtTokenUtilTest cases fail).
-
-          Must be the **old** GAV javax.xml.bind:jaxb-api, not a downgraded jakarta.xml.bind-api,
-          which swapped namespaces across majors: 2.3.x = 119 javax/xml/bind/*, 0 jakarta/*; 4.0.5
-          (parent-BOM-managed) = 0 javax, 126 jakarta (jar -tf counts). Downgrading hides
-          jakarta.xml.bind.JAXBException from Hibernate 7 and entityManagerFactory creation fails
-          outright — exactly what turned the first verify round red here. Disjoint packages, so both
-          coexist. The only javax leftover in this slice; the jjwt upgrade is a later one.
+          The javax.xml.bind:jaxb-api that S01 pinned for jjwt 0.9.1 is gone with this upgrade.
+          The current jjwt serialises with Jackson and never touches
+          javax.xml.bind.DatatypeConverter, so that lone javax artifact had no reason to remain in
+          a codebase that has otherwise finished its jakarta migration.
         -->
-        <dependency>
-            <groupId>javax.xml.bind</groupId>
-            <artifactId>jaxb-api</artifactId>
-            <version>2.3.1</version>
-        </dependency>
 
         <!--MySQL driver: since SB3 the parent BOM manages only the new GAV com.mysql:mysql-connector-j; the old mysql:mysql-connector-java is unmanaged-->
         <dependency>
@@ -224,15 +232,17 @@
                                             <value>COVEREDRATIO</value>
                                             <!--
                                               Measured, not guessed — both run modes:
-                                                ./mvnw verify -DskipITs -> 139/761 = 18.27% (11 unit tests only)
-                                                ./mvnw verify           -> 151/761 = 19.84% (+2 Testcontainers ITs)
+                                                ./mvnw verify -DskipITs -> 177/582 = 30.41% (28 unit tests)
+                                                ./mvnw verify           -> 208/582 = 35.74% (+6 Testcontainers ITs)
                                               failsafe inherits jacoco's argLine, so *IT really does count.
-                                              The gate takes the lower bound, 0.18, so a local run with ITs skipped
-                                              and a full CI run both pass — the 0.20 in S00.md:142 is an unmeasured
-                                              estimate that would turn the very first CI run red.
+                                              The gate takes the lower bound so a local run with ITs skipped and a
+                                              full CI run both pass.
                                               Ratchet: each later slice raises it one notch, never lowers it.
+                                              S00 0.18 -> S02 0.30. Part of the jump is the security tests, part is
+                                              the denominator: deleting ResponseUtil and the static JwtTokenUtil
+                                              took 179 lines out of the bundle.
                                             -->
-                                            <minimum>0.18</minimum>
+                                            <minimum>0.30</minimum>
                                         </limit>
                                     </limits>
                                 </rule>

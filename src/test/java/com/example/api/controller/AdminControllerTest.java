@@ -6,6 +6,7 @@ import com.example.api.repository.AdminRepository;
 import com.example.api.security.SecurityConfiguration;
 import com.example.api.service.AdminService;
 import com.example.api.service.LoginLogService;
+import com.example.api.utils.JwtTokenUtil;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -54,6 +55,10 @@ class AdminControllerTest {
     @MockitoBean AdminService adminService;
     @MockitoBean AdminRepository adminRepository;
     @MockitoBean LoginLogService loginLogService;
+    // SecurityConfiguration's filter chain needs one. These cases send no Authorization header,
+    // so the mock's null resolveToken() is exactly the "no token" path; what the filter does
+    // with a real token is JwtAuthorizationFilterTest's subject.
+    @MockitoBean JwtTokenUtil jwtTokenUtil;
 
     @Test
     @DisplayName("hasInit boolean is wrapped into the {code,status,msg,data} envelope")
@@ -103,7 +108,7 @@ class AdminControllerTest {
         // An omitted field still works, which is why probing the endpoint with curl
         // did not reveal this — only the real client did.
         when(adminService.loginByPassword(any())).thenReturn(new Admin());
-        when(adminService.createToken(any(), anyLong())).thenReturn("logistics:stub");
+        when(adminService.createToken(any(), anyLong())).thenReturn("stub.jwt.token");
 
         mockMvc.perform(post("/api/admin/login?type=password")
                         .contentType(MediaType.APPLICATION_JSON)
