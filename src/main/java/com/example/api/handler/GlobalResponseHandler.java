@@ -10,8 +10,8 @@ import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseBodyAdvice;
 
 /**
- * 统一拦截Controller中所有方法的返回值
- * 封装后返回ResponseResult<T>
+ * Intercepts the return value of every controller method and
+ * wraps it in a ResponseResult<T> envelope.
  */
 @ControllerAdvice(value = "com.example.api.controller")
 public class GlobalResponseHandler implements ResponseBodyAdvice<Object> {

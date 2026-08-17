@@ -9,7 +9,7 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
 
 /**
- * 仓库
+ * Warehouse
  */
 @Data
 @Entity
@@ -21,17 +21,17 @@ public class Warehouse {
     @GenericGenerator(name = "uuid2", strategy = "org.hibernate.id.UUIDGenerator")
     private String id;
 
-    //仓库名称
+    //warehouse name
     private String name;
 
-    //仓库负责人
+    //warehouse manager
     private String principle;
 
     private String location;
 
-    //緯度
+    //latitude
     private double lat;
-    //經度
+    //longitude
     private  double lng;
 
     private String createAt;

@@ -9,7 +9,7 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
 
 /**
- * 库存记录 出库 入库
+ * Inventory record: stock-out / stock-in movement
  */
 @Data
 @Entity
@@ -21,21 +21,21 @@ public class InventoryRecord {
     @GenericGenerator(name = "uuid2", strategy = "org.hibernate.id.UUIDGenerator")
     private String id;
 
-    //商品名
+    //commodity name
     private String name;
 
-    //仓库id
+    //warehouse id
     private String wid;
 
-    //商品信息id
+    //commodity id
     private String cid;
 
     private Integer count;
 
-    //-1:出库 +1:入库
+    //-1: stock-out, +1: stock-in
     private Integer type;
 
-    //描述信息
+    //description
     private String description;
 
     private String createAt;

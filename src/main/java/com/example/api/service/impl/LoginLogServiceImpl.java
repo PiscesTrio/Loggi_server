@@ -27,11 +27,11 @@ public class LoginLogServiceImpl implements LoginLogService {
 
     @Override
     public void recordLog(LoginDto loginDto, Admin admin, HttpServletRequest request) {
-        //创建日志对象
+        //create the log record
         LoginLog loginLog = new LoginLog();
         loginLog.setDate(new Date());
         loginLog.setEmail(loginDto.getEmail());
-        //获取浏览器版本
+        //resolve the browser version
         loginLog.setBrowser(BrowserUtil.getBrower(request));
         loginLog.setIp(IpUtil.getIpAddr(request));
         if (admin == null){
@@ -39,7 +39,7 @@ public class LoginLogServiceImpl implements LoginLogService {
         }else {
             loginLog.setStatus(1);
         }
-        //将日志记录写入数据库
+        //write the log record to the database
         loginLogRepository.save(loginLog);
     }
 

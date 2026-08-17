@@ -57,11 +57,11 @@ public class InventoryRecordServiceImpl implements InventoryRecordService {
     @Override
     public InventoryRecord out(InventoryRecord record) throws Exception {
 
-        //查找当前商品在该仓库的库存
+        //Look up this commodity's stock in the given warehouse
         Inventory inventory = inventoryRepository.findByWidAndCid(record.getWid(), record.getCid());
-        //查询结果为空
+        //No such stock record
         if (inventory == null) throw new Exception("仓库内不存在该商品");
-        //比较库存
+        //Check available stock
         if (inventory.getCount() < record.getCount()) throw new Exception("出库失败，库存数量不足");
 
         Optional<Commodity> optional = commodityRepository.findById(record.getCid());
@@ -89,11 +89,11 @@ public class InventoryRecordServiceImpl implements InventoryRecordService {
         commodity.setCount(commodity.getCount() + record.getCount());
         commodityRepository.save(optional.get());
 
-        //查找当前商品在该仓库的库存
+        //Look up this commodity's stock in the given warehouse
         Inventory inventory = inventoryRepository.findByWidAndCid(record.getWid(), record.getCid());
-        //查询结果为空
+        //No such stock record
         if (inventory == null) {
-            //新建该商品库存信息
+            //Create a stock record for this commodity
             inventory = new Inventory();
             inventory.setCid(record.getCid());
             inventory.setWid(record.getWid());

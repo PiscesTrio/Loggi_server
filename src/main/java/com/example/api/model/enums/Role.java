@@ -7,7 +7,7 @@ import lombok.Getter;
 @JsonFormat(shape = JsonFormat.Shape.OBJECT)
 public enum Role {
 
-    //超级管理员 不对外提供添加此权限的方法
+    //super admin: no public method is exposed for granting this role
     ROLE_SUPER_ADMIN("ROLE_SUPER_ADMIN", "超级管理员"),
 
     ROLE_ADMIN("ROLE_ADMIN", "操作员相关权限"),

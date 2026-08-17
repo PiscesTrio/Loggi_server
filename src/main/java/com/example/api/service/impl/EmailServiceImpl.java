@@ -30,7 +30,7 @@ public class EmailServiceImpl implements EmailService {
         SimpleMailMessage message = new SimpleMailMessage();
         message.setFrom(from);
         message.setTo(email);
-        //设置标题
+        //set the mail subject
         message.setSubject("验证码");
         String value = "123456";
         message.setText("你的验证码为:  " + value + "  十五分钟内有效");
@@ -40,8 +40,8 @@ public class EmailServiceImpl implements EmailService {
             e.printStackTrace();
             return false;
         }
-        //保存验证码
-        //同一主键的email为update操作
+        //persist the verification code
+        //email is the primary key, so re-sending updates the existing row
         codeRepository.save(new Code(email, value));
         System.out.println("执行save code");
         return true;
@@ -51,7 +51,7 @@ public class EmailServiceImpl implements EmailService {
     public boolean checkVerificationCode(String email, String value) {
         Code code = codeRepository.findByEmailAndValue(email, value);
         if (code != null && code.getExp() > System.currentTimeMillis()) {
-            //登陆成功删除验证码
+            //delete the verification code once the login succeeds
             codeRepository.delete(code);
             return true;
         }

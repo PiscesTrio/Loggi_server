@@ -4,10 +4,10 @@ import org.springframework.mail.MailException;
 
 public interface EmailService {
 
-    //发送验证码
+    //Send a verification code
     boolean sendVerificationCode(String email) throws MailException;
 
-    //检验验证码
+    //Validate a verification code
     boolean checkVerificationCode(String email, String code);
 
 }

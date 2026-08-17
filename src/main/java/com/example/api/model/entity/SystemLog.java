@@ -20,25 +20,25 @@ public class SystemLog {
     @Id
     @GeneratedValue(generator = "uuid2")
     @GenericGenerator(name = "uuid2", strategy = "org.hibernate.id.UUIDGenerator")
-    //主键
+    //primary key
     private String id;
-    //账号
+    //account
     private String account;
-    //功能模块
+    //functional module
     private String module;
 
-    //操作类型
+    //operation type
     @Column(columnDefinition = "varchar(30) default 'LTD' not null")
     private String busincessType;
 
-    //用户IP
+    //user IP
     @Column(columnDefinition = "varchar(40) default 'LTD' not null")
     private String ip;
 
-    //请求方法
+    //request method
     @Column(columnDefinition = "varchar(100) default 'LTD' not null")
     private String method;
-    //操作时间
+    //operation time
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd HH:mm:ss", timezone = "GMT+8")
     private LocalDateTime time;
 

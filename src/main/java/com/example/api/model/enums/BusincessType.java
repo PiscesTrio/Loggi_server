@@ -1,15 +1,15 @@
 package com.example.api.model.enums;
 /*
-    业务操作类型
+    Business operation type
  */
 public enum BusincessType {
-    OTHER("其他"), //其他
-    QUERY("查询"), //查询
-    INSERT("新增"), //新增
-    UPDATE("更新"), //更新
-    DELETE("删除"), //删除
-    EXPORT("导出"), //导出
-    FORCE("退出"); //强制退出
+    OTHER("其他"), //other
+    QUERY("查询"), //query
+    INSERT("新增"), //insert
+    UPDATE("更新"), //update
+    DELETE("删除"), //delete
+    EXPORT("导出"), //export
+    FORCE("退出"); //force logout
 
     private BusincessType(String name){
         this.name=name;

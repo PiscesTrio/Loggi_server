@@ -30,29 +30,29 @@ public class InventoryController {
         return recordService.analyzeCommodity(type);
     }
 
-    //指定仓库id
-    //查询某个仓库的库存情况
+    //takes a warehouse id
+    //list the stock held in one warehouse
     @GetMapping("/warehouse/{id}")
     public List<Inventory> findByWarehouse(@PathVariable String id) {
         return inventoryService.findByWarehouseId(id);
     }
 
-    //指定商品id
-    //查询某个商品在所有仓库的库存
+    //takes a commodity id
+    //list the stock of one commodity across all warehouses
     @GetMapping("/commodity/{id}")
     public List<Inventory> findByCommodity(@PathVariable String id) {
         return inventoryService.findByCommodityId(id);
     }
 
-    //指定仓库id
-    //查询某个仓库库内商品的出库入库记录
+    //takes a warehouse id
+    //list inbound/outbound records for the goods in one warehouse
     @GetMapping("/record/warehouse/{id}")
     public List<InventoryRecord> findRecordByWarehouse(@PathVariable String id) {
         return recordService.findAllByWarehouseId(id);
     }
 
-    //指定商品id
-    //查询某个商品在所有仓库出库入库记录
+    //takes a commodity id
+    //list inbound/outbound records of one commodity across all warehouses
     @GetMapping("/record/commodity/{id}")
     public List<InventoryRecord> findRecordByCommodity(@PathVariable String id) {
         return recordService.findAllByCommodityId(id);

@@ -6,7 +6,7 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * 加上注解后不统一封装返回
+ * Annotated methods skip the global response envelope.
  */
 @Target(ElementType.METHOD)
 @Retention(RetentionPolicy.RUNTIME)

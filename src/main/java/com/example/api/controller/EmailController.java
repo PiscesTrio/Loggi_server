@@ -24,9 +24,9 @@ public class EmailController {
     @GetMapping("/send")
     public String send() {
         SimpleMailMessage message = new SimpleMailMessage();
-        //发件人
+        //sender
         message.setFrom(from);
-        //收件人
+        //recipient
         message.setTo("demo@loggi.example");
         message.setSubject("验证码");
         message.setText("你的验证码为:  " + RandomUtil.next() + "  十五分钟内有效");

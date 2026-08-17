@@ -71,14 +71,15 @@ class AdminControllerTest {
         //   3. @PreAuthorize on AdminController.findAll() denies the anonymous
         //      principal and raises AccessDeniedException.
         //   4. GlobalExceptionHandler catches it and RETURNS a body instead of a
-        //      status: `new ResponseResult<>(403, "你没有访问权限")`. There is no
-        //      @ResponseStatus and no ResponseEntity anywhere in src/main, so the
-        //      HTTP status stays 200 and the 403 exists only as a JSON field.
+        //      status: `new ResponseResult<>(403, ...)` with the msg asserted below.
+        //      There is no @ResponseStatus and no ResponseEntity anywhere in src/main,
+        //      so the HTTP status stays 200 and the 403 exists only as a JSON field.
         //   5. GlobalResponseHandler is @ControllerAdvice("com.example.api.controller")
         //      while GlobalExceptionHandler lives in ...api.handler, so the error body
         //      is NOT re-wrapped — the fields sit at the JSON root.
-        // This is the bug S06 (全局异常/响应处理修复) will fix: when it starts returning
-        // a real 403, THIS test goes red on purpose — update it then, deliberately.
+        // This is the bug S06 (global exception/response handling fix) will fix: when
+        // it starts returning a real 403, THIS test goes red on purpose — update it
+        // then, deliberately.
         mockMvc.perform(get("/api/admin"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value(403))

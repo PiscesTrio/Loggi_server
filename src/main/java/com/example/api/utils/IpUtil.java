@@ -8,7 +8,7 @@ public class IpUtil {
     private static final String IPV6_ADDRESS = "0:0:0:0:0:0:0:1";
 
     /**
-     * 通过HttpServletRequest返回客户端真实IP地址（通过多级代理后也能获取到真实ip）
+     * Returns the client's real IP from the HttpServletRequest, resolving through chained proxies.
      */
     public static String getIpAddr(HttpServletRequest request) {
         try {
@@ -28,7 +28,7 @@ public class IpUtil {
             if (ip == null || ip.length() == 0 || "unknown".equalsIgnoreCase(ip)) {
                 ip = request.getRemoteAddr();
             }
-            //如果使用localhost访问，对于windows IPv6会返回0:0:0:0:0:0:0:1，将其转为127.0.0.1
+            //on Windows, localhost comes back as IPv6 0:0:0:0:0:0:0:1; normalize it to 127.0.0.1
             if (IPV6_ADDRESS.equals(ip)) {
                 ip = LOOPBACK_ADDRESS;
             }

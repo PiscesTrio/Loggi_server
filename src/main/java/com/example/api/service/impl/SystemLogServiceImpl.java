@@ -37,7 +37,7 @@ public class SystemLogServiceImpl implements SystemLogService {
     @Override
     public List<SystemLog> query(SystemLogVo systemLogVo) {
         /*
-            构造查询条件
+            build the query criteria
          */
         Specification<SystemLog> specification = new Specification<SystemLog>() {
             @Override

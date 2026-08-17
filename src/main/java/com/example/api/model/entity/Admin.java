@@ -11,7 +11,7 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
 
 /**
- * 管理员
+ * Administrator
  */
 @Data
 @Entity
