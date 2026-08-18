@@ -1,18 +1,20 @@
 package com.example.api.service.impl;
 
+import com.example.api.exception.BizException;
 import com.example.api.model.entity.Distribution;
-import com.example.api.model.entity.DistributionStatus;
 import com.example.api.model.entity.Driver;
 import com.example.api.model.entity.Vehicle;
+import com.example.api.model.enums.DistributionStatus;
 import com.example.api.repository.DistributionRepository;
 import com.example.api.repository.DriverRepository;
 import com.example.api.repository.VehicleRepository;
 import com.example.api.service.DistributionService;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import jakarta.annotation.Resource;
 import java.util.List;
-import java.util.Optional;
+import java.util.Objects;
 
 @Service
 public class DistributionServiceImpl implements DistributionService {
@@ -26,32 +28,86 @@ public class DistributionServiceImpl implements DistributionService {
     @Resource
     private VehicleRepository vehicleRepository;
 
+    /**
+     * Saves an order and moves the driver and vehicle with it.
+     *
+     * <p>Approving an order marks both as driving; completing it releases them. Those are
+     * two writes plus the order itself, and without a transaction they committed
+     * separately: a failure after the driver update left a driver marked busy for a trip
+     * that was never recorded, and {@code /api/distribution/can} - which lists whoever is
+     * not driving - hid them from every later dispatch with nothing to explain why.
+     *
+     * <p>The status codes were bare 1 and 2. {@link DistributionStatus} had spelled them
+     * REVIEW_SUCCESS and END since the first version of this project and was referenced
+     * from nowhere.
+     */
     @Override
+    @Transactional
     public Distribution save(Distribution distribution) throws Exception {
-      if (distribution.getStatus()==2) {
-  //          Optional<Driver> driver = driverRepository.findById(distribution.getDid());
- //           Optional<Vehicle> vehicle = vehicleRepository.findById(distribution.getVid());
-//            if (driver.isEmpty() || vehicle.isEmpty()) throw new Exception("请求参数错误");
-//            if (driver.get().isDriving() || vehicle.get().isDriving()) throw new Exception("司机或货车状态不可用");
-            driverRepository.updateDriving(false, distribution.getDid());
-            vehicleRepository.updateDriving(false, distribution.getVid());
-          return distributionRepository.save(distribution);
-       }
-        else if(distribution.getStatus()==1){
-          driverRepository.updateDriving(true, distribution.getDid());
-          vehicleRepository.updateDriving(true, distribution.getVid());
-          return distributionRepository.save(distribution);
+        Integer status = distribution.getStatus();
 
-      }else {
+        if (Objects.equals(status, DistributionStatus.REVIEW_SUCCESS.getCode())) {
+            assign(distribution);
+        } else if (Objects.equals(status, DistributionStatus.END.getCode())) {
+            release(distribution);
+        }
+        return distributionRepository.save(distribution);
+    }
 
-          return distributionRepository.save(distribution);
-      }
+    /**
+     * Approval: the driver and vehicle are taken.
+     *
+     * <p>This is where the availability check belongs, and it is worth saying why it was
+     * not simply uncommented where it was found. The commented-out lines sat in the
+     * <em>completion</em> branch and read "if the driver is driving, refuse" - but a driver
+     * completing a delivery is by definition driving, having been marked so on approval, so
+     * restoring them there would have rejected every completion the system can produce.
+     * Dead code is not a spare part; it was commented out because it did not work, and the
+     * question is what it was reaching for rather than where it happened to sit.
+     *
+     * <p>Existence is checked in both directions. A missing id used to reach
+     * {@code updateDriving}, whose UPDATE matched no rows and reported success.
+     */
+    private void assign(Distribution distribution) {
+        Driver driver = requireDriver(distribution.getDid());
+        Vehicle vehicle = requireVehicle(distribution.getVid());
+
+        // Re-approving an order already approved will be refused here. That is the correct
+        // answer for a second driver being handed a busy truck; a retry of the same
+        // approval is the case it also catches, and telling the caller the assignment did
+        // not go through is safer than silently reassigning.
+        if (driver.isDriving()) {
+            throw new BizException(409, "司机当前不可用");
+        }
+        if (vehicle.isDriving()) {
+            throw new BizException(409, "货车当前不可用");
+        }
+
+        driverRepository.updateDriving(true, distribution.getDid());
+        vehicleRepository.updateDriving(true, distribution.getVid());
+    }
+
+    /** Completion: the driver and vehicle go back into the pool. */
+    private void release(Distribution distribution) {
+        requireDriver(distribution.getDid());
+        requireVehicle(distribution.getVid());
+
+        driverRepository.updateDriving(false, distribution.getDid());
+        vehicleRepository.updateDriving(false, distribution.getVid());
+    }
+
+    private Driver requireDriver(String did) {
+        return driverRepository.findById(did == null ? "" : did)
+                .orElseThrow(() -> new BizException(404, "不存在的司机id: " + did));
+    }
+
+    private Vehicle requireVehicle(String vid) {
+        return vehicleRepository.findById(vid == null ? "" : vid)
+                .orElseThrow(() -> new BizException(404, "不存在的货车id: " + vid));
     }
 
     @Override
     public List<Distribution> findAll() {
         return distributionRepository.findAll();
     }
-
-
 }
