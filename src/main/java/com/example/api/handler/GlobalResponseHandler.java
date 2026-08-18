@@ -4,28 +4,63 @@ import com.example.api.annotation.DisableBaseResponse;
 import com.example.api.model.support.ResponseResult;
 import org.springframework.core.MethodParameter;
 import org.springframework.http.MediaType;
+import org.springframework.http.converter.HttpMessageConverter;
+import org.springframework.http.converter.StringHttpMessageConverter;
 import org.springframework.http.server.ServerHttpRequest;
 import org.springframework.http.server.ServerHttpResponse;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseBodyAdvice;
 
+import tools.jackson.databind.ObjectMapper;
+
 /**
- * Intercepts the return value of every controller method and
- * wraps it in a ResponseResult<T> envelope.
+ * Wraps a controller's return value in the {@code {code,status,msg,data}} envelope.
  */
 @ControllerAdvice(value = "com.example.api.controller")
 public class GlobalResponseHandler implements ResponseBodyAdvice<Object> {
 
+    private final ObjectMapper objectMapper;
 
+    public GlobalResponseHandler(ObjectMapper objectMapper) {
+        this.objectMapper = objectMapper;
+    }
+
+    /**
+     * {@code hasMethodAnnotation}, not {@code hasParameterAnnotation}.
+     *
+     * <p>{@link DisableBaseResponse} targets METHOD, and the MethodParameter handed to a
+     * ResponseBodyAdvice describes the <em>return value</em>, whose parameter index is -1
+     * and whose parameter annotations are therefore always empty. The check could never
+     * match, so the annotation did nothing wherever it was applied — the sort of defect
+     * that leaves no trace, because an annotation that is silently ignored looks exactly
+     * like one that is being honoured until you inspect the body.
+     */
     @Override
-    public boolean supports(MethodParameter methodParameter, Class c) {
-        return !methodParameter.hasParameterAnnotation(DisableBaseResponse.class);
+    public boolean supports(MethodParameter returnType,
+                            Class<? extends HttpMessageConverter<?>> converterType) {
+        if (returnType.hasMethodAnnotation(DisableBaseResponse.class)) {
+            return false;
+        }
+        // Already an envelope: wrapping again would nest it inside its own data field.
+        return !ResponseResult.class.isAssignableFrom(returnType.getParameterType());
     }
 
     @Override
-    public Object beforeBodyWrite(Object o, MethodParameter methodParameter, MediaType mediaType, Class aClass,
-                                  ServerHttpRequest serverHttpRequest, ServerHttpResponse serverHttpResponse) {
-        return o == null ? new ResponseResult<>() : new ResponseResult<>(o);
-    }
+    public Object beforeBodyWrite(Object body, MethodParameter returnType, MediaType mediaType,
+                                  Class<? extends HttpMessageConverter<?>> converterType,
+                                  ServerHttpRequest request, ServerHttpResponse response) {
+        ResponseResult<Object> wrapped =
+                body == null ? new ResponseResult<>() : new ResponseResult<>(body);
 
+        // A String return type makes Spring pick StringHttpMessageConverter before this
+        // advice runs, and that converter can only write a String — handing it a
+        // ResponseResult threw ClassCastException at write time rather than failing to
+        // compile. Serialising here produces the same envelope through the converter that
+        // was already chosen.
+        if (StringHttpMessageConverter.class.isAssignableFrom(converterType)) {
+            response.getHeaders().setContentType(MediaType.APPLICATION_JSON);
+            return objectMapper.writeValueAsString(wrapped);
+        }
+        return wrapped;
+    }
 }
