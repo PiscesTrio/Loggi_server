@@ -1,6 +1,5 @@
 package com.example.api.controller;
 
-import com.example.api.annotation.DisableBaseResponse;
 import com.example.api.annotation.Log;
 import com.example.api.model.entity.Vehicle;
 import com.example.api.model.enums.BusincessType;

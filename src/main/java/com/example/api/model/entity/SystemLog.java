@@ -42,5 +42,14 @@ public class SystemLog {
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd HH:mm:ss", timezone = "GMT+8")
     private LocalDateTime time;
 
+    //how long the operation took, in milliseconds
+    //LogAspect measured this from the first version and had nowhere to put it
+    private Long costMs;
+
+    //whether the operation completed or threw
+    //the aspect records from a finally block, so a failed operation is written too - it was
+    //previously indistinguishable from one that worked
+    @Column(columnDefinition = "boolean default true not null")
+    private boolean success;
 
 }
