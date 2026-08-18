@@ -68,8 +68,8 @@ public class InventoryRecordServiceImpl implements InventoryRecordService {
      * movement record that would explain it is exactly the write that did not happen.
      */
     @Override
-    @Transactional
-    public InventoryRecord out(InventoryRecord record) throws Exception {
+    @Transactional(rollbackFor = Exception.class)
+    public InventoryRecord out(InventoryRecord record) {
         requirePositiveCount(record);
 
         Inventory inventory = inventoryRepository.findByWidAndCid(record.getWid(), record.getCid());
@@ -97,8 +97,8 @@ public class InventoryRecordServiceImpl implements InventoryRecordService {
 
     /** Moves stock into a warehouse, creating the inventory row on first arrival. */
     @Override
-    @Transactional
-    public InventoryRecord in(InventoryRecord record) throws Exception {
+    @Transactional(rollbackFor = Exception.class)
+    public InventoryRecord in(InventoryRecord record) {
         requirePositiveCount(record);
 
         Commodity commodity = findCommodity(record.getCid());

@@ -42,8 +42,8 @@ public class DistributionServiceImpl implements DistributionService {
      * from nowhere.
      */
     @Override
-    @Transactional
-    public Distribution save(Distribution distribution) throws Exception {
+    @Transactional(rollbackFor = Exception.class)
+    public Distribution save(Distribution distribution) {
         Integer status = distribution.getStatus();
 
         if (Objects.equals(status, DistributionStatus.REVIEW_SUCCESS.getCode())) {
