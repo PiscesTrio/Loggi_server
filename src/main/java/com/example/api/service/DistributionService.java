@@ -6,7 +6,7 @@ import java.util.List;
 
 public interface DistributionService {
 
-    Distribution save(Distribution distribution) throws Exception;
+    Distribution save(Distribution distribution);
 
     List<Distribution> findAll();
 

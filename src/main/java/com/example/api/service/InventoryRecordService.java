@@ -15,9 +15,9 @@ public interface InventoryRecordService {
     List<InventoryRecord> findAllByCommodityId(String cid);
 
     //outbound
-    InventoryRecord out(InventoryRecord record) throws Exception;
+    InventoryRecord out(InventoryRecord record);
 
     //inbound
-    InventoryRecord in(InventoryRecord record) throws Exception;
+    InventoryRecord in(InventoryRecord record);
 
 }

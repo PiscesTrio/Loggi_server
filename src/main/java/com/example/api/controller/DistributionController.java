@@ -33,7 +33,7 @@ public class DistributionController {
 
     @Log(moudle = "配送管理",type = BusincessType.INSERT)
     @PostMapping("")
-    public Distribution save(@RequestBody Distribution distribution) throws Exception {
+    public Distribution save(@RequestBody Distribution distribution) {
         return distributionService.save(distribution);
     }
 

@@ -1,5 +1,6 @@
 package com.example.api.service.impl;
 
+import com.example.api.exception.BizException;
 import com.example.api.model.entity.Commodity;
 import com.example.api.model.entity.Inventory;
 import com.example.api.model.entity.InventoryRecord;
@@ -19,10 +20,16 @@ import static org.assertj.core.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 /**
- * Characterization tests for the stock in/out logic.
- * Note: the source's `if (optional == null)` (findById never returns null) is a
- * dead branch; a truly missing commodity blows up at optional.get() with
- * NoSuchElementException — left for the InventoryRecord rewrite slice to fix and assert.
+ * Stock in/out: what moves, and what refuses to move.
+ *
+ * <p>S00 wrote the first four of these as characterization tests and left a note that the
+ * source's {@code if (optional == null)} was a dead branch — findById never returns null,
+ * so a missing commodity fell through to {@code optional.get()} and NoSuchElementException
+ * — for the rewrite slice to fix and assert. This is that slice; the note is now the test
+ * below it.
+ *
+ * <p>The refusals carry a status apiece rather than the single flattened 400 they used to:
+ * a missing id is 404, insufficient stock is 409, a nonsense quantity is 400.
  */
 @ExtendWith(MockitoExtension.class)
 class InventoryRecordServiceImplTest {
@@ -40,9 +47,13 @@ class InventoryRecordServiceImplTest {
         Inventory inv = new Inventory(); inv.setCount(3);
         when(inventoryRepository.findByWidAndCid("w1", "c1")).thenReturn(inv);
 
+        // 409: the request is well formed, and would be valid against a different stock
+        // level. Flattened into 400 the client could not tell it apart from a malformed
+        // body, which is the difference between "ask for fewer" and "fix your code".
         assertThatThrownBy(() -> service.out(rec))
-                .isExactlyInstanceOf(Exception.class)
-                .hasMessage("出库失败，库存数量不足");
+                .isInstanceOf(BizException.class)
+                .hasMessage("出库失败，库存数量不足")
+                .extracting(e -> ((BizException) e).getStatus()).isEqualTo(409);
     }
 
     @Test
@@ -53,7 +64,9 @@ class InventoryRecordServiceImplTest {
         when(inventoryRepository.findByWidAndCid("w1", "c1")).thenReturn(null);
 
         assertThatThrownBy(() -> service.out(rec))
-                .hasMessage("仓库内不存在该商品");
+                .isInstanceOf(BizException.class)
+                .hasMessage("仓库内不存在该商品")
+                .extracting(e -> ((BizException) e).getStatus()).isEqualTo(404);
     }
 
     @Test
@@ -96,5 +109,37 @@ class InventoryRecordServiceImplTest {
         assertThat(saved.getType()).isEqualTo(1);     // pin it: in => type = +1
         assertThat(saved.getCreateAt()).isNotNull();
         verify(inventoryRepository).save(any(Inventory.class));
+    }
+
+    @Test
+    @DisplayName("A commodity id that does not exist is refused, not dereferenced")
+    void in_whenCommodityMissing_throws404() {
+        // The branch S00 flagged. `if (optional == null)` could never be true, so the
+        // guard's message never reached anyone and the next line threw
+        // NoSuchElementException from inside the Optional instead — a guard that reads
+        // like validation while the real failure walks straight past it.
+        InventoryRecord rec = new InventoryRecord();
+        rec.setWid("w1"); rec.setCid("ghost"); rec.setCount(1);
+        when(commodityRepository.findById("ghost")).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> service.in(rec))
+                .isInstanceOf(BizException.class)
+                .hasMessageContaining("不存在的商品id")
+                .extracting(e -> ((BizException) e).getStatus()).isEqualTo(404);
+        verifyNoInteractions(inventoryRepository, recordRepository);
+    }
+
+    @Test
+    @DisplayName("A negative inbound quantity is refused before anything is written")
+    void in_whenCountNegative_throwsAndWritesNothing() {
+        // Unguarded, this drains stock through the method called "in" and leaves a
+        // movement record claiming the opposite of what happened.
+        InventoryRecord rec = new InventoryRecord();
+        rec.setWid("w1"); rec.setCid("c1"); rec.setCount(-5);
+
+        assertThatThrownBy(() -> service.in(rec))
+                .isInstanceOf(BizException.class)
+                .extracting(e -> ((BizException) e).getStatus()).isEqualTo(400);
+        verifyNoInteractions(commodityRepository, inventoryRepository, recordRepository);
     }
 }

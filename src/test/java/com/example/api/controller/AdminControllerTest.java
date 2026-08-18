@@ -86,20 +86,18 @@ class AdminControllerTest {
 
     @Test
     @WithMockUser(roles = {"NOBODY"})
-    @DisplayName("An authenticated caller with the wrong role still gets HTTP 200 carrying code=403 "
-            + "(pins the remaining swallowed-status bug)")
-    void findAll_authenticatedButWrongRole_stillReturns200WithCode403InBody() throws Exception {
-        // The other half of what S00 pinned is still here. Once the request is
-        // authenticated it reaches the handler, @PreAuthorize denies it, and
-        // GlobalExceptionHandler returns a BODY rather than a status: there is no
-        // @ResponseStatus and no ResponseEntity anywhere in src/main, so the HTTP status
-        // stays 200 and the 403 exists only as a JSON field.
+    @DisplayName("An authenticated caller with the wrong role is refused with HTTP 403")
+    void findAll_authenticatedButWrongRole_returns403() throws Exception {
+        // S00 pinned this as "HTTP 200 carrying code=403 in the body" and said the
+        // exception-handling slice would turn it red. It has. @PreAuthorize still denies
+        // the request inside the handler, but GlobalExceptionHandler now answers with a
+        // ResponseEntity, so the refusal reaches the client on the status line where every
+        // HTTP client already looks, instead of only as a JSON field none of them read.
         //
-        // S03 fixed the unauthenticated case by refusing it earlier. This case belongs to
-        // the exception-handling slice, and this assertion is what keeps it visible until
-        // then - deleting the old test outright would have lost it.
+        // The body is unchanged, which is the point: clients that were parsing $.code keep
+        // working while clients that check the status finally see the truth.
         mockMvc.perform(get("/api/admin"))
-                .andExpect(status().isOk())
+                .andExpect(status().isForbidden())
                 .andExpect(jsonPath("$.code").value(403))
                 .andExpect(jsonPath("$.status").value(false))
                 .andExpect(jsonPath("$.msg").value("你没有访问权限"));
