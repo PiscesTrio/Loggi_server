@@ -13,13 +13,19 @@ import org.springframework.context.annotation.Import;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.Map;
 import java.util.NoSuchElementException;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -81,6 +87,12 @@ class ErrorResponseTest {
         @DisableBaseResponse
         public String raw() {
             return "raw";
+        }
+
+        /** Only reachable with a parseable body and an int-shaped parameter. */
+        @PostMapping("/echo")
+        public String echo(@RequestBody Map<String, Object> body, @RequestParam int size) {
+            return String.valueOf(size);
         }
     }
 
@@ -145,5 +157,59 @@ class ErrorResponseTest {
         mockMvc.perform(get("/api/test-errors/raw"))
                 .andExpect(status().isOk())
                 .andExpect(content().string("raw"));
+    }
+
+    // ---------------------------------------------------------------------------------
+    // What Spring throws before a handler ever runs. These four went unnoticed through a
+    // green unit suite and were found by curl against a running server, because every test
+    // above enters through a controller that is reached - and these never reach one.
+    // ---------------------------------------------------------------------------------
+
+    @Test
+    @WithMockUser
+    @DisplayName("An unmapped path is 404, and does not repeat the internal lookup back")
+    void unmappedPath_is404WithoutLeakingTheResourceName() throws Exception {
+        // Was 400 with "No static resource api/nope for request '/api/nope'." - the wrong
+        // status, and a sentence describing this server's internals in a language the
+        // interface does not use.
+        mockMvc.perform(get("/api/test-errors/does-not-exist"))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value(404))
+                .andExpect(jsonPath("$.msg").value("请求的资源不存在"));
+    }
+
+    @Test
+    @WithMockUser
+    @DisplayName("An unparseable body is 400, not 500")
+    void malformedJson_is400() throws Exception {
+        // HttpMessageNotReadableException is a RuntimeException, so the fallback sent it
+        // to the 500 branch: the caller was told the server had broken when in fact they
+        // had sent something the server could not read.
+        mockMvc.perform(post("/api/test-errors/echo?size=1")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{ this is not json "))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value(400));
+    }
+
+    @Test
+    @WithMockUser
+    @DisplayName("The wrong HTTP verb is 405, not 500")
+    void wrongMethod_is405() throws Exception {
+        mockMvc.perform(post("/api/test-errors/ok"))
+                .andExpect(status().isMethodNotAllowed())
+                .andExpect(jsonPath("$.code").value(405))
+                .andExpect(jsonPath("$.msg").value("不支持的请求方法"));
+    }
+
+    @Test
+    @WithMockUser
+    @DisplayName("A parameter that will not convert is 400, not 500")
+    void unconvertibleParameter_is400() throws Exception {
+        mockMvc.perform(post("/api/test-errors/echo?size=abc")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value(400));
     }
 }

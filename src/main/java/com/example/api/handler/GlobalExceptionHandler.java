@@ -4,9 +4,12 @@ import com.example.api.exception.BizException;
 import com.example.api.model.support.ResponseResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.TypeMismatchException;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
+import org.springframework.web.ErrorResponse;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
@@ -70,18 +73,75 @@ public class GlobalExceptionHandler {
     }
 
     /**
-     * The checked {@code Exception} the services still throw by hand.
+     * A request the server could not read: unparseable body, or a value that will not
+     * convert to the parameter's type.
      *
-     * <p>Kept while {@code throws Exception} remains in the service signatures. Its message
-     * is written by us and is safe to return; it is the catch-all below that must not leak.
+     * <p>Listed by name because neither implements {@link ErrorResponse} - the branch below
+     * does not catch them, and both are RuntimeExceptions, so they fell through to the 500.
+     * Telling a caller the server broke when they sent malformed JSON sends them looking in
+     * the wrong place, and it puts a stack trace in the server log for something that is
+     * not a server fault.
+     */
+    @ExceptionHandler({HttpMessageNotReadableException.class, TypeMismatchException.class})
+    public ResponseEntity<ResponseResult<Void>> handleUnreadableRequest(Exception e) {
+        log.debug("Request could not be read: {}", e.getMessage());
+        return ResponseEntity.badRequest().body(new ResponseResult<>(400, "请求参数错误"));
+    }
+
+    /**
+     * Everything else, in the order the three cases have to be tested.
+     *
+     * <p>Spring's own MVC exceptions come first. They already carry the right status - an
+     * unmapped path is a NoResourceFoundException that means 404, an unparseable body means
+     * 400, the wrong verb means 405 - and a bare {@code @ExceptionHandler(Exception.class)}
+     * intercepts all of them before Spring's default handling can say so. Measured against
+     * a running server rather than reasoned about: an unknown path answered 400 while
+     * repeating "No static resource api/nope for request '/api/nope'." back to the caller,
+     * and malformed JSON, an unsupported method and an unconvertible parameter all answered
+     * 500. Three of those are the caller's mistake and none is a server fault. Every one of
+     * them passed the unit tests, because the tests exercised the handlers directly and
+     * never asked what Spring itself throws on the way in.
+     *
+     * <p>Testing {@code ErrorResponse} rather than listing exception classes covers the
+     * ones not thought of, including any Spring adds later.
      */
     @ExceptionHandler(Exception.class)
-    public ResponseEntity<ResponseResult<Void>> handleChecked(Exception e) {
+    public ResponseEntity<ResponseResult<Void>> handleFallback(Exception e) {
+        if (e instanceof ErrorResponse errorResponse) {
+            return handleSpringMvc(e, errorResponse);
+        }
         if (e instanceof RuntimeException) {
             return handleUnexpected(e);
         }
+        // The checked Exception the services still throw by hand, while `throws Exception`
+        // remains in their signatures. Its message is written by us and is safe to return.
         log.debug("Request refused: {}", e.getMessage());
         return ResponseEntity.badRequest().body(new ResponseResult<>(400, e.getMessage()));
+    }
+
+    /**
+     * A Spring MVC exception, answered with the status it already carries.
+     *
+     * <p>The message is ours, not {@code getBody().getDetail()}. Spring's detail names
+     * server-side artefacts - "No static resource api/nope" tells a caller which internal
+     * lookup failed - and it is written in English in an interface that is not.
+     */
+    private ResponseEntity<ResponseResult<Void>> handleSpringMvc(Exception e, ErrorResponse errorResponse) {
+        int status = errorResponse.getStatusCode().value();
+        String msg = switch (status) {
+            case 404 -> "请求的资源不存在";
+            case 405 -> "不支持的请求方法";
+            case 415 -> "不支持的媒体类型";
+            default -> errorResponse.getStatusCode().is4xxClientError()
+                    ? "请求参数错误"
+                    : "服务器内部错误";
+        };
+        if (errorResponse.getStatusCode().is5xxServerError()) {
+            log.error("Spring MVC reported a server-side failure", e);
+        } else {
+            log.debug("Request rejected before the handler: {}", e.getMessage());
+        }
+        return ResponseEntity.status(status).body(new ResponseResult<>(status, msg));
     }
 
     /**
