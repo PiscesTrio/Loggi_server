@@ -45,17 +45,25 @@ class AdminRepositoryIT {
     @Autowired AdminRepository adminRepository;
 
     @Test
-    @DisplayName("findAdminByEmailAndPassword matches on the plaintext password (pins derived-query behavior)")
-    void findAdminByEmailAndPassword_matchesPlaintext() {
+    @DisplayName("The account is found by e-mail alone, and the column holds a full hash")
+    void findAdminByEmail_returnsTheAccountAndItsStoredHash() {
+        // Replaces a test that pinned findAdminByEmailAndPassword matching a plaintext
+        // password. S00 wrote that one knowing the BCrypt slice would delete the query it
+        // described; this is what took its place.
+        String hash = "{bcrypt}$2a$10$Qu7Ns1ky0lClGLYVviA1Fuuz2jEf4PiE/Nv7a9Kh9Sq8F30uStOxC";
         Admin a = new Admin();
         a.setEmail("admin@logi.com");
-        a.setPassword("plain123");      // plaintext storage, pinned as-is
+        a.setPassword(hash);
         a.setRoles("ROLE_SUPER_ADMIN");
         adminRepository.save(a);
 
-        Admin found = adminRepository.findAdminByEmailAndPassword("admin@logi.com", "plain123");
+        Admin found = adminRepository.findAdminByEmail("admin@logi.com");
         assertThat(found).isNotNull();
-        assertThat(adminRepository.findAdminByEmailAndPassword("admin@logi.com", "wrong")).isNull();
+        // The real assertion: the column round-trips the hash intact. At varchar(30) it
+        // would come back truncated to 30 characters and every login would fail with no
+        // error anywhere - the write succeeds, only the comparison quietly stops matching.
+        assertThat(found.getPassword()).isEqualTo(hash);
+        assertThat(hash).hasSize(68);
     }
 
     @Test

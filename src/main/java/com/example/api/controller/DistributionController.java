@@ -63,9 +63,5 @@ public class DistributionController {
     }
 
 
-    @GetMapping("testLocation")
-    public Distribution testLocation(@RequestParam String did,@RequestParam Integer status){
-        return distributionService.testLocation(did,status);
-    }
 
 }

@@ -1,6 +1,7 @@
 package com.example.api.security;
 
 import com.example.api.utils.JwtTokenUtil;
+import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -9,7 +10,9 @@ import org.springframework.security.config.annotation.method.configuration.Enabl
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.web.AuthenticationEntryPoint;
+import org.springframework.security.crypto.factory.PasswordEncoderFactories;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.CorsConfiguration;
@@ -28,9 +31,10 @@ import java.util.List;
  * username/password pair at the filter layer — it only reads tokens it issued earlier — so that
  * manager had nothing to do.
  *
- * <p>Request-level authorization stays {@code permitAll}: every endpoint remains guarded by
- * {@code @PreAuthorize} exactly as before. Building a real authorization matrix is its own slice;
- * doing it here would hide a behaviour change inside a refactor.
+ * <p>Request-level authorization is a default-deny matrix: a short list of endpoints that
+ * must work before a token exists, and {@code authenticated()} for everything else.
+ * {@code @PreAuthorize} still narrows individual methods by role, but it is no longer the
+ * only thing between an anonymous caller and the data.
  */
 @Configuration
 @EnableMethodSecurity
@@ -43,9 +47,21 @@ public class SecurityConfiguration {
         this.allowedOrigins = allowedOrigins;
     }
 
+    /**
+     * Password hashing for the whole application.
+     *
+     * <p>A BCryptPasswordEncoder bean stood here since the project began and nothing
+     * ever injected it, while passwords were stored and compared in plain text. It is
+     * now the encoder the service actually uses.
+     *
+     * <p>Delegating rather than plain BCrypt: it writes an algorithm prefix into the
+     * hash and reads that prefix back when verifying, so the day BCrypt needs replacing,
+     * existing hashes keep working while new ones use the new algorithm. Plain BCrypt
+     * would make that a migration.
+     */
     @Bean
-    public BCryptPasswordEncoder bCryptPasswordEncoder() {
-        return new BCryptPasswordEncoder();
+    public PasswordEncoder passwordEncoder() {
+        return PasswordEncoderFactories.createDelegatingPasswordEncoder();
     }
 
     @Bean
@@ -59,10 +75,51 @@ public class SecurityConfiguration {
                 .authorizeHttpRequests(auth -> auth
                         // Pre-flight carries no credentials and must never be challenged.
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-                        .anyRequest().permitAll())
+                        // Everything below is the complete public surface. Each entry is
+                        // here because it must work before a token exists:
+                        //   login     — where tokens come from
+                        //   hasInit   — asked on a fresh install, which has no account
+                        //   init      — creates the first account; guarded by hasInit,
+                        //               not by authentication, since there is nobody to
+                        //               authenticate as yet
+                        //   sendEmail — the e-mail login path's first step
+                        .requestMatchers(HttpMethod.POST, "/api/admin/login").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/admin/init").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/admin/hasInit").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/admin/sendEmail").permitAll()
+                        // Default deny. Until now this line read permitAll(), so URL-level
+                        // authorization did not exist and the only thing in front of the
+                        // data was whatever @PreAuthorize a controller happened to carry —
+                        // seven of the thirteen carry none.
+                        .anyRequest().authenticated())
+                .exceptionHandling(ex -> ex.authenticationEntryPoint(unauthorizedEntryPoint()))
                 .addFilterBefore(new JwtAuthorizationFilter(jwtTokenUtil),
                         UsernamePasswordAuthenticationFilter.class)
                 .build();
+    }
+
+    /**
+     * Answers 401 when a request arrives without credentials.
+     *
+     * <p>Spring Security's default for a denied anonymous request is 403, because an
+     * anonymous authentication technically exists and is simply not permitted. For an API
+     * that is the wrong answer: 403 tells a client "you are known and not allowed", which
+     * sends it looking for a permissions problem, when the real answer is "you did not
+     * present a token". It also disagreed with JwtAuthorizationFilter, which already
+     * answers 401 for a token that fails to verify — the same situation from the client's
+     * point of view, reported two different ways.
+     *
+     * <p>Same envelope as the filter's, so a client parses one shape whichever layer
+     * refused it.
+     */
+    @Bean
+    public AuthenticationEntryPoint unauthorizedEntryPoint() {
+        return (request, response, authException) -> {
+            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+            response.setContentType("application/json;charset=UTF-8");
+            response.getWriter().write(
+                    "{\"code\":401,\"status\":false,\"msg\":\"Authentication required\",\"data\":null}");
+        };
     }
 
     /**

@@ -72,24 +72,32 @@ class AdminControllerTest {
     }
 
     @Test
-    @DisplayName("findAll without authentication returns HTTP 200 carrying code=403 in the body (pins the swallowed-status bug)")
-    void findAll_withoutAuth_returnsHttp200WithCode403InBody() throws Exception {
-        // Pin the CURRENT (broken) behavior, not the expected one:
-        //   1. JwtAuthorizationFilter lets an empty token through (chain.doFilter).
-        //   2. SecurityConfiguration never calls authorizeRequests(), so there is NO
-        //      URL-level authorization; the request reaches the handler.
-        //   3. @PreAuthorize on AdminController.findAll() denies the anonymous
-        //      principal and raises AccessDeniedException.
-        //   4. GlobalExceptionHandler catches it and RETURNS a body instead of a
-        //      status: `new ResponseResult<>(403, ...)` with the msg asserted below.
-        //      There is no @ResponseStatus and no ResponseEntity anywhere in src/main,
-        //      so the HTTP status stays 200 and the 403 exists only as a JSON field.
-        //   5. GlobalResponseHandler is @ControllerAdvice("com.example.api.controller")
-        //      while GlobalExceptionHandler lives in ...api.handler, so the error body
-        //      is NOT re-wrapped — the fields sit at the JSON root.
-        // This is the bug S06 (global exception/response handling fix) will fix: when
-        // it starts returning a real 403, THIS test goes red on purpose — update it
-        // then, deliberately.
+    @DisplayName("findAll without a token is refused at the URL layer with 401")
+    void findAll_withoutAuth_returns401() throws Exception {
+        // S00 pinned this as "HTTP 200 carrying code=403 in the body" and said in its own
+        // comment that the test would go red on purpose once a real status came back.
+        // It has: authorizeHttpRequests now refuses the request before any handler runs,
+        // and the entry point answers 401 because no credential was presented.
+        mockMvc.perform(get("/api/admin"))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.code").value(401))
+                .andExpect(jsonPath("$.status").value(false));
+    }
+
+    @Test
+    @WithMockUser(roles = {"NOBODY"})
+    @DisplayName("An authenticated caller with the wrong role still gets HTTP 200 carrying code=403 "
+            + "(pins the remaining swallowed-status bug)")
+    void findAll_authenticatedButWrongRole_stillReturns200WithCode403InBody() throws Exception {
+        // The other half of what S00 pinned is still here. Once the request is
+        // authenticated it reaches the handler, @PreAuthorize denies it, and
+        // GlobalExceptionHandler returns a BODY rather than a status: there is no
+        // @ResponseStatus and no ResponseEntity anywhere in src/main, so the HTTP status
+        // stays 200 and the 403 exists only as a JSON field.
+        //
+        // S03 fixed the unauthenticated case by refusing it earlier. This case belongs to
+        // the exception-handling slice, and this assertion is what keeps it visible until
+        // then - deleting the old test outright would have lost it.
         mockMvc.perform(get("/api/admin"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value(403))

@@ -10,6 +10,7 @@ import com.example.api.service.AdminService;
 import com.example.api.service.EmailService;
 import com.example.api.utils.DataTimeUtil;
 import com.example.api.utils.JwtTokenUtil;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import jakarta.annotation.Resource;
@@ -28,9 +29,15 @@ public class AdminServiceImpl implements AdminService {
     @Resource
     private JwtTokenUtil jwtTokenUtil;
 
+    @Resource
+    private PasswordEncoder passwordEncoder;
+
     @Override
     public Admin save(Admin admin) throws Exception {
         if (admin.getEmail().length() < 8 || admin.getPassword().length() < 5) throw new Exception("请求参数异常");
+        // Encode before anything can persist it. The length check above runs on the
+        // password as typed, which is the only point at which that is meaningful.
+        admin.setPassword(passwordEncoder.encode(admin.getPassword()));
         admin.setCreateAt(DataTimeUtil.getNowTimeString());
         return adminRepository.save(admin);
     }
@@ -49,8 +56,10 @@ public class AdminServiceImpl implements AdminService {
 
     @Override
     public Admin loginByPassword(LoginDto dto) throws Exception {
-        Admin one = adminRepository.findAdminByEmailAndPassword(dto.getEmail(), dto.getPassword());
-        if (one == null) {
+        Admin one = adminRepository.findAdminByEmail(dto.getEmail());
+        // One message for both branches on purpose: distinguishing "no such account"
+        // from "wrong password" tells an attacker which addresses are registered.
+        if (one == null || !passwordEncoder.matches(dto.getPassword(), one.getPassword())) {
             throw new Exception("邮箱或密码错误");
         }
         return one;
