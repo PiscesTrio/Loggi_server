@@ -116,7 +116,7 @@ class AdminControllerTest {
         when(adminService.loginByPassword(any())).thenReturn(new Admin());
         when(adminService.createToken(any(), anyLong())).thenReturn("stub.jwt.token");
 
-        mockMvc.perform(post("/api/admin/login?type=password")
+        mockMvc.perform(post("/api/admin/login/password")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"email\":\"a@b.c\",\"password\":\"p\",\"code\":null,\"remember\":null}"))
                 .andExpect(status().isOk())

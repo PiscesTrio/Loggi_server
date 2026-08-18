@@ -1,6 +1,7 @@
 package com.example.api.controller;
 
 import com.example.api.exception.AccountAndPasswordError;
+import com.example.api.exception.BizException;
 import com.example.api.model.dto.LoginDto;
 import com.example.api.model.entity.Admin;
 import com.example.api.model.entity.LoginLog;
@@ -78,35 +79,80 @@ public class AdminController {
         return adminService.save(admin);
     }
 
-    @PostMapping("/login")
-    public Map<String, Object> loginByEmail(String type, @RequestBody LoginDto dto, HttpServletRequest request) throws Exception {
+    /**
+     * Password login.
+     *
+     * <p>Two endpoints now, where there was one taking a {@code type} string. That string
+     * had no {@code @RequestParam}, so a caller who omitted it reached
+     * {@code type.equals("email")} on a null and the NPE was caught and reported as a wrong
+     * password — control flow by exception, and a diagnosis that pointed at the user.
+     */
+    @PostMapping("/login/password")
+    public Map<String, Object> loginByPassword(@RequestBody LoginDto dto, HttpServletRequest request) throws Exception {
+        return login(dto, request, () -> adminService.loginByPassword(dto));
+    }
+
+    /** E-mail code login. Step two; step one is POST /verification-code. */
+    @PostMapping("/login/email")
+    public Map<String, Object> loginByEmail(@RequestBody LoginDto dto, HttpServletRequest request) throws Exception {
+        return login(dto, request, () -> adminService.loginByEmail(dto));
+    }
+
+    /**
+     * The part both share: issue a token, and record the attempt either way.
+     *
+     * <p>The old body wrapped everything in {@code catch (Exception e) { throw new
+     * Exception("邮箱或密码错误"); }}. That is the right answer for a credential mismatch and
+     * the wrong one for everything else it also caught: a rate-limit refusal, a mail server
+     * outage, a locked account, a null pointer. The caller was told to check their password
+     * while the actual reason was discarded — including the reasons they could have acted
+     * on. BizException already carries a status and a message written to be shown, so it
+     * passes through; anything else still collapses, because an unexpected failure during
+     * authentication is the one case where saying less is right.
+     */
+    private Map<String, Object> login(LoginDto dto, HttpServletRequest request, AuthAttempt attempt) throws Exception {
         Map<String, Object> map = new HashMap<>();
         Admin admin = null;
         String token = null;
         try {
-            admin = type.equals("email") ? adminService.loginByEmail(dto) : adminService.loginByPassword(dto);
+            admin = attempt.authenticate();
             token = adminService.createToken(admin,
                     dto.isRemember() ? JwtTokenUtil.REMEMBER_EXPIRATION_TIME : JwtTokenUtil.EXPIRATION_TIME);
-        }catch (Exception e){
+        } catch (BizException e) {
+            throw e;
+        } catch (Exception e) {
+            log.debug("Login refused for {}", dto.getEmail(), e);
             throw new Exception("邮箱或密码错误");
-        }finally {
-            loginLogService.recordLog(dto,admin,request);
+        } finally {
+            loginLogService.recordLog(dto, admin, request);
         }
         map.put("admin", admin);
         map.put("token", token);
         return map;
     }
 
-    @GetMapping("/sendEmail")
-    public ResponseResult sendEmail(String email) throws Exception {
-        Boolean flag = adminService.sendEmail(email);
-        ResponseResult res = new ResponseResult();
-        if (flag){
-            res.setMsg("发送成功，请登录邮箱查看");
-        }else {
-            res.setMsg("发送验证码失败，请检查邮箱服务");
-        }
-        res.setStatus(flag);
+    @FunctionalInterface
+    private interface AuthAttempt {
+        Admin authenticate() throws Exception;
+    }
+
+    /**
+     * Issues a one-time code to an address.
+     *
+     * <p>POST, not the GET it was. A request that sends mail and writes server state is not
+     * safe to retry, prefetch, or log with its parameters, which is what GET invites.
+     *
+     * <p>The reply is the same whether or not the address has an account. The old one threw
+     * "不存在的邮箱账户", turning a public endpoint into an oracle for which addresses are
+     * registered — the exact leak {@code loginByPassword} takes care to avoid one method
+     * away.
+     */
+    @PostMapping("/verification-code")
+    public ResponseResult<Void> sendVerificationCode(@RequestParam String email) {
+        adminService.sendEmail(email);
+        ResponseResult<Void> res = new ResponseResult<>();
+        res.setMsg("如果该邮箱已注册，验证码已发送");
+        res.setStatus(true);
         return res;
     }
 
