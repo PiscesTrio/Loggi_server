@@ -94,7 +94,6 @@ public class BrowserUtil {
         {
             browserVersion = "谷歌浏览器";
         }
-        System.out.println(browserVersion);
         return browserVersion;
 
     }

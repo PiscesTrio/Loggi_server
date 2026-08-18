@@ -22,7 +22,10 @@ spring:
     port: 465
     properties:
       mail:
-        debug: true
+        # Off unless asked for. JavaMail's debug channel prints the whole SMTP
+        # conversation to stdout, including the AUTH line - the mail password, in the
+        # server log, on every send. It was on by default.
+        debug: ${MAIL_DEBUG:false}
         smtp:
           ssl:
             enable: true
@@ -56,7 +59,10 @@ spring:
     # Required: without it data.sql runs *before* Hibernate creates the tables.
     defer-datasource-initialization: true
     open-in-view: false
-    show-sql: true
+    # Off unless asked for. Every statement, with its parameters, went to stdout on
+    # every request - the audit log's own INSERTs included, which is how a request's
+    # account and IP end up in a log nobody treats as sensitive.
+    show-sql: ${JPA_SHOW_SQL:false}
 # Root level, i.e. the level for the application as a whole.
 logging:
   level:

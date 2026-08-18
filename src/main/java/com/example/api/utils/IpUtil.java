@@ -1,8 +1,13 @@
 package com.example.api.utils;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import jakarta.servlet.http.HttpServletRequest;
 
 public class IpUtil {
+
+    private static final Logger log = LoggerFactory.getLogger(IpUtil.class);
 
     private static final String LOOPBACK_ADDRESS = "127.0.0.1";
     private static final String IPV6_ADDRESS = "0:0:0:0:0:0:0:1";
@@ -34,7 +39,11 @@ public class IpUtil {
             }
             return ip;
         } catch (Exception e) {
-            e.printStackTrace();
+            // Deliberately not rethrown: an audit record with an unknown IP is worth more
+            // than a request that fails because the IP could not be determined. But the
+            // stack has to go somewhere - printStackTrace wrote it to stdout, where no
+            // deployment of this application collects it.
+            log.warn("Could not determine the caller's IP address", e);
         }
         return "";
     }
