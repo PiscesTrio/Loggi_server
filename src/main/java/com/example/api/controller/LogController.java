@@ -48,7 +48,6 @@ public class LogController {
 
     @GetMapping("/querySystemlog")
     public List<SystemLog> querySystemlog(SystemLogVo systemLogVo){
-        System.out.println(systemLogVo);
         return systemLogService.query(systemLogVo);
     }
 }

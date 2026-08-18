@@ -4,6 +4,7 @@ import com.example.api.model.entity.Code;
 import com.example.api.repository.CodeRepository;
 import com.example.api.service.EmailService;
 import com.example.api.utils.RandomUtil;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.MailException;
@@ -13,6 +14,7 @@ import org.springframework.stereotype.Service;
 
 import jakarta.annotation.Resource;
 
+@Slf4j
 @Service
 public class EmailServiceImpl implements EmailService {
 
@@ -37,13 +39,12 @@ public class EmailServiceImpl implements EmailService {
         try {
 //            mailSender.send(message);
         }catch (Exception e){
-            e.printStackTrace();
+            log.error("Failed to send a verification code to {}", email, e);
             return false;
         }
         //persist the verification code
         //email is the primary key, so re-sending updates the existing row
         codeRepository.save(new Code(email, value));
-        System.out.println("执行save code");
         return true;
     }
 
