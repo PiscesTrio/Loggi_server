@@ -10,7 +10,6 @@ public interface DistributionService {
 
     List<Distribution> findAll();
 
-    Distribution testLocation(String did,Integer status);
 
 
 }

@@ -54,7 +54,4 @@ public class DistributionServiceImpl implements DistributionService {
     }
 
 
-    @Override
-    public Distribution testLocation(String did,Integer status){return distributionRepository.findByDidAndStatus(did, status);};
-
 }

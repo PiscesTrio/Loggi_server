@@ -42,8 +42,20 @@ public class AdminController {
         return adminRepository.existsAdminByRoles(Role.ROLE_SUPER_ADMIN.getValue());
     }
 
+    /**
+     * Creates the first super administrator, once.
+     *
+     * <p>Deliberately anonymous: on a fresh install there is no account to authenticate
+     * as, so requiring a token would make the system impossible to bootstrap. What stops
+     * it being an open door is the check below — until this slice there was none, and any
+     * caller could POST here at any time and mint themselves a super administrator on a
+     * running system.
+     */
     @PostMapping("/init")
     public Admin init(@RequestBody Admin admin) throws Exception {
+        if (adminRepository.existsAdminByRoles(Role.ROLE_SUPER_ADMIN.getValue())) {
+            throw new Exception("系统已初始化");
+        }
         admin.setRoles(Role.ROLE_SUPER_ADMIN.getValue());
         return adminService.save(admin);
     }

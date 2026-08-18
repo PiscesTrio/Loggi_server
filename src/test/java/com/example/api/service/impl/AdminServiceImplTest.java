@@ -4,60 +4,145 @@ import com.example.api.model.dto.LoginDto;
 import com.example.api.model.entity.Admin;
 import com.example.api.repository.AdminRepository;
 import com.example.api.service.EmailService;
+import com.example.api.utils.JwtTokenUtil;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.security.crypto.factory.PasswordEncoderFactories;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.test.util.ReflectionTestUtils;
 
-import static org.assertj.core.api.Assertions.*;
-import static org.mockito.Mockito.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.when;
 
 /**
- * Characterization tests pinning the CURRENT real behavior of AdminServiceImpl,
- * including its known bugs. This slice fixes nothing; it only freezes today's
- * behavior into a red/green safety net.
+ * Passwords are hashed now, so these assertions replace the ones S00 wrote.
+ *
+ * <p>S00 deliberately pinned the plaintext behaviour — a derived query comparing the
+ * raw password, and a {@code save} that stored whatever it was handed — and said in
+ * its own comment that the BCrypt slice would turn them red. It did. Those two tests
+ * are gone with the behaviour they described.
+ *
+ * <p>The encoder here is real, not a mock. Mocking it would assert that the service
+ * calls a method; the question worth asking is whether what reaches the database can
+ * still be read back, and only a real hash answers that.
  */
 @ExtendWith(MockitoExtension.class)
 class AdminServiceImplTest {
 
     @Mock AdminRepository adminRepository;
     @Mock EmailService emailService;
-    @InjectMocks AdminServiceImpl adminService;
+    @Mock JwtTokenUtil jwtTokenUtil;
 
-    @Test
-    @DisplayName("loginByPassword passes the raw password straight to the query (pins current plaintext behavior)")
-    void loginByPassword_passesRawPasswordToQuery() throws Exception {
-        // Current impl runs a derived query with the plaintext password
-        // (a bug, but that is the behavior today — to be fixed in the BCrypt slice).
-        LoginDto dto = new LoginDto();
-        dto.setEmail("admin@logi.com");
-        dto.setPassword("plaintext123");
-        Admin found = new Admin();
-        found.setEmail("admin@logi.com");
-        when(adminRepository.findAdminByEmailAndPassword("admin@logi.com", "plaintext123"))
-                .thenReturn(found);
+    private final PasswordEncoder encoder =
+            PasswordEncoderFactories.createDelegatingPasswordEncoder();
 
-        Admin result = adminService.loginByPassword(dto);
-
-        assertThat(result).isSameAs(found);
-        // Pin it: the raw password is used directly, with no encode/matches.
-        verify(adminRepository).findAdminByEmailAndPassword("admin@logi.com", "plaintext123");
+    private AdminServiceImpl service() {
+        AdminServiceImpl s = new AdminServiceImpl();
+        ReflectionTestUtils.setField(s, "adminRepository", adminRepository);
+        ReflectionTestUtils.setField(s, "emailService", emailService);
+        ReflectionTestUtils.setField(s, "jwtTokenUtil", jwtTokenUtil);
+        ReflectionTestUtils.setField(s, "passwordEncoder", encoder);
+        return s;
     }
 
     @Test
-    @DisplayName("loginByPassword throws a generic Exception when no admin matches")
-    void loginByPassword_whenNotFound_throwsGenericException() {
-        when(adminRepository.findAdminByEmailAndPassword(anyString(), anyString())).thenReturn(null);
-        LoginDto dto = new LoginDto();
-        dto.setEmail("x@y.com");
-        dto.setPassword("p");
+    @DisplayName("save stores a hash, never the password it was given")
+    void save_storesAHashNotThePlaintext() throws Exception {
+        Admin admin = new Admin();
+        admin.setEmail("admin@loggi.example");
+        admin.setPassword("plaintext123");
+        when(adminRepository.save(any(Admin.class))).thenAnswer(i -> i.getArgument(0));
 
-        // Pin it: a raw java.lang.Exception is thrown, not a custom exception.
-        assertThatThrownBy(() -> adminService.loginByPassword(dto))
+        service().save(admin);
+
+        assertThat(admin.getPassword()).isNotEqualTo("plaintext123");
+        // DelegatingPasswordEncoder prefixes the algorithm; matches() uses it to route.
+        assertThat(admin.getPassword()).startsWith("{bcrypt}");
+        assertThat(encoder.matches("plaintext123", admin.getPassword())).isTrue();
+        assertThat(admin.getCreateAt()).isNotNull();
+        verify(adminRepository).save(admin);
+    }
+
+    @Test
+    @DisplayName("login looks the account up by e-mail alone and verifies the hash")
+    void loginByPassword_looksUpByEmailThenVerifies() throws Exception {
+        Admin stored = new Admin();
+        stored.setEmail("admin@loggi.example");
+        stored.setPassword(encoder.encode("correct-horse"));
+        when(adminRepository.findAdminByEmail("admin@loggi.example")).thenReturn(stored);
+
+        LoginDto dto = new LoginDto();
+        dto.setEmail("admin@loggi.example");
+        dto.setPassword("correct-horse");
+
+        assertThat(service().loginByPassword(dto)).isSameAs(stored);
+        // The e-mail is the only thing that may reach the query. A derived finder taking
+        // the password would compare hashes for equality, which never matches: BCrypt
+        // salts every call, so encode() of the same input differs every time.
+        verify(adminRepository).findAdminByEmail("admin@loggi.example");
+    }
+
+    @Test
+    @DisplayName("A wrong password is rejected even though the account exists")
+    void loginByPassword_wrongPassword_throws() {
+        Admin stored = new Admin();
+        stored.setEmail("admin@loggi.example");
+        stored.setPassword(encoder.encode("correct-horse"));
+        when(adminRepository.findAdminByEmail("admin@loggi.example")).thenReturn(stored);
+
+        LoginDto dto = new LoginDto();
+        dto.setEmail("admin@loggi.example");
+        dto.setPassword("wrong");
+
+        assertThatThrownBy(() -> service().loginByPassword(dto))
                 .isExactlyInstanceOf(Exception.class)
                 .hasMessage("邮箱或密码错误");
+    }
+
+    @Test
+    @DisplayName("An unknown e-mail fails the same way a wrong password does")
+    void loginByPassword_unknownEmail_throwsTheSameMessage() {
+        when(adminRepository.findAdminByEmail(anyString())).thenReturn(null);
+
+        LoginDto dto = new LoginDto();
+        dto.setEmail("nobody@loggi.example");
+        dto.setPassword("whatever");
+
+        // Same message on purpose: a different one would tell an attacker which
+        // e-mail addresses have accounts.
+        assertThatThrownBy(() -> service().loginByPassword(dto))
+                .isExactlyInstanceOf(Exception.class)
+                .hasMessage("邮箱或密码错误");
+    }
+
+    @Test
+    @DisplayName("Two accounts with the same password get different hashes")
+    void save_saltsEachHashIndependently() throws Exception {
+        when(adminRepository.save(any(Admin.class))).thenAnswer(i -> i.getArgument(0));
+        Admin a = new Admin();
+        a.setEmail("a@loggi.example");
+        a.setPassword("same-password");
+        Admin b = new Admin();
+        b.setEmail("b@loggi.example");
+        b.setPassword("same-password");
+
+        AdminServiceImpl s = service();
+        s.save(a);
+        s.save(b);
+
+        // If this ever fails, the encoder has been swapped for an unsalted digest and
+        // the hashes have become a lookup table.
+        assertThat(a.getPassword()).isNotEqualTo(b.getPassword());
+        assertThat(encoder.matches("same-password", a.getPassword())).isTrue();
+        assertThat(encoder.matches("same-password", b.getPassword())).isTrue();
     }
 
     @Test
@@ -66,23 +151,9 @@ class AdminServiceImplTest {
         Admin admin = new Admin();
         admin.setEmail("a@b.com"); // length 7 < 8
         admin.setPassword("123456");
-        assertThatThrownBy(() -> adminService.save(admin))
+        assertThatThrownBy(() -> service().save(admin))
                 .isExactlyInstanceOf(Exception.class)
                 .hasMessage("请求参数异常");
         verifyNoInteractions(adminRepository); // not persisted when validation fails
-    }
-
-    @Test
-    @DisplayName("save accepts boundary lengths (email=8, password=5), persists, and sets createAt")
-    void save_atBoundaryLengths_persistsAndSetsCreateAt() throws Exception {
-        Admin admin = new Admin();
-        admin.setEmail("12345678");   // length exactly 8 (not < 8)
-        admin.setPassword("12345");   // length exactly 5 (not < 5)
-        when(adminRepository.save(admin)).thenReturn(admin);
-
-        adminService.save(admin);
-
-        verify(adminRepository).save(admin);
-        assertThat(admin.getCreateAt()).isNotNull(); // save() sets createAt internally
     }
 }
