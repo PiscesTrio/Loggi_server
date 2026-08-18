@@ -11,7 +11,14 @@ public interface AdminService {
 
     Admin findById(String id);
 
-    boolean sendEmail(String email) throws Exception;
+    /**
+     * Issues a one-time code to the address, if it belongs to an account.
+     *
+     * <p>Returns nothing and says nothing about whether the account exists. The
+     * boolean it used to return was turned into a message by the controller, which
+     * made a refusal by policy and a mail outage indistinguishable.
+     */
+    void sendEmail(String email);
 
     Admin loginByPassword(LoginDto dto) throws Exception;
 

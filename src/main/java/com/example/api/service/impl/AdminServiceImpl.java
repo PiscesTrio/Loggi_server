@@ -11,12 +11,14 @@ import com.example.api.service.EmailService;
 import com.example.api.utils.DataTimeUtil;
 import com.example.api.utils.JwtTokenUtil;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import jakarta.annotation.Resource;
 import java.util.Date;
 import java.util.List;
 
+@Slf4j
 @Service
 public class AdminServiceImpl implements AdminService {
 
@@ -48,10 +50,18 @@ public class AdminServiceImpl implements AdminService {
     }
 
     @Override
-    public boolean sendEmail(String email) throws Exception {
+    public void sendEmail(String email) {
         Admin admin = adminRepository.findAdminByEmail(email);
-        if (admin == null) throw new Exception("不存在的邮箱账户");
-        return emailService.sendVerificationCode(email);
+        if (admin == null) {
+            // Deliberately silent. This threw "不存在的邮箱账户" from an endpoint that needs
+            // no authentication, so anyone could ask it which addresses have accounts and
+            // get a straight answer - the same enumeration leak loginByPassword goes out of
+            // its way to avoid a few lines below. The caller sees the identical reply either
+            // way; the difference is only whether an e-mail is actually sent.
+            log.debug("Verification code requested for an address with no account");
+            return;
+        }
+        emailService.sendVerificationCode(email);
     }
 
     @Override

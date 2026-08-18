@@ -17,6 +17,17 @@ services:
     volumes:
       - mysql_data:/var/lib/mysql
 
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    # 无 volume:验证码与限流计数器都是短时数据,重启丢掉正是期望行为
+
   app:
     build:
       context: .
@@ -24,11 +35,15 @@ services:
     environment:
       DB_HOST: mysql
       DB_PORT: "3306"
+      REDIS_HOST: redis
+      REDIS_PORT: "6379"
     ports:
       - "8088:8088"
     depends_on:
       mysql:
         condition: service_healthy   # 等 MySQL 健康再启动 app
+      redis:
+        condition: service_healthy
 
 volumes:
   mysql_data:

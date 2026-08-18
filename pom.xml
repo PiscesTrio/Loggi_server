@@ -136,6 +136,18 @@
             <artifactId>spring-boot-starter-data-jpa-test</artifactId>
             <scope>test</scope>
         </dependency>
+        <!--
+          Redis: TTL storage for verification codes and atomic counters for rate limiting.
+          A one-time code is cache data, not business data - short-lived, single-use, and
+          write-heavy. SET ... EX expires it without an application-level `exp` column that
+          nothing ever cleans up, and INCR/EXPIRE give the send cooldown and the failed-attempt
+          lockout an atomicity that a read-then-write over JPA cannot.
+        -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-data-redis</artifactId>
+        </dependency>
+
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-security-test</artifactId>
@@ -154,6 +166,18 @@
         <dependency>
             <groupId>org.testcontainers</groupId>
             <artifactId>testcontainers-mysql</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+        <!--
+          GreenMail: an in-process SMTP server, so a test can assert that a message was
+          actually sent and read the code out of its body. The whole reason this slice
+          exists is that `mailSender.send(...)` sat commented out and nothing noticed.
+        -->
+        <dependency>
+            <groupId>com.icegreen</groupId>
+            <artifactId>greenmail-junit5</artifactId>
+            <version>2.1.0</version>
             <scope>test</scope>
         </dependency>
 

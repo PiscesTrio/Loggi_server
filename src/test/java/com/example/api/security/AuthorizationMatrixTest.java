@@ -51,11 +51,23 @@ class AuthorizationMatrixTest {
     @MockitoBean JwtTokenUtil jwtTokenUtil;
 
     @Test
-    @DisplayName("Login is reachable without a token — it is where tokens come from")
-    void login_isPublic() throws Exception {
-        mockMvc.perform(post("/api/admin/login?type=password")
+    @DisplayName("Password login is reachable without a token — it is where tokens come from")
+    void loginByPassword_isPublic() throws Exception {
+        mockMvc.perform(post("/api/admin/login/password")
                         .contentType("application/json")
                         .content("{\"email\":\"a@b.c\",\"password\":\"p\",\"code\":null,\"remember\":null}"))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    @DisplayName("E-mail login is reachable without a token, and is now a separate route")
+    void loginByEmail_isPublic() throws Exception {
+        // The single /login endpoint took a bare `type` string with no @RequestParam, so
+        // omitting it reached type.equals("email") on a null. Two routes, no parameter to
+        // forget, and each can be rate-limited and documented on its own terms.
+        mockMvc.perform(post("/api/admin/login/email")
+                        .contentType("application/json")
+                        .content("{\"email\":\"a@b.c\",\"password\":null,\"code\":\"000000\",\"remember\":null}"))
                 .andExpect(status().isOk());
     }
 
@@ -75,9 +87,22 @@ class AuthorizationMatrixTest {
     }
 
     @Test
-    @DisplayName("sendEmail is reachable without a token — it serves the e-mail login path")
-    void sendEmail_isPublic() throws Exception {
-        mockMvc.perform(get("/api/admin/sendEmail?email=a@b.c")).andExpect(status().isOk());
+    @DisplayName("Requesting a verification code is reachable without a token, and is a POST")
+    void verificationCode_isPublic() throws Exception {
+        // Was GET /api/admin/sendEmail. Sending mail and writing server state is not a safe
+        // method: GET is retried by proxies, prefetched by browsers, and logged with its
+        // query string - which here is somebody's e-mail address.
+        mockMvc.perform(post("/api/admin/verification-code?email=a@b.c"))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    @DisplayName("The old GET sendEmail route is gone rather than merely unused")
+    void oldSendEmailRoute_isNoLongerRoutable() throws Exception {
+        // 401, not 404: an unmapped path is refused by the default-deny rule before the
+        // dispatcher looks for a handler. Either way it is unreachable, which is the point.
+        mockMvc.perform(get("/api/admin/sendEmail?email=a@b.c"))
+                .andExpect(status().isUnauthorized());
     }
 
     @Test

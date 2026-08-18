@@ -77,16 +77,21 @@ public class SecurityConfiguration {
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         // Everything below is the complete public surface. Each entry is
                         // here because it must work before a token exists:
-                        //   login     — where tokens come from
+                        //   login/*   — where tokens come from
                         //   hasInit   — asked on a fresh install, which has no account
                         //   init      — creates the first account; guarded by hasInit,
                         //               not by authentication, since there is nobody to
                         //               authenticate as yet
-                        //   sendEmail — the e-mail login path's first step
-                        .requestMatchers(HttpMethod.POST, "/api/admin/login").permitAll()
+                        //   verification-code — the e-mail login path's first step
+                        .requestMatchers(HttpMethod.POST, "/api/admin/login/password").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/admin/login/email").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/admin/init").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/admin/hasInit").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/admin/sendEmail").permitAll()
+                        // Was GET /api/admin/sendEmail. A request that sends mail and writes
+                        // server state is not a GET: it is retried by proxies, prefetched by
+                        // browsers, and logged with its parameters. Rate limiting lives in the
+                        // service, because a matcher cannot count.
+                        .requestMatchers(HttpMethod.POST, "/api/admin/verification-code").permitAll()
                         // Default deny. Until now this line read permitAll(), so URL-level
                         // authorization did not exist and the only thing in front of the
                         // data was whatever @PreAuthorize a controller happened to carry —
