@@ -9,7 +9,6 @@ import com.example.api.repository.CommodityRepository;
 import com.example.api.repository.InventoryRecordRepository;
 import com.example.api.repository.InventoryRepository;
 import com.example.api.service.InventoryRecordService;
-import com.example.api.utils.DataTimeUtil;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -90,7 +89,6 @@ public class InventoryRecordServiceImpl implements InventoryRecordService {
         inventory.setCount(inventory.getCount() - record.getCount());
         inventoryRepository.save(inventory);
 
-        record.setCreateAt(DataTimeUtil.getNowTimeString());
         record.setType(TYPE_OUT);
         return recordRepository.save(record);
     }
@@ -116,7 +114,6 @@ public class InventoryRecordServiceImpl implements InventoryRecordService {
         inventory.setCount(inventory.getCount() + record.getCount());
         inventoryRepository.save(inventory);
 
-        record.setCreateAt(DataTimeUtil.getNowTimeString());
         record.setType(TYPE_IN);
         return recordRepository.save(record);
     }

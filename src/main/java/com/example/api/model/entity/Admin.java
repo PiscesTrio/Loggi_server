@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.GenericGenerator;
 
@@ -16,13 +17,15 @@ import jakarta.persistence.Id;
  * Administrator
  */
 @Data
+@EqualsAndHashCode(onlyExplicitlyIncluded = true)
 @Entity
 @NoArgsConstructor
 @AllArgsConstructor
 
-public class Admin {
+public class Admin extends Auditable {
 
     @Id
+    @EqualsAndHashCode.Include
     @GeneratedValue(generator = "uuid2")
     @GenericGenerator(name = "uuid2", strategy = "org.hibernate.id.UUIDGenerator")
     private String id;
@@ -43,7 +46,5 @@ public class Admin {
     private String password;
 
     private String roles;
-
-    private String createAt;
 
 }

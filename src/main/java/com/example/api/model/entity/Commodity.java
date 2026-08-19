@@ -1,6 +1,7 @@
 package com.example.api.model.entity;
 
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.GenericGenerator;
 
@@ -12,11 +13,13 @@ import jakarta.persistence.Id;
  * Commodity
  */
 @Data
+@EqualsAndHashCode(onlyExplicitlyIncluded = true)
 @Entity
 @NoArgsConstructor
-public class Commodity {
+public class Commodity extends Auditable {
 
     @Id
+    @EqualsAndHashCode.Include
     @GeneratedValue(generator = "uuid2")
     @GenericGenerator(name = "uuid2", strategy = "org.hibernate.id.UUIDGenerator")
     private String id;
@@ -28,9 +31,5 @@ public class Commodity {
     private String description;
 
     private int count;
-
-    private String createAt;
-
-    private String updateAt;
 
 }

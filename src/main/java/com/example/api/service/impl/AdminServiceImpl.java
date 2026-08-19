@@ -8,7 +8,6 @@ import com.example.api.repository.AdminRepository;
 import com.example.api.repository.LoginLogRepository;
 import com.example.api.service.AdminService;
 import com.example.api.service.EmailService;
-import com.example.api.utils.DataTimeUtil;
 import com.example.api.utils.JwtTokenUtil;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import lombok.extern.slf4j.Slf4j;
@@ -40,7 +39,6 @@ public class AdminServiceImpl implements AdminService {
         // Encode before anything can persist it. The length check above runs on the
         // password as typed, which is the only point at which that is meaningful.
         admin.setPassword(passwordEncoder.encode(admin.getPassword()));
-        admin.setCreateAt(DataTimeUtil.getNowTimeString());
         return adminRepository.save(admin);
     }
 

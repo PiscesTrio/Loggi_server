@@ -87,7 +87,7 @@ class InventoryRecordServiceImplTest {
         InventoryRecord saved = service.out(rec);
 
         assertThat(saved.getType()).isEqualTo(-1);      // pin it: out => type = -1
-        assertThat(saved.getCreateAt()).isNotNull();
+        // createAt: see AuditingIT — filled by the auditing listener, not by this service.
         assertThat(c.getCount()).isEqualTo(6);          // commodity total: 10 - 4
         assertThat(inv.getCount()).isEqualTo(6);        // warehouse inventory: 10 - 4
         verify(commodityRepository).save(c);
@@ -107,7 +107,7 @@ class InventoryRecordServiceImplTest {
         InventoryRecord saved = service.in(rec);
 
         assertThat(saved.getType()).isEqualTo(1);     // pin it: in => type = +1
-        assertThat(saved.getCreateAt()).isNotNull();
+        // createAt: see AuditingIT — filled by the auditing listener, not by this service.
         verify(inventoryRepository).save(any(Inventory.class));
     }
 
