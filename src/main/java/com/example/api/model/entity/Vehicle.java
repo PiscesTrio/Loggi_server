@@ -13,7 +13,10 @@ import jakarta.persistence.Id;
  * Vehicle
  */
 @Data
-@EqualsAndHashCode(onlyExplicitlyIncluded = true)
+// Identity is the id and nothing else: two rows with the same id are the same row,
+// whatever their other columns say. callSuper = false because the superclass holds
+// only timestamps, and when a row was last touched is not part of what it is.
+@EqualsAndHashCode(onlyExplicitlyIncluded = true, callSuper = false)
 @Entity
 @NoArgsConstructor
 public class Vehicle extends Auditable {

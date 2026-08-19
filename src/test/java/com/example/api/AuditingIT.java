@@ -84,7 +84,7 @@ class AuditingIT {
     private static Commodity commodity(String name) {
         Commodity c = new Commodity();
         c.setName(name);
-        c.setPrice(1000);
+        c.setPrice(new java.math.BigDecimal("1000.00"));
         c.setCount(1);
         return c;
     }
