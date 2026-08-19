@@ -98,7 +98,6 @@ public class InventoryController {
         Commodity commodity = new Commodity();
         commodity.setId(request.getCommodityId());
         record.setCommodity(commodity);
-        record.setName(request.getName());
         record.setCount(request.getCount());
         record.setDescription(request.getDescription());
         return record;

@@ -27,8 +27,6 @@ public class InventoryMovementRequest {
     @NotBlank(message = "商品不能为空")
     private String commodityId;
 
-    /** Denormalised commodity name, rendered by the stock screen and the chart legend. */
-    private String name;
 
     @NotNull(message = "数量不能为空")
     @Min(value = 1, message = "数量必须大于 0")
