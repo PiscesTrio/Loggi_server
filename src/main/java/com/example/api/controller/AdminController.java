@@ -17,6 +17,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
 import jakarta.annotation.Resource;
@@ -56,6 +57,7 @@ public class AdminController {
      * running system.
      */
     @PostMapping("/init")
+    @ResponseStatus(HttpStatus.CREATED)
     public AdminVo init(@RequestBody Admin admin) throws Exception {
         if (adminRepository.existsAdminByRolesContains(Role.ROLE_SUPER_ADMIN)) {
             throw new Exception("系统已初始化");
@@ -70,13 +72,15 @@ public class AdminController {
         return adminService.findAll().stream().map(AdminVo::from).toList();
     }
 
-    @DeleteMapping("")
+    @DeleteMapping("/{id}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
     @PreAuthorize("hasAnyRole('ROLE_SUPER_ADMIN' ,'ROLE_ADMIN')")
-    public void delete(String id) {
+    public void delete(@PathVariable String id) {
         adminService.delete(id);
     }
 
     @PostMapping("")
+    @ResponseStatus(HttpStatus.CREATED)
     @PreAuthorize("hasAnyRole('ROLE_SUPER_ADMIN' ,'ROLE_ADMIN')")
     public AdminVo save(@RequestBody Admin admin) throws Exception {
         return AdminVo.from(adminService.save(admin));

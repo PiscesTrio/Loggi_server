@@ -16,6 +16,7 @@ import com.example.api.repository.DriverRepository;
 import com.example.api.repository.VehicleRepository;
 import com.example.api.service.DistributionService;
 import com.example.api.service.DistributionTrackService;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
 import jakarta.annotation.Resource;
@@ -43,6 +44,7 @@ public class DistributionController {
 
     @Log(module = "配送管理",type = BusinessType.INSERT)
     @PostMapping("")
+    @ResponseStatus(HttpStatus.CREATED)
     public DistributionVo save(@Valid @RequestBody DistributionRequest request) {
         return DistributionVo.from(distributionService.save(toEntity(request)));
     }

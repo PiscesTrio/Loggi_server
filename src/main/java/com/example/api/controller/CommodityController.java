@@ -5,6 +5,7 @@ import com.example.api.model.entity.Commodity;
 import com.example.api.model.enums.BusinessType;
 import com.example.api.service.CommodityService;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
 import jakarta.annotation.Resource;
@@ -20,13 +21,15 @@ public class CommodityController {
 
     @Log(module = "商品管理",type = BusinessType.INSERT)
     @PostMapping("")
+    @ResponseStatus(HttpStatus.CREATED)
     public Commodity save(@RequestBody Commodity commodity) {
         return commodityService.save(commodity);
     }
 
     @Log(module = "商品管理",type = BusinessType.DELETE)
-    @DeleteMapping("")
-    public void delete(String id) {
+    @DeleteMapping("/{id}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void delete(@PathVariable String id) {
         commodityService.delete(id);
     }
 

@@ -3,6 +3,7 @@ package com.example.api.controller;
 import com.example.api.model.entity.Sale;
 import com.example.api.service.SaleService;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
 import jakarta.annotation.Resource;
@@ -16,6 +17,7 @@ public class SaleController {
     private SaleService saleService;
 
     @PostMapping("")
+    @ResponseStatus(HttpStatus.CREATED)
     public Sale save(@RequestBody Sale sale) {
         return saleService.save(sale);
     }

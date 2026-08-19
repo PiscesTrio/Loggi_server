@@ -109,10 +109,13 @@ class AuthorizationMatrixTest {
     @Test
     @DisplayName("init is reachable without a token; the guard against abuse is the initialised check, not authentication")
     void init_isPublic() throws Exception {
+        // Any 2xx, not a specific one. This case asks whether an anonymous caller may reach
+        // the endpoint; which success code it answers with is a different question, decided
+        // in S10 (201, because it creates something) and asserted where that belongs.
         mockMvc.perform(post("/api/admin/init")
                         .contentType("application/json")
                         .content("{\"email\":\"admin@loggi.example\",\"password\":\"password\"}"))
-                .andExpect(status().isOk());
+                .andExpect(status().is2xxSuccessful());
     }
 
     @Test

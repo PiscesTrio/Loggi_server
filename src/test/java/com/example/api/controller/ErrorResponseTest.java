@@ -13,6 +13,9 @@ import org.springframework.context.annotation.Import;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.ResponseStatus;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -24,6 +27,8 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.Map;
 import java.util.NoSuchElementException;
 
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
@@ -81,6 +86,17 @@ class ErrorResponseTest {
         @GetMapping("/ok")
         public String ok() {
             return "plain";
+        }
+
+        @PostMapping("/created")
+        @ResponseStatus(HttpStatus.CREATED)
+        public Map<String, Object> created() {
+            return Map.of("id", "new-1");
+        }
+
+        @DeleteMapping("/gone")
+        @ResponseStatus(HttpStatus.NO_CONTENT)
+        public void gone() {
         }
 
         @GetMapping("/raw")
@@ -211,5 +227,31 @@ class ErrorResponseTest {
                         .content("{}"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value(400));
+    }
+
+    @Test
+    @WithMockUser
+    @DisplayName("A created resource answers 201, and the envelope says 201 too")
+    void created_statusAndEnvelopeAgree() throws Exception {
+        // The envelope hardcoded code 200 for every success. S06 made the status line tell
+        // the truth about failures; a 201 arriving with 200 in its body would reintroduce
+        // exactly the disagreement that fixed, on the other half of the API.
+        mockMvc.perform(post("/api/test-errors/created").with(csrf()))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.code").value(201))
+                .andExpect(jsonPath("$.status").value(true))
+                .andExpect(jsonPath("$.data.id").value("new-1"));
+    }
+
+    @Test
+    @WithMockUser
+    @DisplayName("A 204 carries no body, not an envelope claiming there is none")
+    void noContent_writesNothing() throws Exception {
+        // No Content is not a suggestion. Wrapping null in an envelope produces a response
+        // that contradicts its own status line, and clients disagree about whether to read
+        // a body they were told does not exist.
+        mockMvc.perform(delete("/api/test-errors/gone").with(csrf()))
+                .andExpect(status().isNoContent())
+                .andExpect(content().string(""));
     }
 }

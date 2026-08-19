@@ -4,6 +4,7 @@ import com.example.api.annotation.Log;
 import com.example.api.model.entity.Driver;
 import com.example.api.model.enums.BusinessType;
 import com.example.api.service.DriverService;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
 import jakarta.annotation.Resource;
@@ -18,6 +19,7 @@ public class DriverController {
 
     @Log(module = "驾驶员管理",type = BusinessType.INSERT)
     @PostMapping("")
+    @ResponseStatus(HttpStatus.CREATED)
     public Driver save(@RequestBody Driver driver) {
         return driverService.save(driver);
     }
@@ -35,8 +37,9 @@ public class DriverController {
     }
 
     @Log(module = "驾驶员管理",type = BusinessType.DELETE)
-    @DeleteMapping("")
-    public void delete(String id) {
+    @DeleteMapping("/{id}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void delete(@PathVariable String id) {
         driverService.delete(id);
     }
 

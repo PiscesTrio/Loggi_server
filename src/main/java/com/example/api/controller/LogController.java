@@ -7,9 +7,12 @@ import com.example.api.model.vo.SystemLogVo;
 import com.example.api.service.LoginLogService;
 import com.example.api.service.SystemLogService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
@@ -30,8 +33,9 @@ public class LogController {
         return all;
     }
 
-    @DeleteMapping("/loginlog")
-    public void delLoginLog(String id){
+    @DeleteMapping("/loginlog/{id}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void delLoginLog(@PathVariable String id) {
         loginLogService.delLoginLog(id);
     }
 
@@ -41,8 +45,9 @@ public class LogController {
         return systemLogService.getAll();
     }
 
-    @DeleteMapping("/systemlog")
-    public void deleteSystemLogById(String id){
+    @DeleteMapping("/systemlog/{id}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void deleteSystemLogById(@PathVariable String id) {
         systemLogService.delete(id);
     }
 

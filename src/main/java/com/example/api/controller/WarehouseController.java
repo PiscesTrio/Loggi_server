@@ -5,6 +5,7 @@ import com.example.api.model.entity.Warehouse;
 import com.example.api.model.enums.BusinessType;
 import com.example.api.service.WarehouseService;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
 import jakarta.annotation.Resource;
@@ -20,6 +21,7 @@ public class WarehouseController {
 
     @Log(module = "仓库管理",type = BusinessType.INSERT)
     @PostMapping("")
+    @ResponseStatus(HttpStatus.CREATED)
     public Warehouse save(@RequestBody Warehouse warehouse) {
         return warehouseService.save(warehouse);
     }
@@ -31,8 +33,9 @@ public class WarehouseController {
     }
 
     @Log(module = "仓库管理",type = BusinessType.DELETE)
-    @DeleteMapping("")
-    public void delete(String id) {
+    @DeleteMapping("/{id}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void delete(@PathVariable String id) {
         warehouseService.delete(id);
     }
 
