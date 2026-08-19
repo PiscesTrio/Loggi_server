@@ -47,24 +47,36 @@ INSERT INTO admin (id, email, password, roles, create_at) VALUES
    '{bcrypt}$2a$10$Qu7Ns1ky0lClGLYVviA1Fuuz2jEf4PiE/Nv7a9Kh9Sq8F30uStOxC',
    'ROLE_SUPER_ADMIN', '2026-08-01 09:00:00');
 
--- Warehouses. Coordinates are WGS-84 at street-address precision, which is what
--- the map layer expects; they were rebuilt directly in WGS-84 rather than
--- converted from the previous Chinese coordinates.
+-- Warehouses. Coordinates are WGS-84, which is what the map layer expects.
+--
+-- Addresses are fictional. The prefecture and ward are real so the map still shows a
+-- believable route, but the town name is `ロギ` — this application's own name, which no
+-- Japanese address uses — and the coordinates sit in the ward generally rather than on a
+-- building. The previous seed pointed at Tokyo Station, Umeda and Nagoya Station at
+-- street-address precision, which is a real place attached to a made-up business.
+--
+-- Phone numbers throughout use the 090-0xxx-xxxx form. Japan has no reserved range for
+-- fiction the way the US reserves 555-0100..0199, but mobile numbers are allocated as
+-- 090CDEFGHJK with C != 0, so nothing starting 0900 can ever be issued.
 INSERT INTO warehouse (id, name, principle, location, lat, lng, create_at) VALUES
-  ('seed-wh-tokyo',  '東京丸の内倉庫',   '佐藤 健',   '東京都千代田区丸の内1-9-1',      35.681252, 139.767242, '2026-08-01 09:00:00'),
-  ('seed-wh-osaka',  '大阪梅田倉庫',     '鈴木 一郎', '大阪府大阪市北区梅田3-1-3',      34.701881, 135.496338, '2026-08-01 09:00:00'),
-  ('seed-wh-nagoya', '名古屋名駅倉庫',   '高橋 美咲', '愛知県名古屋市中村区名駅1-1-4',  35.170750, 136.883423, '2026-08-01 09:00:00');
+  ('seed-wh-tokyo',  '東京江東倉庫',   '山田 太郎', '東京都江東区ロギ1-1-1',            35.672000, 139.817000, '2026-08-01 09:00:00'),
+  ('seed-wh-osaka',  '大阪此花倉庫',   '山田 花子', '大阪府大阪市此花区ロギ2-1-1',      34.687000, 135.448000, '2026-08-01 09:00:00'),
+  ('seed-wh-nagoya', '名古屋港倉庫',   '山田 次郎', '愛知県名古屋市港区ロギ3-1-1',      35.108000, 136.859000, '2026-08-01 09:00:00');
 
 INSERT INTO driver (id, name, gender, phone, address, id_card, license, score, driving, create_at, update_at) VALUES
-  ('seed-dr-1', '田中 太郎', '男性', '090-1234-5678', '東京都江東区豊洲2-1-1',   'JP-A-100001', '第一種大型', '12', 0, '2026-08-01 09:00:00', '2026-08-01 09:00:00'),
-  ('seed-dr-2', '山本 花子', '女性', '090-2345-6789', '大阪府大阪市西区新町1-2-3', 'JP-A-100002', '第一種中型', '10', 0, '2026-08-01 09:00:00', '2026-08-01 09:00:00'),
-  ('seed-dr-3', '中村 大輔', '男性', '090-3456-7890', '愛知県名古屋市中区栄3-4-5', 'JP-A-100003', '第一種大型', '15', 0, '2026-08-01 09:00:00', '2026-08-01 09:00:00');
+  ('seed-dr-1', '田中 三郎', '男性', '090-0000-0001', '東京都江東区ロギ4-2-1',       'JP-A-100001', '第一種大型', '12', 0, '2026-08-01 09:00:00', '2026-08-01 09:00:00'),
+  ('seed-dr-2', '佐々木 花子', '女性', '090-0000-0002', '大阪府大阪市此花区ロギ5-3-2', 'JP-A-100002', '第一種中型', '10', 0, '2026-08-01 09:00:00', '2026-08-01 09:00:00'),
+  ('seed-dr-3', '小林 五郎', '男性', '090-0000-0003', '愛知県名古屋市港区ロギ6-4-3', 'JP-A-100003', '第一種大型', '15', 0, '2026-08-01 09:00:00', '2026-08-01 09:00:00');
 
 -- vehicle.type must remain one of the three values the client's dropdown offers.
+--
+-- The hiragana is `へ` on every plate on purpose: Japanese plates never use お, し, へ or
+-- ん, so these read as plates while being ones that cannot have been issued. Same idea as
+-- the 0900 phone numbers above.
 INSERT INTO vehicle (id, number, type, driving, create_at) VALUES
-  ('seed-vh-1', '品川800あ12-34', '货车', 0, '2026-08-01 09:00:00'),
-  ('seed-vh-2', 'なにわ800い56-78', '卡车', 0, '2026-08-01 09:00:00'),
-  ('seed-vh-3', '名古屋800う90-12', '重卡', 0, '2026-08-01 09:00:00');
+  ('seed-vh-1', '品川800へ12-34', '货车', 0, '2026-08-01 09:00:00'),
+  ('seed-vh-2', 'なにわ800へ56-78', '卡车', 0, '2026-08-01 09:00:00'),
+  ('seed-vh-3', '名古屋800へ90-12', '重卡', 0, '2026-08-01 09:00:00');
 
 INSERT INTO commodity (id, name, price, description, count, create_at, update_at) VALUES
   ('seed-cm-1', '精密機器',   125000.00, '振動厳禁。緩衝材必須。',       120, '2026-08-01 09:00:00', '2026-08-01 09:00:00'),
@@ -97,12 +109,12 @@ INSERT INTO inventory_record (id, name, wid, cid, count, type, description, crea
 -- distribution.wid holds the warehouse NAME (not the id). from_* is the origin
 -- warehouse, to_* the destination, both WGS-84.
 INSERT INTO distribution (id, did, vid, wid, driver, number, phone, address, urgent, care, time, status, from_lat, from_lng, to_lat, to_lng) VALUES
-  ('seed-dis-1', 'seed-dr-1', 'seed-vh-1', '東京丸の内倉庫', '田中 太郎', '品川800あ12-34',  '092-111-2222', '福岡県福岡市博多区博多駅中央街1-1', 1, '易碎,防潮,',  '2026-08-05 11:30:00', 1, 35.681252, 139.767242, 33.589912, 130.420395),
-  ('seed-dis-2', 'seed-dr-2', 'seed-vh-2', '大阪梅田倉庫',   '山本 花子', 'なにわ800い56-78', '011-333-4444', '北海道札幌市中央区北5条西2丁目',    0, '冷藏,防高温,', '2026-08-06 09:15:00', 0, 34.701881, 135.496338, 43.067902, 141.352829);
+  ('seed-dis-1', 'seed-dr-1', 'seed-vh-1', '東京江東倉庫', '田中 三郎', '品川800へ12-34',  '090-0000-0011', '福岡県福岡市東区ロギ7-1-1',   1, '易碎,防潮,',  '2026-08-05 11:30:00', 1, 35.672000, 139.817000, 33.620000, 130.427000),
+  ('seed-dis-2', 'seed-dr-2', 'seed-vh-2', '大阪此花倉庫', '佐々木 花子', 'なにわ800へ56-78', '090-0000-0012', '北海道札幌市白石区ロギ8-1-1', 0, '冷藏,防高温,', '2026-08-06 09:15:00', 0, 34.687000, 135.448000, 43.048000, 141.402000);
 
 -- distribution_status.location is the warehouse NAME as well; it is rendered
 -- verbatim in the tracking timeline, so an id here would show up as an id.
 INSERT INTO distribution_status (id, dis_id, lat, lng, location, time, status) VALUES
-  ('seed-ds-1', 'seed-dis-1', 35.681252, 139.767242, '東京丸の内倉庫', '2026-08-05 11:30:00', 0),
-  ('seed-ds-2', 'seed-dis-1', 34.701881, 135.496338, '大阪梅田倉庫',   '2026-08-05 19:40:00', 1),
-  ('seed-ds-3', 'seed-dis-2', 34.701881, 135.496338, '大阪梅田倉庫',   '2026-08-06 09:15:00', 0);
+  ('seed-ds-1', 'seed-dis-1', 35.672000, 139.817000, '東京江東倉庫', '2026-08-05 11:30:00', 0),
+  ('seed-ds-2', 'seed-dis-1', 34.687000, 135.448000, '大阪此花倉庫', '2026-08-05 19:40:00', 1),
+  ('seed-ds-3', 'seed-dis-2', 34.687000, 135.448000, '大阪此花倉庫', '2026-08-06 09:15:00', 0);

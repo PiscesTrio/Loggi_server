@@ -58,16 +58,17 @@ class SeedDataIT {
         Optional<Warehouse> tokyo = warehouseRepository.findById("seed-wh-tokyo");
 
         assertThat(tokyo).isPresent();
-        assertThat(tokyo.get().getName()).isEqualTo("東京丸の内倉庫");
-        // Roughly Marunouchi. The band is wide enough to survive an edit to the
-        // exact address but narrow enough to fail if the coordinates ever revert
-        // to the previous Chinese ones, which is the regression that matters.
+        assertThat(tokyo.get().getName()).isEqualTo("東京江東倉庫");
+        // A band, not a point: the seed addresses are fictional and their coordinates
+        // may be nudged again, but they must stay in Japan. Narrow enough to fail if
+        // they ever revert to the previous Chinese ones, which is the regression that
+        // matters.
         assertThat(tokyo.get().getLat()).isBetween(35.0, 36.0);
         assertThat(tokyo.get().getLng()).isBetween(139.0, 140.0);
 
         assertThat(warehouseRepository.findAll())
                 .extracting(Warehouse::getName)
-                .contains("東京丸の内倉庫", "大阪梅田倉庫", "名古屋名駅倉庫");
+                .contains("東京江東倉庫", "大阪此花倉庫", "名古屋港倉庫");
     }
 
     @Test
@@ -77,7 +78,7 @@ class SeedDataIT {
 
         assertThat(dis).isPresent();
         // wid is the warehouse name here — an id would render as an id in the UI.
-        assertThat(dis.get().getWid()).isEqualTo("東京丸の内倉庫");
+        assertThat(dis.get().getWid()).isEqualTo("東京江東倉庫");
         // The client builds this string with a trailing comma; seeded rows must
         // have the same shape as real ones.
         assertThat(dis.get().getCare()).endsWith(",");
