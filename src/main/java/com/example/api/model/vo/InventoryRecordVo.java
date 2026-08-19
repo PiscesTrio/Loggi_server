@@ -4,7 +4,6 @@ import com.example.api.model.entity.Commodity;
 import com.example.api.model.entity.InventoryRecord;
 import com.example.api.model.entity.Warehouse;
 import com.example.api.model.enums.InventoryType;
-import com.fasterxml.jackson.annotation.JsonFormat;
 
 import java.time.LocalDateTime;
 
@@ -19,7 +18,6 @@ public record InventoryRecordVo(
         Integer count,
         InventoryType type,
         String description,
-        @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd HH:mm:ss")
         LocalDateTime createAt) {
 
     public static InventoryRecordVo from(InventoryRecord record) {

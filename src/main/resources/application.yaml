@@ -99,6 +99,17 @@ spring:
       # are all primitive booleans, so changing types one at a time is whack-a-mole. Restoring
       # the one default treats the cause.
       fail-on-null-for-primitives: false
+    datatype:
+      datetime:
+        # Every timestamp goes out as ISO-8601, which is what the OpenAPI document means by
+        # `format: date-time`. Each field used to carry its own @JsonFormat with a custom
+        # pattern — a wire format the document cannot express, so the document was wrong about
+        # every timestamp the API sends. Reading survived it by accident (Dart's DateTime.parse
+        # accepts a space where RFC 3339 wants a T); writing did not, and POST /distribution
+        # answered 400 to a body the generated client produced exactly as documented.
+        # Left to itself Jackson writes a LocalDateTime as an array of numbers, so the
+        # annotations could not simply be deleted — this is the setting that replaces them.
+        write-dates-as-timestamps: false
   sql:
     init:
       # The project had no data initialisation path at all: ddl-auto only creates tables,

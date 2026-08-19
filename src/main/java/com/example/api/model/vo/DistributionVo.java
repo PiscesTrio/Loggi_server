@@ -5,7 +5,6 @@ import com.example.api.model.entity.Driver;
 import com.example.api.model.entity.Vehicle;
 import com.example.api.model.entity.Warehouse;
 import com.example.api.model.enums.DistributionStatus;
-import com.fasterxml.jackson.annotation.JsonFormat;
 
 import java.time.LocalDateTime;
 
@@ -34,14 +33,12 @@ public record DistributionVo(
         String address,
         boolean urgent,
         String care,
-        @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd HH:mm:ss")
         LocalDateTime time,
         DistributionStatus status,
         double fromLat,
         double fromLng,
         double toLat,
         double toLng,
-        @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd HH:mm:ss")
         LocalDateTime createAt) {
 
     /** Enough to name a driver on a card, and nothing else about them. */

@@ -1,9 +1,8 @@
 package com.example.api.model.vo;
 
 import com.example.api.model.entity.LoginLog;
-import com.fasterxml.jackson.annotation.JsonFormat;
 
-import java.util.Date;
+import java.time.LocalDateTime;
 
 /**
  * One login attempt, successful or not.
@@ -14,8 +13,7 @@ public record LoginLogVo(
         Integer status,
         String ip,
         String browser,
-        @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd HH:mm:ss", timezone = "Asia/Tokyo")
-        Date date) {
+        LocalDateTime date) {
 
     public static LoginLogVo from(LoginLog log) {
         return new LoginLogVo(log.getId(), log.getEmail(), log.getStatus(),

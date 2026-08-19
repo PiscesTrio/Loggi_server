@@ -2,7 +2,6 @@ package com.example.api.model.entity;
 
 
 import com.example.api.model.enums.DistributionStatus;
-import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
@@ -67,7 +66,6 @@ public class DistributionTrack {
 
     private  String location;
 
-    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd HH:mm:ss", timezone = "GMT+8")
     private LocalDateTime time;
 
     @Enumerated(EnumType.STRING)

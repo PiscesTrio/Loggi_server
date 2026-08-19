@@ -100,8 +100,12 @@ class DistributionTrackContractTest {
                 .andExpect(jsonPath("$.data[0].lng").value(139.817))
                 .andExpect(jsonPath("$.data[0].location").value("東京江東倉庫"))
                 .andExpect(jsonPath("$.data[0].status").value("REVIEWING"))
-                // The app parses this string; a shape change here breaks the timeline.
-                .andExpect(jsonPath("$.data[0].time").value("2026-08-19 10:30:00"));
+                // ISO-8601, with the T. It was "2026-08-19 10:30:00" until the per-field
+                // @JsonFormat came off: `format: date-time` in the OpenAPI document means
+                // RFC 3339, and the space-separated form the server used to send was a
+                // format the document had no way to express. Dart's DateTime.parse accepts
+                // both, which is why reading never noticed; writing answered 400.
+                .andExpect(jsonPath("$.data[0].time").value("2026-08-19T10:30:00"));
     }
 
     @Test

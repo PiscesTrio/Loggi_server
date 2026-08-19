@@ -1,7 +1,6 @@
 package com.example.api.model.entity;
 
 import com.example.api.model.enums.DistributionStatus;
-import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
@@ -18,7 +17,6 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
 import java.time.LocalDateTime;
-import java.util.Date;
 
 /**
  * Distribution
@@ -77,7 +75,6 @@ public class Distribution extends Auditable {
 
     private String care;
     //operation time
-    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd HH:mm:ss", timezone = "GMT+8")
     private LocalDateTime time;
 
     /**

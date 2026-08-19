@@ -97,6 +97,7 @@ public class InventoryRecordServiceImpl implements InventoryRecordService {
         inventoryRepository.save(inventory);
 
         record.setType(InventoryType.OUT);
+        record.setName(commodity.getName());
         return recordRepository.save(record);
     }
 
@@ -116,12 +117,18 @@ public class InventoryRecordServiceImpl implements InventoryRecordService {
             inventory.setCommodity(commodity);
             inventory.setWarehouse(requireWarehouse(idOf(record.getWarehouse())));
             inventory.setCount(0);
-            inventory.setName(record.getName());
+            inventory.setName(commodity.getName());
         }
         inventory.setCount(inventory.getCount() + record.getCount());
         inventoryRepository.save(inventory);
 
         record.setType(InventoryType.IN);
+        // The name is copied from the commodity this record already points at, not taken
+        // from the caller. It is a denormalised copy that the stock screen and the chart
+        // legend render, and asking the client to supply it meant the client could get it
+        // wrong or omit it — which it did: a movement submitted without changing the
+        // dropdown sent no name at all, and the chart drew a slice with no label.
+        record.setName(commodity.getName());
         return recordRepository.save(record);
     }
 

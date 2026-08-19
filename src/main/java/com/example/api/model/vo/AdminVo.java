@@ -2,7 +2,6 @@ package com.example.api.model.vo;
 
 import com.example.api.model.entity.Admin;
 import com.example.api.model.enums.Role;
-import com.fasterxml.jackson.annotation.JsonFormat;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -22,7 +21,6 @@ public record AdminVo(
         String id,
         String email,
         List<String> roles,
-        @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd HH:mm:ss")
         LocalDateTime createAt) {
 
     public static AdminVo from(Admin admin) {

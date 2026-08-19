@@ -139,4 +139,30 @@ class ObservabilityIT {
         // so it is written down here, in the artefact a reader actually opens.
         assertThat(body).contains("Sales (API only)").contains("Employees (API only)");
     }
+
+    @Test
+    @DisplayName("The document describes the envelope the server actually sends")
+    void openApiDocumentDescribesTheEnvelope() {
+        String body = client().get().uri("/v3/api-docs").retrieve().body(String.class);
+
+        // springdoc derives a response schema from the controller's return type, and this API
+        // does not send that: the envelope is applied by a ResponseBodyAdvice after the method
+        // returns. Left alone, the document claimed GET /api/commodity answers with an array
+        // of CommodityVo while the server answers with an object containing one - so a client
+        // generated from it would fail to parse every response, and "OpenAPI as the single
+        // source of truth" would be a claim rather than a fact.
+        assertThat(body).contains("ResponseResultCommodityVoList");
+        assertThat(body).contains("ResponseResultPageVoSystemLogVo");
+    }
+
+    @Test
+    @DisplayName("A 204 is documented with no body, matching what it sends")
+    void noContentIsDocumentedWithoutAnEnvelope() {
+        String body = client().get().uri("/v3/api-docs").retrieve().body(String.class);
+
+        // The wrapping has to skip 204 for the same reason the advice does. A response
+        // documented as carrying an envelope while carrying nothing is the same class of
+        // untruth in the other direction.
+        assertThat(body).doesNotContain("ResponseResultVoidList");
+    }
 }

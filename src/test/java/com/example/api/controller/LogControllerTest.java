@@ -74,7 +74,9 @@ class LogControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.items[0].id").value("log-1"))
                 .andExpect(jsonPath("$.data.items[0].businessType").value("QUERY"))
-                .andExpect(jsonPath("$.data.items[0].time").value("2026-08-20 10:30:00"))
+                // ISO-8601 since the per-field @JsonFormat came off; see
+                // DistributionTrackContractTest for why.
+                .andExpect(jsonPath("$.data.items[0].time").value("2026-08-20T10:30:00"))
                 .andExpect(jsonPath("$.data.page").value(0))
                 .andExpect(jsonPath("$.data.size").value(20))
                 // The number that makes the page usable. Without a total a client cannot tell

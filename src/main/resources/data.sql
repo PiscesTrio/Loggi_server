@@ -10,9 +10,15 @@
 -- `spring.jpa.defer-datasource-initialization: true` so that Hibernate has created
 -- the tables before this executes.
 --
--- IDEMPOTENT AND NON-DESTRUCTIVE: every seeded row carries a `seed-` id prefix and
--- is deleted by that prefix before being re-inserted. Re-running it does not
--- duplicate rows, and it never touches rows created through the app.
+-- IDEMPOTENT AND NON-DESTRUCTIVE: every seeded row carries a `seed-` id prefix and is
+-- written with ON DUPLICATE KEY UPDATE. Re-running restores the documented values without
+-- duplicating rows, and it never touches rows created through the app.
+--
+-- It used to delete by that prefix and re-insert. That reads as equivalent and is not: S09
+-- gave these tables real foreign keys, so an app-created inventory_record pointing at a
+-- seeded commodity does not get deleted, it *blocks* the delete. Because this script runs
+-- on every boot, recording a single inventory movement was enough to stop the application
+-- from ever starting again -- a fresh clone worked, and using it was what broke it.
 --
 -- Two field-naming traps this file has to respect, both inherited:
 --   * distribution.wid holds the warehouse *name* (see the warehouse dropdown),
@@ -27,19 +33,8 @@
 -- and each care token must be one of the eight the client offers. These are wire
 -- values, not display text -- localising them is a separate, deliberate step.
 
--- Order matters since S09: these tables now have real foreign keys between them, so a
--- child has to go before its parent. The sequence below is already child-first; it was
--- arbitrary before and is load-bearing now.
-DELETE FROM admin_roles        WHERE admin_id LIKE 'seed-%';
-DELETE FROM distribution_track WHERE id LIKE 'seed-%';
-DELETE FROM distribution       WHERE id LIKE 'seed-%';
-DELETE FROM inventory_record   WHERE id LIKE 'seed-%';
-DELETE FROM inventory          WHERE id LIKE 'seed-%';
-DELETE FROM commodity          WHERE id LIKE 'seed-%';
-DELETE FROM vehicle            WHERE id LIKE 'seed-%';
-DELETE FROM driver             WHERE id LIKE 'seed-%';
-DELETE FROM warehouse          WHERE id LIKE 'seed-%';
-DELETE FROM admin              WHERE id LIKE 'seed-%';
+-- Order matters since S09: these tables have real foreign keys between them, so a parent
+-- has to be written before its child. The sequence below is parent-first and load-bearing.
 
 -- Demo login. Exists so a fresh clone can be logged into; it is not a credential.
 INSERT INTO admin (id, email, password, create_at) VALUES
@@ -49,10 +44,14 @@ INSERT INTO admin (id, email, password, create_at) VALUES
   -- .createDelegatingPasswordEncoder().encode(...) if the demo password changes.
   ('seed-admin-1', 'demo@loggi.example',
    '{bcrypt}$2a$10$Qu7Ns1ky0lClGLYVviA1Fuuz2jEf4PiE/Nv7a9Kh9Sq8F30uStOxC',
-   '2026-08-01 09:00:00');
+   '2026-08-01 09:00:00')
+  ON DUPLICATE KEY UPDATE
+    email = VALUES(email),
+    password = VALUES(password),
+    create_at = VALUES(create_at);
 
 -- Roles are rows since S09; admin.roles used to be a semicolon-joined string.
-INSERT INTO admin_roles (admin_id, role) VALUES ('seed-admin-1', 'ROLE_SUPER_ADMIN');
+INSERT IGNORE INTO admin_roles (admin_id, role) VALUES ('seed-admin-1', 'ROLE_SUPER_ADMIN');
 
 -- Warehouses. Coordinates are WGS-84, which is what the map layer expects.
 --
@@ -68,12 +67,30 @@ INSERT INTO admin_roles (admin_id, role) VALUES ('seed-admin-1', 'ROLE_SUPER_ADM
 INSERT INTO warehouse (id, name, principle, location, lat, lng, create_at) VALUES
   ('seed-wh-tokyo',  '東京江東倉庫',   '山田 太郎', '東京都江東区ロギ1-1-1',            35.672000, 139.817000, '2026-08-01 09:00:00'),
   ('seed-wh-osaka',  '大阪此花倉庫',   '山田 花子', '大阪府大阪市此花区ロギ2-1-1',      34.687000, 135.448000, '2026-08-01 09:00:00'),
-  ('seed-wh-nagoya', '名古屋港倉庫',   '山田 次郎', '愛知県名古屋市港区ロギ3-1-1',      35.108000, 136.859000, '2026-08-01 09:00:00');
+  ('seed-wh-nagoya', '名古屋港倉庫',   '山田 次郎', '愛知県名古屋市港区ロギ3-1-1',      35.108000, 136.859000, '2026-08-01 09:00:00')
+  ON DUPLICATE KEY UPDATE
+    name = VALUES(name),
+    principle = VALUES(principle),
+    location = VALUES(location),
+    lat = VALUES(lat),
+    lng = VALUES(lng),
+    create_at = VALUES(create_at);
 
 INSERT INTO driver (id, name, gender, phone, address, id_card, license, score, driving, create_at, update_at) VALUES
   ('seed-dr-1', '田中 三郎', '男性', '090-0000-0001', '東京都江東区ロギ4-2-1',       'JP-A-100001', '第一種大型', '12', 0, '2026-08-01 09:00:00', '2026-08-01 09:00:00'),
   ('seed-dr-2', '佐々木 花子', '女性', '090-0000-0002', '大阪府大阪市此花区ロギ5-3-2', 'JP-A-100002', '第一種中型', '10', 0, '2026-08-01 09:00:00', '2026-08-01 09:00:00'),
-  ('seed-dr-3', '小林 五郎', '男性', '090-0000-0003', '愛知県名古屋市港区ロギ6-4-3', 'JP-A-100003', '第一種大型', '15', 0, '2026-08-01 09:00:00', '2026-08-01 09:00:00');
+  ('seed-dr-3', '小林 五郎', '男性', '090-0000-0003', '愛知県名古屋市港区ロギ6-4-3', 'JP-A-100003', '第一種大型', '15', 0, '2026-08-01 09:00:00', '2026-08-01 09:00:00')
+  ON DUPLICATE KEY UPDATE
+    name = VALUES(name),
+    gender = VALUES(gender),
+    phone = VALUES(phone),
+    address = VALUES(address),
+    id_card = VALUES(id_card),
+    license = VALUES(license),
+    score = VALUES(score),
+    driving = VALUES(driving),
+    create_at = VALUES(create_at),
+    update_at = VALUES(update_at);
 
 -- vehicle.type must remain one of the three values the client's dropdown offers.
 --
@@ -83,13 +100,25 @@ INSERT INTO driver (id, name, gender, phone, address, id_card, license, score, d
 INSERT INTO vehicle (id, number, type, driving, create_at) VALUES
   ('seed-vh-1', '品川800へ12-34', '货车', 0, '2026-08-01 09:00:00'),
   ('seed-vh-2', 'なにわ800へ56-78', '卡车', 0, '2026-08-01 09:00:00'),
-  ('seed-vh-3', '名古屋800へ90-12', '重卡', 0, '2026-08-01 09:00:00');
+  ('seed-vh-3', '名古屋800へ90-12', '重卡', 0, '2026-08-01 09:00:00')
+  ON DUPLICATE KEY UPDATE
+    number = VALUES(number),
+    type = VALUES(type),
+    driving = VALUES(driving),
+    create_at = VALUES(create_at);
 
 INSERT INTO commodity (id, name, price, description, count, create_at, update_at) VALUES
   ('seed-cm-1', '精密機器',   125000.00, '振動厳禁。緩衝材必須。',       120, '2026-08-01 09:00:00', '2026-08-01 09:00:00'),
   ('seed-cm-2', '冷蔵食品',     3200.00, '要冷蔵。5℃以下を維持。',       480, '2026-08-01 09:00:00', '2026-08-01 09:00:00'),
   ('seed-cm-3', '医薬品',      58000.00, '温度記録が必要。',              90, '2026-08-01 09:00:00', '2026-08-01 09:00:00'),
-  ('seed-cm-4', '家電製品',     42000.00, '積み重ね不可。',              210, '2026-08-01 09:00:00', '2026-08-01 09:00:00');
+  ('seed-cm-4', '家電製品',     42000.00, '積み重ね不可。',              210, '2026-08-01 09:00:00', '2026-08-01 09:00:00')
+  ON DUPLICATE KEY UPDATE
+    name = VALUES(name),
+    price = VALUES(price),
+    description = VALUES(description),
+    count = VALUES(count),
+    create_at = VALUES(create_at),
+    update_at = VALUES(update_at);
 
 -- Since S09 these are real foreign keys (warehouse_id / commodity_id); inventory.name is
 -- still a denormalised copy of the commodity name, and it is that copy the UI renders.
@@ -99,7 +128,13 @@ INSERT INTO inventory (id, warehouse_id, commodity_id, name, location, count) VA
   ('seed-inv-3', 'seed-wh-osaka',  'seed-cm-3', '医薬品',   'C-02', 45),
   ('seed-inv-4', 'seed-wh-osaka',  'seed-cm-4', '家電製品', 'A-04', 110),
   ('seed-inv-5', 'seed-wh-nagoya', 'seed-cm-1', '精密機器', 'D-01', 60),
-  ('seed-inv-6', 'seed-wh-nagoya', 'seed-cm-2', '冷蔵食品', 'D-02', 280);
+  ('seed-inv-6', 'seed-wh-nagoya', 'seed-cm-2', '冷蔵食品', 'D-02', 280)
+  ON DUPLICATE KEY UPDATE
+    warehouse_id = VALUES(warehouse_id),
+    commodity_id = VALUES(commodity_id),
+    name = VALUES(name),
+    location = VALUES(location),
+    count = VALUES(count);
 
 -- type is IN / OUT since S09; it was +1 / -1. The pie chart groups by
 -- inventory_record.name, NOT by commodity.name -- so these rows are what the legend shows.
@@ -111,7 +146,15 @@ INSERT INTO inventory_record (id, name, warehouse_id, commodity_id, count, type,
   ('seed-ir-5', '医薬品',   'seed-wh-osaka',  'seed-cm-3', 15, 'OUT', '出庫（大阪→札幌）', '2026-08-06 09:15:00'),
   ('seed-ir-6', '家電製品', 'seed-wh-osaka',  'seed-cm-4', 110, 'IN', '初期入庫',       '2026-08-02 10:30:00'),
   ('seed-ir-7', '精密機器', 'seed-wh-nagoya', 'seed-cm-1', 60,  'IN', '初期入庫',       '2026-08-02 10:40:00'),
-  ('seed-ir-8', '冷蔵食品', 'seed-wh-nagoya', 'seed-cm-2', 280, 'IN', '初期入庫',       '2026-08-02 10:50:00');
+  ('seed-ir-8', '冷蔵食品', 'seed-wh-nagoya', 'seed-cm-2', 280, 'IN', '初期入庫',       '2026-08-02 10:50:00')
+  ON DUPLICATE KEY UPDATE
+    name = VALUES(name),
+    warehouse_id = VALUES(warehouse_id),
+    commodity_id = VALUES(commodity_id),
+    count = VALUES(count),
+    type = VALUES(type),
+    description = VALUES(description),
+    create_at = VALUES(create_at);
 
 -- Since S09 the order points at its driver, vehicle and origin warehouse by id, with real
 -- foreign keys behind all three; the driver's name and the plate are no longer copied here.
@@ -120,11 +163,32 @@ INSERT INTO inventory_record (id, name, warehouse_id, commodity_id, count, type,
 -- from_* is the origin warehouse, to_* the destination, both WGS-84.
 INSERT INTO distribution (id, driver_id, vehicle_id, warehouse_id, phone, address, urgent, care, time, status, from_lat, from_lng, to_lat, to_lng) VALUES
   ('seed-dis-1', 'seed-dr-1', 'seed-vh-1', 'seed-wh-tokyo', '090-0000-0011', '福岡県福岡市東区ロギ7-1-1',   1, '易碎,防潮,',  '2026-08-05 11:30:00', 'REVIEW_SUCCESS', 35.672000, 139.817000, 33.620000, 130.427000),
-  ('seed-dis-2', 'seed-dr-2', 'seed-vh-2', 'seed-wh-osaka', '090-0000-0012', '北海道札幌市白石区ロギ8-1-1', 0, '冷藏,防高温,', '2026-08-06 09:15:00', 'REVIEWING',      34.687000, 135.448000, 43.048000, 141.402000);
+  ('seed-dis-2', 'seed-dr-2', 'seed-vh-2', 'seed-wh-osaka', '090-0000-0012', '北海道札幌市白石区ロギ8-1-1', 0, '冷藏,防高温,', '2026-08-06 09:15:00', 'REVIEWING',      34.687000, 135.448000, 43.048000, 141.402000)
+  ON DUPLICATE KEY UPDATE
+    driver_id = VALUES(driver_id),
+    vehicle_id = VALUES(vehicle_id),
+    warehouse_id = VALUES(warehouse_id),
+    phone = VALUES(phone),
+    address = VALUES(address),
+    urgent = VALUES(urgent),
+    care = VALUES(care),
+    time = VALUES(time),
+    status = VALUES(status),
+    from_lat = VALUES(from_lat),
+    from_lng = VALUES(from_lng),
+    to_lat = VALUES(to_lat),
+    to_lng = VALUES(to_lng);
 
 -- distribution_track.location is the warehouse NAME as well; it is rendered
 -- verbatim in the tracking timeline, so an id here would show up as an id.
 INSERT INTO distribution_track (id, distribution_id, lat, lng, location, time, status) VALUES
   ('seed-ds-1', 'seed-dis-1', 35.672000, 139.817000, '東京江東倉庫', '2026-08-05 11:30:00', 'REVIEWING'),
   ('seed-ds-2', 'seed-dis-1', 34.687000, 135.448000, '大阪此花倉庫', '2026-08-05 19:40:00', 'REVIEW_SUCCESS'),
-  ('seed-ds-3', 'seed-dis-2', 34.687000, 135.448000, '大阪此花倉庫', '2026-08-06 09:15:00', 'REVIEWING');
+  ('seed-ds-3', 'seed-dis-2', 34.687000, 135.448000, '大阪此花倉庫', '2026-08-06 09:15:00', 'REVIEWING')
+  ON DUPLICATE KEY UPDATE
+    distribution_id = VALUES(distribution_id),
+    lat = VALUES(lat),
+    lng = VALUES(lng),
+    location = VALUES(location),
+    time = VALUES(time),
+    status = VALUES(status);

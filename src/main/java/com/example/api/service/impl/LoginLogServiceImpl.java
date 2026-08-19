@@ -14,7 +14,7 @@ import org.springframework.stereotype.Service;
 import jakarta.annotation.Resource;
 import jakarta.servlet.http.HttpServletRequest;
 import java.time.LocalDateTime;
-import java.util.Date;
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
@@ -40,7 +40,7 @@ public class LoginLogServiceImpl implements LoginLogService {
     public void recordLog(LoginDto loginDto, Admin admin, HttpServletRequest request) {
         //create the log record
         LoginLog loginLog = new LoginLog();
-        loginLog.setDate(new Date());
+        loginLog.setDate(LocalDateTime.now());
         loginLog.setEmail(loginDto.getEmail());
         //resolve the browser version
         loginLog.setBrowser(BrowserUtil.getBrower(request));

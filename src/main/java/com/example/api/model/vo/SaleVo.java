@@ -1,7 +1,6 @@
 package com.example.api.model.vo;
 
 import com.example.api.model.entity.Sale;
-import com.fasterxml.jackson.annotation.JsonFormat;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -17,7 +16,6 @@ public record SaleVo(
         String phone,
         String description,
         boolean pay,
-        @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd HH:mm:ss")
         LocalDateTime createAt) {
 
     public static SaleVo from(Sale s) {

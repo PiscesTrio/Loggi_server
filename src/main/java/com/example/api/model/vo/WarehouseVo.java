@@ -1,7 +1,6 @@
 package com.example.api.model.vo;
 
 import com.example.api.model.entity.Warehouse;
-import com.fasterxml.jackson.annotation.JsonFormat;
 
 import java.time.LocalDateTime;
 
@@ -13,7 +12,6 @@ public record WarehouseVo(
         String location,
         double lat,
         double lng,
-        @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd HH:mm:ss")
         LocalDateTime createAt) {
 
     public static WarehouseVo from(Warehouse w) {
