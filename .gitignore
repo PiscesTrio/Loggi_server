@@ -45,3 +45,6 @@ Thumbs.db
 .env
 .env.*
 !.env.example
+
+# Delegated-agent reports: scratch output, not source.
+.claude/

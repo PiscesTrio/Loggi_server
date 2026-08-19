@@ -92,6 +92,20 @@ public class SecurityConfiguration {
                         // browsers, and logged with its parameters. Rate limiting lives in the
                         // service, because a matcher cannot count.
                         .requestMatchers(HttpMethod.POST, "/api/admin/verification-code").permitAll()
+                        // Health, and only health. An orchestrator probes it before the
+                        // application has any way to authenticate, so it cannot require a
+                        // token; the rest of /actuator can and does. show-details is off in
+                        // configuration, so this answers UP or DOWN and nothing about what
+                        // is broken.
+                        .requestMatchers(HttpMethod.GET, "/actuator/health", "/actuator/health/**").permitAll()
+                        // The API documentation. Public deliberately: every endpoint it
+                        // describes is itself authenticated, so hiding the description is
+                        // obscurity rather than a control - and for a portfolio, being able
+                        // to open the API and read it is the point. If this were a real
+                        // deployment the trade-off would go the other way, because a
+                        // published surface is a shorter path to whatever is weakest in it.
+                        .requestMatchers(HttpMethod.GET, "/v3/api-docs", "/v3/api-docs/**",
+                                "/swagger-ui.html", "/swagger-ui/**").permitAll()
                         // Default deny. Until now this line read permitAll(), so URL-level
                         // authorization did not exist and the only thing in front of the
                         // data was whatever @PreAuthorize a controller happened to carry —
