@@ -76,8 +76,8 @@ public class LogAspect {
             Log annotation = method.getAnnotation(Log.class);
 
             SystemLog systemLog = new SystemLog();
-            systemLog.setModule(annotation.moudle());
-            systemLog.setBusincessType(annotation.type().getName());
+            systemLog.setModule(annotation.module());
+            systemLog.setBusinessType(annotation.type().getName());
             systemLog.setIp(currentIp());
             systemLog.setTime(LocalDateTime.now());
             systemLog.setMethod(shortName(signature));

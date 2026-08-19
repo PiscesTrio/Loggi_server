@@ -1,10 +1,8 @@
 package com.example.api.model.enums;
 
-import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.Getter;
 
 @Getter
-@JsonFormat(shape = JsonFormat.Shape.OBJECT)
 public enum Role {
 
     //super admin: no public method is exposed for granting this role

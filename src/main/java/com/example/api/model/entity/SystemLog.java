@@ -1,6 +1,6 @@
 package com.example.api.model.entity;
 
-import com.example.api.model.enums.BusincessType;
+import com.example.api.model.enums.BusinessType;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -29,7 +29,7 @@ public class SystemLog {
 
     //operation type
     @Column(columnDefinition = "varchar(30) default 'LTD' not null")
-    private String busincessType;
+    private String businessType;
 
     //user IP
     @Column(columnDefinition = "varchar(40) default 'LTD' not null")

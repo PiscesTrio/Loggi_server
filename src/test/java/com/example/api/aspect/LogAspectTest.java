@@ -2,7 +2,7 @@ package com.example.api.aspect;
 
 import com.example.api.annotation.Log;
 import com.example.api.model.entity.SystemLog;
-import com.example.api.model.enums.BusincessType;
+import com.example.api.model.enums.BusinessType;
 import com.example.api.service.SystemLogService;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.reflect.MethodSignature;
@@ -40,7 +40,7 @@ class LogAspectTest {
 
     /** Stands in for a controller method; only its annotation and name are read. */
     static class Fixture {
-        @Log(moudle = "测试模块", type = BusincessType.INSERT)
+        @Log(module = "测试模块", type = BusinessType.INSERT)
         public void annotated() {}
     }
 
@@ -75,7 +75,7 @@ class LogAspectTest {
         // read, because SystemLog had no column to put it in.
         assertThat(recorded.getCostMs()).isNotNull().isGreaterThanOrEqualTo(0L);
         assertThat(recorded.getModule()).isEqualTo("测试模块");
-        assertThat(recorded.getBusincessType()).isEqualTo("新增");
+        assertThat(recorded.getBusinessType()).isEqualTo("新增");
     }
 
     @Test

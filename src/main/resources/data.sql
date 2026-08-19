@@ -27,7 +27,7 @@
 -- and each care token must be one of the eight the client offers. These are wire
 -- values, not display text -- localising them is a separate, deliberate step.
 
-DELETE FROM distribution_status WHERE id LIKE 'seed-%';
+DELETE FROM distribution_track WHERE id LIKE 'seed-%';
 DELETE FROM distribution       WHERE id LIKE 'seed-%';
 DELETE FROM inventory_record   WHERE id LIKE 'seed-%';
 DELETE FROM inventory          WHERE id LIKE 'seed-%';
@@ -112,9 +112,9 @@ INSERT INTO distribution (id, did, vid, wid, driver, number, phone, address, urg
   ('seed-dis-1', 'seed-dr-1', 'seed-vh-1', '東京江東倉庫', '田中 三郎', '品川800へ12-34',  '090-0000-0011', '福岡県福岡市東区ロギ7-1-1',   1, '易碎,防潮,',  '2026-08-05 11:30:00', 1, 35.672000, 139.817000, 33.620000, 130.427000),
   ('seed-dis-2', 'seed-dr-2', 'seed-vh-2', '大阪此花倉庫', '佐々木 花子', 'なにわ800へ56-78', '090-0000-0012', '北海道札幌市白石区ロギ8-1-1', 0, '冷藏,防高温,', '2026-08-06 09:15:00', 0, 34.687000, 135.448000, 43.048000, 141.402000);
 
--- distribution_status.location is the warehouse NAME as well; it is rendered
+-- distribution_track.location is the warehouse NAME as well; it is rendered
 -- verbatim in the tracking timeline, so an id here would show up as an id.
-INSERT INTO distribution_status (id, dis_id, lat, lng, location, time, status) VALUES
+INSERT INTO distribution_track (id, dis_id, lat, lng, location, time, status) VALUES
   ('seed-ds-1', 'seed-dis-1', 35.672000, 139.817000, '東京江東倉庫', '2026-08-05 11:30:00', 0),
   ('seed-ds-2', 'seed-dis-1', 34.687000, 135.448000, '大阪此花倉庫', '2026-08-05 19:40:00', 1),
   ('seed-ds-3', 'seed-dis-2', 34.687000, 135.448000, '大阪此花倉庫', '2026-08-06 09:15:00', 0);

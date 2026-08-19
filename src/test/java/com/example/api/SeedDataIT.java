@@ -3,7 +3,7 @@ package com.example.api;
 import com.example.api.model.entity.Distribution;
 import com.example.api.model.entity.Warehouse;
 import com.example.api.repository.DistributionRepository;
-import com.example.api.repository.WareHouseRepository;
+import com.example.api.repository.WarehouseRepository;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -49,7 +49,7 @@ class SeedDataIT {
         r.add("jwt.secret", () -> "integration-test-secret-at-least-32-bytes");
     }
 
-    @Autowired WareHouseRepository warehouseRepository;
+    @Autowired WarehouseRepository warehouseRepository;
     @Autowired DistributionRepository distributionRepository;
 
     @Test
