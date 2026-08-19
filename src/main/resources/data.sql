@@ -106,11 +106,14 @@ INSERT INTO inventory_record (id, name, wid, cid, count, type, description, crea
   ('seed-ir-7', '精密機器', 'seed-wh-nagoya', 'seed-cm-1', 60,  1, '初期入庫',       '2026-08-02 10:40:00'),
   ('seed-ir-8', '冷蔵食品', 'seed-wh-nagoya', 'seed-cm-2', 280, 1, '初期入庫',       '2026-08-02 10:50:00');
 
--- distribution.wid holds the warehouse NAME (not the id). from_* is the origin
--- warehouse, to_* the destination, both WGS-84.
-INSERT INTO distribution (id, did, vid, wid, driver, number, phone, address, urgent, care, time, status, from_lat, from_lng, to_lat, to_lng) VALUES
-  ('seed-dis-1', 'seed-dr-1', 'seed-vh-1', '東京江東倉庫', '田中 三郎', '品川800へ12-34',  '090-0000-0011', '福岡県福岡市東区ロギ7-1-1',   1, '易碎,防潮,',  '2026-08-05 11:30:00', 1, 35.672000, 139.817000, 33.620000, 130.427000),
-  ('seed-dis-2', 'seed-dr-2', 'seed-vh-2', '大阪此花倉庫', '佐々木 花子', 'なにわ800へ56-78', '090-0000-0012', '北海道札幌市白石区ロギ8-1-1', 0, '冷藏,防高温,', '2026-08-06 09:15:00', 0, 34.687000, 135.448000, 43.048000, 141.402000);
+-- Since S09 the order points at its driver, vehicle and origin warehouse by id, with real
+-- foreign keys behind all three; the driver's name and the plate are no longer copied here.
+-- warehouse_id used to be `wid` and held the warehouse NAME, which is why the migration
+-- resolves it by name rather than renaming the column.
+-- from_* is the origin warehouse, to_* the destination, both WGS-84.
+INSERT INTO distribution (id, driver_id, vehicle_id, warehouse_id, phone, address, urgent, care, time, status, from_lat, from_lng, to_lat, to_lng) VALUES
+  ('seed-dis-1', 'seed-dr-1', 'seed-vh-1', 'seed-wh-tokyo', '090-0000-0011', '福岡県福岡市東区ロギ7-1-1',   1, '易碎,防潮,',  '2026-08-05 11:30:00', 'REVIEW_SUCCESS', 35.672000, 139.817000, 33.620000, 130.427000),
+  ('seed-dis-2', 'seed-dr-2', 'seed-vh-2', 'seed-wh-osaka', '090-0000-0012', '北海道札幌市白石区ロギ8-1-1', 0, '冷藏,防高温,', '2026-08-06 09:15:00', 'REVIEWING',      34.687000, 135.448000, 43.048000, 141.402000);
 
 -- distribution_track.location is the warehouse NAME as well; it is rendered
 -- verbatim in the tracking timeline, so an id here would show up as an id.
