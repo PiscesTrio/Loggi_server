@@ -2,6 +2,8 @@ package com.example.api.service.impl;
 
 import com.example.api.model.dto.LoginDto;
 import com.example.api.model.entity.Admin;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import com.example.api.model.entity.LoginLog;
 import com.example.api.repository.LoginLogRepository;
 import com.example.api.service.LoginLogService;
@@ -20,9 +22,18 @@ public class LoginLogServiceImpl implements LoginLogService {
     @Resource
     private LoginLogRepository loginLogRepository;
 
+    /**
+     * One page of the log, newest first.
+     *
+     * <p>It returned every row. That is fine on a demo database with a few dozen and
+     * indefensible on anything that has been running: this table grows by one row per login
+     * attempt, forever, and the endpoint would eventually load every one of them into memory to
+     * serialise them into a response no client can use. Ordering is part of the contract
+     * here, because "the first page" is meaningless without it.
+     */
     @Override
-    public List<LoginLog> getAll() {
-        return loginLogRepository.findAll();
+    public Page<LoginLog> getAll(Pageable pageable) {
+        return loginLogRepository.findAll(pageable);
     }
 
     @Override

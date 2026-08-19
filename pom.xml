@@ -95,6 +95,32 @@
           a codebase that has otherwise finished its jakarta migration.
         -->
 
+        <!--Bean Validation. The constraints live on the request DTOs, so a malformed request
+            is refused by the framework before a controller method body runs - rather than by
+            an `if` somewhere in a service, which is where this project's validation lived when
+            it existed at all.-->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-validation</artifactId>
+        </dependency>
+
+        <!--Actuator: /actuator/health is what a container orchestrator probes. Without it a
+            deployment has no way to ask whether the application is actually serving.-->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-actuator</artifactId>
+        </dependency>
+
+        <!--springdoc generates the OpenAPI document from the controllers themselves, so the
+            documentation cannot drift from the code the way a hand-written file does. Version
+            pinned here because springdoc is not in Spring Boot's BOM; the 3.x line is the one
+            built against Spring Boot 4.-->
+        <dependency>
+            <groupId>org.springdoc</groupId>
+            <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
+            <version>3.0.0</version>
+        </dependency>
+
         <!--Flyway owns the schema from S08 on. Version comes from the parent BOM, never
             pinned here: Flyway and the JDBC driver have to agree about the database, and the
             BOM is what keeps that pair consistent across a Spring Boot upgrade.

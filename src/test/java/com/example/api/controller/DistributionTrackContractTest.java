@@ -91,10 +91,11 @@ class DistributionTrackContractTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value(200))
                 .andExpect(jsonPath("$.data[0].id").value("track-1"))
-                // disId became `distribution` in S09, carrying the same id: the column was a bare
-                // string with no foreign key and is now a real association, serialised as its id
-                // so the client keeps receiving an id rather than a nested order.
-                .andExpect(jsonPath("$.data[0].distribution").value("dis-1"))
+                // disId in S07, `distribution` in S09, `distributionId` since S10. The column
+                // was a bare string, became a real association, and is now a field on a view
+                // type - which is the shape it should have had all along, and the only one of
+                // the three that reads and writes the same way.
+                .andExpect(jsonPath("$.data[0].distributionId").value("dis-1"))
                 .andExpect(jsonPath("$.data[0].lat").value(35.672))
                 .andExpect(jsonPath("$.data[0].lng").value(139.817))
                 .andExpect(jsonPath("$.data[0].location").value("東京江東倉庫"))
@@ -105,12 +106,11 @@ class DistributionTrackContractTest {
 
     @Test
     @WithMockUser
-    // Note the asymmetry: the response carries the parent as a bare id, the request has to
-    // send it as an object. @JsonIdentityReference can write an id but cannot read a lone
-    // one back — it resolves ids only against objects already seen in the same payload — so
-    // this is as close to symmetric as the entity can get while it is also the wire format.
-    // That is the argument for the DTO boundary in the next slice, stated as a test.
-    @DisplayName("POST /api/distribution/status binds the parent order and the status name")
+    // The asymmetry is gone. Until S10 the response carried the parent as a bare id while a
+    // request had to send it as an object, because @JsonIdentityReference can write an id
+    // but cannot read a lone one back. A view type is not an entity and has no such
+    // constraint: one field, one shape, both directions. This test is where that is checked.
+    @DisplayName("POST /api/distribution/status takes the parent id in the same shape it returns it")
     void saveStatus_bindsTheSameRequestBody() throws Exception {
         given(distributionTrackService.save(any(DistributionTrack.class))).willReturn(sample());
 
@@ -119,10 +119,10 @@ class DistributionTrackContractTest {
                                 .SecurityMockMvcRequestPostProcessors.csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
-                                {"distribution":{"id":"dis-1"},"lat":35.672,"lng":139.817,
+                                {"distributionId":"dis-1","lat":35.672,"lng":139.817,
                                  "location":"東京江東倉庫","status":"REVIEWING"}"""))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.distribution").value("dis-1"));
+                .andExpect(jsonPath("$.data.distributionId").value("dis-1"));
 
         ArgumentCaptor<DistributionTrack> captor = ArgumentCaptor.forClass(DistributionTrack.class);
         verify(distributionTrackService).save(captor.capture());

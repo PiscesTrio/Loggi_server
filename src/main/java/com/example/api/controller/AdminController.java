@@ -2,7 +2,10 @@ package com.example.api.controller;
 
 import com.example.api.exception.AccountAndPasswordError;
 import com.example.api.exception.BizException;
+import com.example.api.model.dto.AdminRequest;
 import com.example.api.model.dto.LoginDto;
+import com.example.api.model.vo.AdminVo;
+import com.example.api.model.vo.LoginVo;
 import com.example.api.model.entity.Admin;
 import com.example.api.model.entity.LoginLog;
 import com.example.api.model.enums.Role;
@@ -15,13 +18,16 @@ import lombok.extern.slf4j.Slf4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.http.HttpStatus;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.web.bind.annotation.*;
 
 import jakarta.annotation.Resource;
 import jakarta.servlet.http.HttpServletRequest;
-import java.util.HashMap;
+import jakarta.validation.Valid;
 import java.util.List;
-import java.util.Map;
+
+@Tag(name = "Administrators", description = "Accounts, authentication and the first-run bootstrap.")
 @RestController
 @RequestMapping("/api/admin")
 @Slf4j
@@ -53,30 +59,49 @@ public class AdminController {
      * running system.
      */
     @PostMapping("/init")
-    public Admin init(@RequestBody Admin admin) throws Exception {
+    @ResponseStatus(HttpStatus.CREATED)
+    public AdminVo init(@Valid @RequestBody AdminRequest request) throws Exception {
         if (adminRepository.existsAdminByRolesContains(Role.ROLE_SUPER_ADMIN)) {
             throw new Exception("系统已初始化");
         }
+        Admin admin = toEntity(request);
+        // Whatever roles the request named are ignored. There is no sensible answer for the
+        // first account other than super administrator, and this endpoint is anonymous by
+        // necessity - letting the body choose would let a caller pick their own privileges
+        // on a fresh install.
         admin.setRoles(java.util.Set.of(Role.ROLE_SUPER_ADMIN));
-        return adminService.save(admin);
+        return AdminVo.from(adminService.save(admin));
     }
 
     @GetMapping("")
     @PreAuthorize("hasAnyRole('ROLE_SUPER_ADMIN' ,'ROLE_ADMIN')")
-    public List<Admin> findAll() {
-        return adminService.findAll();
+    public List<AdminVo> findAll() {
+        return adminService.findAll().stream().map(AdminVo::from).toList();
     }
 
-    @DeleteMapping("")
+    @DeleteMapping("/{id}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
     @PreAuthorize("hasAnyRole('ROLE_SUPER_ADMIN' ,'ROLE_ADMIN')")
-    public void delete(String id) {
+    public void delete(@PathVariable String id) {
         adminService.delete(id);
     }
 
     @PostMapping("")
+    @ResponseStatus(HttpStatus.CREATED)
     @PreAuthorize("hasAnyRole('ROLE_SUPER_ADMIN' ,'ROLE_ADMIN')")
-    public Admin save(@RequestBody Admin admin) throws Exception {
-        return adminService.save(admin);
+    public AdminVo save(@Valid @RequestBody AdminRequest request) throws Exception {
+        return AdminVo.from(adminService.save(toEntity(request)));
+    }
+
+    /** The request as the entity the service persists. The password is hashed there. */
+    private static Admin toEntity(AdminRequest request) {
+        Admin admin = new Admin();
+        admin.setEmail(request.getEmail());
+        admin.setPassword(request.getPassword());
+        if (request.getRoles() != null) {
+            admin.setRoles(request.getRoles());
+        }
+        return admin;
     }
 
     /**
@@ -88,13 +113,13 @@ public class AdminController {
      * password — control flow by exception, and a diagnosis that pointed at the user.
      */
     @PostMapping("/login/password")
-    public Map<String, Object> loginByPassword(@RequestBody LoginDto dto, HttpServletRequest request) throws Exception {
+    public LoginVo loginByPassword(@Valid @RequestBody LoginDto dto, HttpServletRequest request) throws Exception {
         return login(dto, request, () -> adminService.loginByPassword(dto));
     }
 
     /** E-mail code login. Step two; step one is POST /verification-code. */
     @PostMapping("/login/email")
-    public Map<String, Object> loginByEmail(@RequestBody LoginDto dto, HttpServletRequest request) throws Exception {
+    public LoginVo loginByEmail(@Valid @RequestBody LoginDto dto, HttpServletRequest request) throws Exception {
         return login(dto, request, () -> adminService.loginByEmail(dto));
     }
 
@@ -110,8 +135,7 @@ public class AdminController {
      * passes through; anything else still collapses, because an unexpected failure during
      * authentication is the one case where saying less is right.
      */
-    private Map<String, Object> login(LoginDto dto, HttpServletRequest request, AuthAttempt attempt) throws Exception {
-        Map<String, Object> map = new HashMap<>();
+    private LoginVo login(LoginDto dto, HttpServletRequest request, AuthAttempt attempt) throws Exception {
         Admin admin = null;
         String token = null;
         try {
@@ -126,9 +150,7 @@ public class AdminController {
         } finally {
             loginLogService.recordLog(dto, admin, request);
         }
-        map.put("admin", admin);
-        map.put("token", token);
-        return map;
+        return LoginVo.of(admin, token);
     }
 
     @FunctionalInterface

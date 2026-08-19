@@ -19,6 +19,8 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -131,5 +133,58 @@ class AdminControllerTest {
         // @PreAuthorize("hasAnyRole('ROLE_SUPER_ADMIN', ...)"); Spring adds the ROLE_ prefix.
         mockMvc.perform(get("/api/admin"))
                 .andExpect(status().isOk());
+    }
+
+    @Test
+    @DisplayName("A login without an e-mail is refused as a bad request, naming the field")
+    void login_withBlankEmail_isRejectedWithTheFieldMessage() throws Exception {
+        // Before S10 nothing checked this. A blank address reached the repository, missed,
+        // and came back as "wrong e-mail or password" - the same answer a real address with
+        // a wrong password gets. A caller who simply left the field out was told their
+        // credentials were bad.
+        mockMvc.perform(post("/api/admin/login/password")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"email\":\"\",\"password\":\"whatever\"}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value(400))
+                .andExpect(jsonPath("$.msg").value("邮箱不能为空"));
+    }
+
+    @Test
+    @DisplayName("A malformed e-mail is refused before authentication is attempted")
+    void login_withMalformedEmail_neverReachesTheService() throws Exception {
+        mockMvc.perform(post("/api/admin/login/password")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"email\":\"not-an-address\",\"password\":\"whatever\"}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.msg").value("邮箱格式不正确"));
+
+        // The point of validating at the boundary: the service is not consulted at all, so a
+        // request that could never succeed costs no password hash and no login-log row.
+        verify(adminService, never()).loginByPassword(any());
+    }
+
+    @Test
+    @DisplayName("The login response carries the administrator without the credential")
+    void login_responseOmitsThePassword() throws Exception {
+        Admin admin = new Admin();
+        admin.setId("admin-1");
+        admin.setEmail("demo@loggi.example");
+        admin.setPassword("{bcrypt}$2a$10$whatever");
+        admin.setRoles(java.util.Set.of(Role.ROLE_SUPER_ADMIN));
+        when(adminService.loginByPassword(any())).thenReturn(admin);
+        when(adminService.createToken(any(), anyLong())).thenReturn("a-token");
+
+        mockMvc.perform(post("/api/admin/login/password")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"email\":\"demo@loggi.example\",\"password\":\"demo1234\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.token").value("a-token"))
+                .andExpect(jsonPath("$.data.admin.email").value("demo@loggi.example"))
+                .andExpect(jsonPath("$.data.admin.roles[0]").value("ROLE_SUPER_ADMIN"))
+                // Asserted rather than assumed. The entity used to be returned directly, and
+                // what kept the hash off the wire was one annotation on one field; a view type
+                // means a field is present because someone declared it.
+                .andExpect(jsonPath("$.data.admin.password").doesNotExist());
     }
 }

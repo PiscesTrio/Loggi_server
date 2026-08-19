@@ -11,6 +11,8 @@ import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.ErrorResponse;
+import org.springframework.validation.FieldError;
+import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
@@ -71,6 +73,28 @@ public class GlobalExceptionHandler {
         log.debug("Requested record does not exist: {}", e.getMessage());
         return ResponseEntity.status(HttpStatus.NOT_FOUND)
                 .body(new ResponseResult<>(404, "请求的资源不存在"));
+    }
+
+    /**
+     * A request that failed its constraints, answered with the constraint that failed.
+     *
+     * <p>Without this it would reach the catch-all below, be recognised as an
+     * {@link ErrorResponse}, and come back as a flat "请求参数错误". That is true and
+     * useless: the DTO declares which field is wrong and why, and discarding that at the
+     * boundary means the caller has to guess which of five fields the server disliked.
+     *
+     * <p>Only the first violation is returned. Validation order is not defined, so the set
+     * is not stable between runs, and a caller fixing one field at a time gets a coherent
+     * conversation either way. The remaining messages stay in the debug log.
+     */
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    public ResponseEntity<ResponseResult<Void>> handleValidationFailure(MethodArgumentNotValidException e) {
+        String message = e.getBindingResult().getFieldErrors().stream()
+                .map(FieldError::getDefaultMessage)
+                .findFirst()
+                .orElse("请求参数错误");
+        log.debug("Request rejected by validation: {}", e.getBindingResult().getAllErrors());
+        return ResponseEntity.badRequest().body(new ResponseResult<>(400, message));
     }
 
     /**

@@ -135,6 +135,47 @@ spring:
     # nobody treats as sensitive. The default now comes from the active profile; JPA_SHOW_SQL
     # still overrides either way.
     show-sql: ${JPA_SHOW_SQL:false}
+# Actuator. Only what a deployment actually needs, because every exposed endpoint is
+# surface: the default set is small, but `*` is a habit that eventually exposes /env or
+# /heapdump on something that matters.
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      # UP or DOWN and nothing else. The detail view names the components that are failing
+      # - which database, which broker - and that is a description of the internals handed
+      # to an unauthenticated caller, since the probe endpoint cannot require a token.
+      show-details: never
+  info:
+    env:
+      enabled: false
+  health:
+    mail:
+      # Off, and this is the interesting one. Actuator's mail indicator opens an SMTP
+      # connection and authenticates; the credentials here are deliberately placeholders,
+      # so on a fresh clone it fails and drags the aggregate status to DOWN - meaning
+      # /actuator/health answers 503 and a readiness probe would never let the container
+      # into service. The application serves every request perfectly well without a mail
+      # server: only the e-mail-code login path degrades, and it degrades with its own
+      # error. A dependency that one optional feature needs is not a reason to declare the
+      # whole application unhealthy.
+      #
+      # The database and Redis indicators stay on, because those really do gate serving.
+      enabled: false
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+    # Alphabetical rather than declaration order, so the page does not reshuffle when a
+    # method moves.
+    operations-sorter: alpha
+    tags-sorter: alpha
+  api-docs:
+    path: /v3/api-docs
+
 # Root level, i.e. the level for the application as a whole.
 logging:
   level:

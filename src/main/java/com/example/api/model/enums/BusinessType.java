@@ -27,12 +27,19 @@ public enum BusinessType {
         this.name = name;
     }
 
+    /**
+     * The Chinese label, for anything that renders one.
+     *
+     * <p>There used to be a {@code toString()} returning this as well, and it was a trap.
+     * Jackson 3 serialises enums through {@code toString()} where Jackson 2 used
+     * {@code name()}, so the audit log stored INSERT and the API answered 新增 - the value
+     * and its own description disagreeing across one hop. Anything that interpolated the
+     * constant into a string had the same problem quietly.
+     *
+     * <p>Without the override the enum is its name everywhere, and a caller that wants the
+     * label asks for it.
+     */
     public String getName() {
-        return name;
-    }
-
-    @Override
-    public String toString() {
         return name;
     }
 }

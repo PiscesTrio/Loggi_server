@@ -121,6 +121,111 @@ resolves ids only against objects already present in the same payload. This is n
 so much as the limit of using an entity as a wire format, and it is one of the things the DTO
 boundary in the next slice exists to remove.
 
+---
+
+# S10 changed it again, on purpose
+
+S09 changed the wire because the entities *were* the wire. S10 puts a boundary in, so from
+here the shape is a decision rather than a consequence. Where S10 differs from S09, S10 is
+what the client should be written against.
+
+## Login
+
+The response was a `Map` holding "admin" and "token"; it is a declared type now, and the
+administrator inside it carries only `id`, `email`, `roles` and `createAt`.
+
+Requests are validated: a blank or malformed `email` comes back **400** with the reason in
+`msg` (`邮箱不能为空`, `邮箱格式不正确`) instead of being reported as wrong credentials.
+
+## `GET /api/distribution`
+
+| S09 | S10 |
+| --- | --- |
+| `driver: {…the whole Driver row…}` | `driver: { id, name, phone }` |
+| `vehicle: {…the whole Vehicle row…}` | `vehicle: { id, number, type }` |
+| `warehouse: {…the whole Warehouse row…}` | `warehouse: { id, name }` |
+
+Each reference is a summary carrying what a screen renders. The rest never leaves the server.
+
+## `POST /api/distribution`
+
+Takes ids, not objects:
+
+```
+{ "driverId": "...", "vehicleId": "...", "warehouseId": "...",
+  "phone": "...", "address": "...", "urgent": false, "care": "...",
+  "time": "2026-08-20 10:00:00", "status": "REVIEWING",
+  "fromLat": 35.672, "fromLng": 139.817, "toLat": 33.620, "toLng": 130.427 }
+```
+
+**No `id`.** Sending one is what made creating an order fail for the entire life of the
+project: Hibernate read a non-null id as "an existing row to update".
+
+Validated: driver, vehicle, phone, address, time and status are required; coordinates are
+bounded to real latitudes and longitudes, which is what an origin of `0,0` was not.
+
+## `GET|POST /api/distribution/status`
+
+`distribution` becomes **`distributionId`**, and — the part that matters — the request now
+uses the same shape as the response. Under S09 the response carried a bare id while the
+request had to send an object.
+
+`POST` no longer accepts `time`. The server records when the sighting arrived; a
+client-supplied timestamp on a tracking record is the client asserting where a vehicle was
+and when, which is the one thing the record exists to state independently.
+
+## `GET /api/distribution/can`
+
+Was a map with "drivers" and "vehicles". Now a declared type with the same two fields, each
+a list of summaries — the lists are always present, so `available.drivers!.isEmpty` has
+nothing left to force-unwrap.
+
+## Everything else, in one table
+
+Every endpoint now speaks in request and view types. Beyond the transport ones above:
+
+| Resource | Change |
+| --- | --- |
+| all lists | entities replaced by view types; no field reaches a client unless it is declared |
+| `Driver`, `Employee` | **`idCard` removed.** A personal identification number was being sent to every authenticated caller for a field no screen displays |
+| `Driver`, `Vehicle` | `driving` is no longer accepted on create - it follows from approving and completing orders |
+| all creates | **no `id` in the request body.** An id on a create is read by Hibernate as an existing row to update |
+| all creates | no `createAt` / `updateAt` in the request - auditing overwrites them |
+| `Commodity`, `Employee` | `PUT /{id}` instead of `PUT` with the id inside the body |
+| all deletes | `DELETE /{id}` instead of `DELETE?id=x` |
+| `Sale.count` | already an integer since S09; the request now requires it to be positive |
+
+## Status codes
+
+| Operation | Before | After |
+| --- | --- | --- |
+| create | `200` | **`201`**, and the envelope's `code` says 201 too |
+| delete | `200` with an envelope | **`204`, with no body at all** |
+| validation failure | (nothing was validated) | **`400`** with the field's own message in `msg` |
+
+The envelope's `code` used to be hardcoded to 200 on every success. It follows the real
+status now. `204` is the one response with no envelope, because a body contradicting a No
+Content status is worse than an inconsistency.
+
+## Pagination
+
+`GET /api/loginlog` and `GET /api/systemlog` return a page, not a list:
+
+```
+{ "items": [ … ], "page": 0, "size": 20, "totalItems": 137, "totalPages": 7 }
+```
+
+They accept `page` and `size`, and default to twenty, newest first. **These two only** —
+the other lists are bounded and wrapping them would make every caller unwrap something to
+find what it already had.
+
+## `businessType` again
+
+S09 changed it from the Chinese label to the enum name in the database. S10 found the API
+was still sending the label: Jackson 3 serialises enums through `toString()` where Jackson
+2 used `name()`, and the enum had a `toString()` returning its label. The override is gone,
+so the wire and the database finally agree — `QUERY`, not `查询`.
+
 ## Not changed
 
 Paths, the response envelope (`{code, status, data, msg}`), HTTP verbs, authentication, and
