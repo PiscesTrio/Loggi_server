@@ -2,6 +2,8 @@ package com.example.api.model.entity;
 
 import com.example.api.model.enums.DistributionStatus;
 import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.annotation.JsonIdentityInfo;
+import com.fasterxml.jackson.annotation.ObjectIdGenerators;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
@@ -23,6 +25,7 @@ import java.util.Date;
 /**
  * Distribution
  */
+@JsonIdentityInfo(generator = ObjectIdGenerators.PropertyGenerator.class, property = "id")
 @Data
 @ToString(exclude = {"driver", "vehicle", "warehouse"})
 // Identity is the id and nothing else: two rows with the same id are the same row,

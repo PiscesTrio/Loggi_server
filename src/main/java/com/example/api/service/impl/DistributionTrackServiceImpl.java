@@ -17,7 +17,7 @@ public class DistributionTrackServiceImpl implements DistributionTrackService {
 
     @Override
     public List<DistributionTrack> findByDisId(String disId){
-        return distributionTrackRepository.findAllByDisId(disId);
+        return distributionTrackRepository.findAllByDistributionId(disId);
     }
 
     @Override

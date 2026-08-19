@@ -3,11 +3,14 @@ package com.example.api.service.impl;
 import com.example.api.exception.BizException;
 import com.example.api.model.entity.Commodity;
 import com.example.api.model.entity.Inventory;
+import com.example.api.model.entity.Warehouse;
 import com.example.api.model.entity.InventoryRecord;
+import com.example.api.model.enums.InventoryType;
 import com.example.api.model.vo.CommodityChartVo;
 import com.example.api.repository.CommodityRepository;
 import com.example.api.repository.InventoryRecordRepository;
 import com.example.api.repository.InventoryRepository;
+import com.example.api.repository.WarehouseRepository;
 import com.example.api.service.InventoryRecordService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -19,10 +22,11 @@ import java.util.*;
 public class InventoryRecordServiceImpl implements InventoryRecordService {
 
     /** Stock leaving a warehouse. Persisted on InventoryRecord.type. */
-    private static final int TYPE_OUT = -1;
+    // TYPE_OUT / TYPE_IN are gone: the meaning of the column is now InventoryType, declared
+    // where every reader can see it rather than privately here.
 
     /** Stock arriving at a warehouse. */
-    private static final int TYPE_IN = 1;
+
 
     @Resource
     private InventoryRepository inventoryRepository;
@@ -33,8 +37,11 @@ public class InventoryRecordServiceImpl implements InventoryRecordService {
     @Resource
     private InventoryRecordRepository recordRepository;
 
+    @Resource
+    private WarehouseRepository warehouseRepository;
+
     @Override
-    public List<CommodityChartVo> analyzeCommodity(Integer type) {
+    public List<CommodityChartVo> analyzeCommodity(InventoryType type) {
         List<CommodityChartVo> result = new ArrayList<>();
         List<InventoryRecord> all = recordRepository.findAllByType(type);
         Map<String, Integer> map = new HashMap<>();
@@ -49,12 +56,12 @@ public class InventoryRecordServiceImpl implements InventoryRecordService {
 
     @Override
     public List<InventoryRecord> findAllByWarehouseId(String wid) {
-        return recordRepository.findAllByWid(wid);
+        return recordRepository.findAllByWarehouseId(wid);
     }
 
     @Override
     public List<InventoryRecord> findAllByCommodityId(String cid) {
-        return recordRepository.findAllByCid(cid);
+        return recordRepository.findAllByCommodityId(cid);
     }
 
     /**
@@ -71,7 +78,7 @@ public class InventoryRecordServiceImpl implements InventoryRecordService {
     public InventoryRecord out(InventoryRecord record) {
         requirePositiveCount(record);
 
-        Inventory inventory = inventoryRepository.findByWidAndCid(record.getWid(), record.getCid());
+        Inventory inventory = inventoryRepository.findByWarehouseIdAndCommodityId(idOf(record.getWarehouse()), idOf(record.getCommodity()));
         if (inventory == null) {
             throw new BizException(404, "仓库内不存在该商品");
         }
@@ -82,14 +89,14 @@ public class InventoryRecordServiceImpl implements InventoryRecordService {
             throw new BizException(409, "出库失败，库存数量不足");
         }
 
-        Commodity commodity = findCommodity(record.getCid());
+        Commodity commodity = findCommodity(idOf(record.getCommodity()));
         commodity.setCount(commodity.getCount() - record.getCount());
         commodityRepository.save(commodity);
 
         inventory.setCount(inventory.getCount() - record.getCount());
         inventoryRepository.save(inventory);
 
-        record.setType(TYPE_OUT);
+        record.setType(InventoryType.OUT);
         return recordRepository.save(record);
     }
 
@@ -99,22 +106,22 @@ public class InventoryRecordServiceImpl implements InventoryRecordService {
     public InventoryRecord in(InventoryRecord record) {
         requirePositiveCount(record);
 
-        Commodity commodity = findCommodity(record.getCid());
+        Commodity commodity = findCommodity(idOf(record.getCommodity()));
         commodity.setCount(commodity.getCount() + record.getCount());
         commodityRepository.save(commodity);
 
-        Inventory inventory = inventoryRepository.findByWidAndCid(record.getWid(), record.getCid());
+        Inventory inventory = inventoryRepository.findByWarehouseIdAndCommodityId(idOf(record.getWarehouse()), idOf(record.getCommodity()));
         if (inventory == null) {
             inventory = new Inventory();
-            inventory.setCid(record.getCid());
-            inventory.setWid(record.getWid());
+            inventory.setCommodity(commodity);
+            inventory.setWarehouse(requireWarehouse(idOf(record.getWarehouse())));
             inventory.setCount(0);
             inventory.setName(record.getName());
         }
         inventory.setCount(inventory.getCount() + record.getCount());
         inventoryRepository.save(inventory);
 
-        record.setType(TYPE_IN);
+        record.setType(InventoryType.IN);
         return recordRepository.save(record);
     }
 
@@ -127,8 +134,29 @@ public class InventoryRecordServiceImpl implements InventoryRecordService {
      * NoSuchElementException instead. That is not a worse message, it is a different
      * outcome: a guard that reads like validation while the actual failure escapes past it.
      */
+    /**
+     * The id a request named, out of the reference it arrived as.
+     *
+     * <p>A movement arrives carrying {@code {"warehouse": {"id": "..."}}} and nothing more,
+     * because the client is naming a row rather than sending one. The service looks the real
+     * row up before writing anything — which it has to, now that a foreign key would
+     * otherwise refuse the write with an error that cannot say which id was wrong.
+     */
+    private static String idOf(Warehouse warehouse) {
+        return warehouse == null ? null : warehouse.getId();
+    }
+
+    private static String idOf(Commodity commodity) {
+        return commodity == null ? null : commodity.getId();
+    }
+
+    private Warehouse requireWarehouse(String wid) {
+        return warehouseRepository.findById(wid == null ? "" : wid)
+                .orElseThrow(() -> new BizException(404, "不存在的仓库id: " + wid));
+    }
+
     private Commodity findCommodity(String cid) {
-        return commodityRepository.findById(cid)
+        return commodityRepository.findById(cid == null ? "" : cid)
                 .orElseThrow(() -> new BizException(404, "不存在的商品id: " + cid));
     }
 

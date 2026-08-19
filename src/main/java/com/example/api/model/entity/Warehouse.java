@@ -1,5 +1,7 @@
 package com.example.api.model.entity;
 
+import com.fasterxml.jackson.annotation.JsonIdentityInfo;
+import com.fasterxml.jackson.annotation.ObjectIdGenerators;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
@@ -12,6 +14,7 @@ import jakarta.persistence.Id;
 /**
  * Warehouse
  */
+@JsonIdentityInfo(generator = ObjectIdGenerators.PropertyGenerator.class, property = "id")
 @Data
 // Identity is the id and nothing else: two rows with the same id are the same row,
 // whatever their other columns say. callSuper = false because the superclass holds

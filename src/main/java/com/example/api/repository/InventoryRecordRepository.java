@@ -1,6 +1,7 @@
 package com.example.api.repository;
 
 import com.example.api.model.entity.InventoryRecord;
+import com.example.api.model.enums.InventoryType;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
@@ -9,10 +10,10 @@ import java.util.List;
 @Repository
 public interface InventoryRecordRepository extends JpaRepository<InventoryRecord, String> {
 
-    List<InventoryRecord> findAllByWid(String wid);
+    List<InventoryRecord> findAllByWarehouseId(String warehouseId);
 
-    List<InventoryRecord> findAllByType(Integer type);
+    List<InventoryRecord> findAllByType(InventoryType type);
 
-    List<InventoryRecord> findAllByCid(String cid);
+    List<InventoryRecord> findAllByCommodityId(String commodityId);
 
 }

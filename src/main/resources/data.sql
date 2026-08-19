@@ -84,9 +84,9 @@ INSERT INTO commodity (id, name, price, description, count, create_at, update_at
   ('seed-cm-3', '医薬品',      58000.00, '温度記録が必要。',              90, '2026-08-01 09:00:00', '2026-08-01 09:00:00'),
   ('seed-cm-4', '家電製品',     42000.00, '積み重ね不可。',              210, '2026-08-01 09:00:00', '2026-08-01 09:00:00');
 
--- inventory.wid / .cid are ids; inventory.name is a denormalised copy of the
--- commodity name, and it is that copy the UI renders.
-INSERT INTO inventory (id, wid, cid, name, location, count) VALUES
+-- Since S09 these are real foreign keys (warehouse_id / commodity_id); inventory.name is
+-- still a denormalised copy of the commodity name, and it is that copy the UI renders.
+INSERT INTO inventory (id, warehouse_id, commodity_id, name, location, count) VALUES
   ('seed-inv-1', 'seed-wh-tokyo',  'seed-cm-1', '精密機器', 'A-01', 60),
   ('seed-inv-2', 'seed-wh-tokyo',  'seed-cm-2', '冷蔵食品', 'B-03', 200),
   ('seed-inv-3', 'seed-wh-osaka',  'seed-cm-3', '医薬品',   'C-02', 45),
@@ -94,17 +94,17 @@ INSERT INTO inventory (id, wid, cid, name, location, count) VALUES
   ('seed-inv-5', 'seed-wh-nagoya', 'seed-cm-1', '精密機器', 'D-01', 60),
   ('seed-inv-6', 'seed-wh-nagoya', 'seed-cm-2', '冷蔵食品', 'D-02', 280);
 
--- type 1 = inbound, -1 = outbound. The pie chart groups by inventory_record.name,
--- NOT by commodity.name -- so these rows are what the chart legend shows.
-INSERT INTO inventory_record (id, name, wid, cid, count, type, description, create_at) VALUES
-  ('seed-ir-1', '精密機器', 'seed-wh-tokyo',  'seed-cm-1', 80,  1, '初期入庫',       '2026-08-02 10:00:00'),
-  ('seed-ir-2', '精密機器', 'seed-wh-tokyo',  'seed-cm-1', 20, -1, '出庫（東京→福岡）', '2026-08-05 11:30:00'),
-  ('seed-ir-3', '冷蔵食品', 'seed-wh-tokyo',  'seed-cm-2', 200, 1, '初期入庫',       '2026-08-02 10:10:00'),
-  ('seed-ir-4', '医薬品',   'seed-wh-osaka',  'seed-cm-3', 60,  1, '初期入庫',       '2026-08-02 10:20:00'),
-  ('seed-ir-5', '医薬品',   'seed-wh-osaka',  'seed-cm-3', 15, -1, '出庫（大阪→札幌）', '2026-08-06 09:15:00'),
-  ('seed-ir-6', '家電製品', 'seed-wh-osaka',  'seed-cm-4', 110, 1, '初期入庫',       '2026-08-02 10:30:00'),
-  ('seed-ir-7', '精密機器', 'seed-wh-nagoya', 'seed-cm-1', 60,  1, '初期入庫',       '2026-08-02 10:40:00'),
-  ('seed-ir-8', '冷蔵食品', 'seed-wh-nagoya', 'seed-cm-2', 280, 1, '初期入庫',       '2026-08-02 10:50:00');
+-- type is IN / OUT since S09; it was +1 / -1. The pie chart groups by
+-- inventory_record.name, NOT by commodity.name -- so these rows are what the legend shows.
+INSERT INTO inventory_record (id, name, warehouse_id, commodity_id, count, type, description, create_at) VALUES
+  ('seed-ir-1', '精密機器', 'seed-wh-tokyo',  'seed-cm-1', 80,  'IN', '初期入庫',       '2026-08-02 10:00:00'),
+  ('seed-ir-2', '精密機器', 'seed-wh-tokyo',  'seed-cm-1', 20, 'OUT', '出庫（東京→福岡）', '2026-08-05 11:30:00'),
+  ('seed-ir-3', '冷蔵食品', 'seed-wh-tokyo',  'seed-cm-2', 200, 'IN', '初期入庫',       '2026-08-02 10:10:00'),
+  ('seed-ir-4', '医薬品',   'seed-wh-osaka',  'seed-cm-3', 60,  'IN', '初期入庫',       '2026-08-02 10:20:00'),
+  ('seed-ir-5', '医薬品',   'seed-wh-osaka',  'seed-cm-3', 15, 'OUT', '出庫（大阪→札幌）', '2026-08-06 09:15:00'),
+  ('seed-ir-6', '家電製品', 'seed-wh-osaka',  'seed-cm-4', 110, 'IN', '初期入庫',       '2026-08-02 10:30:00'),
+  ('seed-ir-7', '精密機器', 'seed-wh-nagoya', 'seed-cm-1', 60,  'IN', '初期入庫',       '2026-08-02 10:40:00'),
+  ('seed-ir-8', '冷蔵食品', 'seed-wh-nagoya', 'seed-cm-2', 280, 'IN', '初期入庫',       '2026-08-02 10:50:00');
 
 -- Since S09 the order points at its driver, vehicle and origin warehouse by id, with real
 -- foreign keys behind all three; the driver's name and the plate are no longer copied here.
@@ -117,7 +117,7 @@ INSERT INTO distribution (id, driver_id, vehicle_id, warehouse_id, phone, addres
 
 -- distribution_track.location is the warehouse NAME as well; it is rendered
 -- verbatim in the tracking timeline, so an id here would show up as an id.
-INSERT INTO distribution_track (id, dis_id, lat, lng, location, time, status) VALUES
-  ('seed-ds-1', 'seed-dis-1', 35.672000, 139.817000, '東京江東倉庫', '2026-08-05 11:30:00', 0),
-  ('seed-ds-2', 'seed-dis-1', 34.687000, 135.448000, '大阪此花倉庫', '2026-08-05 19:40:00', 1),
-  ('seed-ds-3', 'seed-dis-2', 34.687000, 135.448000, '大阪此花倉庫', '2026-08-06 09:15:00', 0);
+INSERT INTO distribution_track (id, distribution_id, lat, lng, location, time, status) VALUES
+  ('seed-ds-1', 'seed-dis-1', 35.672000, 139.817000, '東京江東倉庫', '2026-08-05 11:30:00', 'REVIEWING'),
+  ('seed-ds-2', 'seed-dis-1', 34.687000, 135.448000, '大阪此花倉庫', '2026-08-05 19:40:00', 'REVIEW_SUCCESS'),
+  ('seed-ds-3', 'seed-dis-2', 34.687000, 135.448000, '大阪此花倉庫', '2026-08-06 09:15:00', 'REVIEWING');

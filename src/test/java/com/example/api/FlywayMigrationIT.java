@@ -65,7 +65,7 @@ class FlywayMigrationIT {
         // Named explicitly rather than counted: a count passes while the wrong scripts run.
         // This list has to be extended by hand for every new migration, which is the point —
         // adding a script should be a decision someone made, not something that slid in.
-        assertThat(versions).containsExactly("1", "2", "3", "4", "5");
+        assertThat(versions).containsExactly("1", "2", "3", "4", "5", "6");
     }
 
     @Test
@@ -89,10 +89,10 @@ class FlywayMigrationIT {
         assertThat(indexesOn("admin")).contains("uk_admin_email");
         assertThat(indexesOn("commodity")).contains("uk_commodity_name");
         assertThat(indexesOn("vehicle")).contains("uk_vehicle_number");
-        assertThat(indexesOn("inventory")).contains("uk_inventory_wid_cid", "idx_inventory_cid");
+        assertThat(indexesOn("inventory")).contains("uk_inventory_warehouse_commodity", "idx_inventory_commodity_id");
         assertThat(indexesOn("inventory_record"))
-                .contains("idx_inventory_record_wid", "idx_inventory_record_cid");
-        assertThat(indexesOn("distribution_track")).contains("idx_distribution_track_dis_id");
+                .contains("idx_inventory_record_warehouse_id", "idx_inventory_record_commodity_id");
+        assertThat(indexesOn("distribution_track")).contains("idx_distribution_track_distribution_id");
     }
 
     @Test
