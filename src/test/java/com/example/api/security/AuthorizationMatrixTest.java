@@ -9,6 +9,9 @@ import com.example.api.service.CommodityService;
 import com.example.api.service.LoginLogService;
 import com.example.api.service.WarehouseService;
 import com.example.api.utils.JwtTokenUtil;
+import com.example.api.model.entity.Admin;
+import com.example.api.model.enums.Role;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -17,7 +20,12 @@ import org.springframework.context.annotation.Import;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
+import java.util.Set;
+
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.Mockito.lenient;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -49,6 +57,27 @@ class AuthorizationMatrixTest {
     // No Authorization header is sent by these cases, so the mock's null resolveToken
     // is exactly the anonymous path.
     @MockitoBean JwtTokenUtil jwtTokenUtil;
+
+    /**
+     * The login and init cases need the service to return an administrator.
+     *
+     * <p>They did not before S10, when the response was a Map that held whatever it was
+     * given and serialised a null admin without complaint. The response is a view type now,
+     * built from the entity, so an unstubbed mock returning null becomes a NullPointerException
+     * and a 500 - and these tests assert who may reach an endpoint, not what it answers, so
+     * a 500 tells them nothing they are asking about.
+     */
+    @BeforeEach
+    void authenticationSucceeds() throws Exception {
+        Admin admin = new Admin();
+        admin.setId("admin-1");
+        admin.setEmail("a@b.c");
+        admin.setRoles(Set.of(Role.ROLE_SUPER_ADMIN));
+        lenient().when(adminService.loginByPassword(any())).thenReturn(admin);
+        lenient().when(adminService.loginByEmail(any())).thenReturn(admin);
+        lenient().when(adminService.save(any())).thenReturn(admin);
+        lenient().when(adminService.createToken(any(), anyLong())).thenReturn("a-token");
+    }
 
     @Test
     @DisplayName("Password login is reachable without a token — it is where tokens come from")

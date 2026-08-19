@@ -3,6 +3,8 @@ package com.example.api.controller;
 import com.example.api.exception.AccountAndPasswordError;
 import com.example.api.exception.BizException;
 import com.example.api.model.dto.LoginDto;
+import com.example.api.model.vo.AdminVo;
+import com.example.api.model.vo.LoginVo;
 import com.example.api.model.entity.Admin;
 import com.example.api.model.entity.LoginLog;
 import com.example.api.model.enums.Role;
@@ -19,6 +21,7 @@ import org.springframework.web.bind.annotation.*;
 
 import jakarta.annotation.Resource;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.validation.Valid;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -53,18 +56,18 @@ public class AdminController {
      * running system.
      */
     @PostMapping("/init")
-    public Admin init(@RequestBody Admin admin) throws Exception {
+    public AdminVo init(@RequestBody Admin admin) throws Exception {
         if (adminRepository.existsAdminByRolesContains(Role.ROLE_SUPER_ADMIN)) {
             throw new Exception("系统已初始化");
         }
         admin.setRoles(java.util.Set.of(Role.ROLE_SUPER_ADMIN));
-        return adminService.save(admin);
+        return AdminVo.from(adminService.save(admin));
     }
 
     @GetMapping("")
     @PreAuthorize("hasAnyRole('ROLE_SUPER_ADMIN' ,'ROLE_ADMIN')")
-    public List<Admin> findAll() {
-        return adminService.findAll();
+    public List<AdminVo> findAll() {
+        return adminService.findAll().stream().map(AdminVo::from).toList();
     }
 
     @DeleteMapping("")
@@ -75,8 +78,8 @@ public class AdminController {
 
     @PostMapping("")
     @PreAuthorize("hasAnyRole('ROLE_SUPER_ADMIN' ,'ROLE_ADMIN')")
-    public Admin save(@RequestBody Admin admin) throws Exception {
-        return adminService.save(admin);
+    public AdminVo save(@RequestBody Admin admin) throws Exception {
+        return AdminVo.from(adminService.save(admin));
     }
 
     /**
@@ -88,13 +91,13 @@ public class AdminController {
      * password — control flow by exception, and a diagnosis that pointed at the user.
      */
     @PostMapping("/login/password")
-    public Map<String, Object> loginByPassword(@RequestBody LoginDto dto, HttpServletRequest request) throws Exception {
+    public LoginVo loginByPassword(@Valid @RequestBody LoginDto dto, HttpServletRequest request) throws Exception {
         return login(dto, request, () -> adminService.loginByPassword(dto));
     }
 
     /** E-mail code login. Step two; step one is POST /verification-code. */
     @PostMapping("/login/email")
-    public Map<String, Object> loginByEmail(@RequestBody LoginDto dto, HttpServletRequest request) throws Exception {
+    public LoginVo loginByEmail(@Valid @RequestBody LoginDto dto, HttpServletRequest request) throws Exception {
         return login(dto, request, () -> adminService.loginByEmail(dto));
     }
 
@@ -110,8 +113,7 @@ public class AdminController {
      * passes through; anything else still collapses, because an unexpected failure during
      * authentication is the one case where saying less is right.
      */
-    private Map<String, Object> login(LoginDto dto, HttpServletRequest request, AuthAttempt attempt) throws Exception {
-        Map<String, Object> map = new HashMap<>();
+    private LoginVo login(LoginDto dto, HttpServletRequest request, AuthAttempt attempt) throws Exception {
         Admin admin = null;
         String token = null;
         try {
@@ -126,9 +128,7 @@ public class AdminController {
         } finally {
             loginLogService.recordLog(dto, admin, request);
         }
-        map.put("admin", admin);
-        map.put("token", token);
-        return map;
+        return LoginVo.of(admin, token);
     }
 
     @FunctionalInterface
