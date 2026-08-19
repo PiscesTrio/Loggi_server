@@ -121,6 +121,65 @@ resolves ids only against objects already present in the same payload. This is n
 so much as the limit of using an entity as a wire format, and it is one of the things the DTO
 boundary in the next slice exists to remove.
 
+---
+
+# S10 changed it again, on purpose
+
+S09 changed the wire because the entities *were* the wire. S10 puts a boundary in, so from
+here the shape is a decision rather than a consequence. Where S10 differs from S09, S10 is
+what the client should be written against.
+
+## Login
+
+The response was a `Map` holding "admin" and "token"; it is a declared type now, and the
+administrator inside it carries only `id`, `email`, `roles` and `createAt`.
+
+Requests are validated: a blank or malformed `email` comes back **400** with the reason in
+`msg` (`邮箱不能为空`, `邮箱格式不正确`) instead of being reported as wrong credentials.
+
+## `GET /api/distribution`
+
+| S09 | S10 |
+| --- | --- |
+| `driver: {…the whole Driver row…}` | `driver: { id, name, phone }` |
+| `vehicle: {…the whole Vehicle row…}` | `vehicle: { id, number, type }` |
+| `warehouse: {…the whole Warehouse row…}` | `warehouse: { id, name }` |
+
+Each reference is a summary carrying what a screen renders. The rest never leaves the server.
+
+## `POST /api/distribution`
+
+Takes ids, not objects:
+
+```
+{ "driverId": "...", "vehicleId": "...", "warehouseId": "...",
+  "phone": "...", "address": "...", "urgent": false, "care": "...",
+  "time": "2026-08-20 10:00:00", "status": "REVIEWING",
+  "fromLat": 35.672, "fromLng": 139.817, "toLat": 33.620, "toLng": 130.427 }
+```
+
+**No `id`.** Sending one is what made creating an order fail for the entire life of the
+project: Hibernate read a non-null id as "an existing row to update".
+
+Validated: driver, vehicle, phone, address, time and status are required; coordinates are
+bounded to real latitudes and longitudes, which is what an origin of `0,0` was not.
+
+## `GET|POST /api/distribution/status`
+
+`distribution` becomes **`distributionId`**, and — the part that matters — the request now
+uses the same shape as the response. Under S09 the response carried a bare id while the
+request had to send an object.
+
+`POST` no longer accepts `time`. The server records when the sighting arrived; a
+client-supplied timestamp on a tracking record is the client asserting where a vehicle was
+and when, which is the one thing the record exists to state independently.
+
+## `GET /api/distribution/can`
+
+Was a map with "drivers" and "vehicles". Now a declared type with the same two fields, each
+a list of summaries — the lists are always present, so `available.drivers!.isEmpty` has
+nothing left to force-unwrap.
+
 ## Not changed
 
 Paths, the response envelope (`{code, status, data, msg}`), HTTP verbs, authentication, and
