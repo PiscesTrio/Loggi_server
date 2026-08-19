@@ -88,4 +88,23 @@ class AuditingIT {
         c.setCount(1);
         return c;
     }
+
+    @Test
+    @DisplayName("The recorded time is the moment the application saw, not one shifted by a zone")
+    void timestampsAreNotShiftedByTheDriver() {
+        // Regression. LocalDateTime and MySQL's `datetime` both describe a wall clock with no
+        // zone attached, so the driver must not convert between them — and it was. The URL
+        // declared serverTimezone=Asia/Shanghai while the server runs on UTC, so a value
+        // written as 09:00 read back as 10:00, and rows the application wrote were stored an
+        // hour before the moment they describe. The round trip was self-consistent, which is
+        // why it stayed invisible until the string columns became real datetimes.
+        //
+        // This container runs on UTC and the build does not, so any reintroduced conversion
+        // shows up here as a difference of whole hours.
+        LocalDateTime before = LocalDateTime.now();
+        Commodity saved = commodityRepository.saveAndFlush(commodity("時刻検証用商品"));
+        LocalDateTime after = LocalDateTime.now();
+
+        assertThat(saved.getCreateAt()).isBetween(before.minusSeconds(1), after.plusSeconds(1));
+    }
 }

@@ -70,7 +70,21 @@ spring:
       timeout: 2s
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
-    url: jdbc:mysql://${DB_HOST:localhost}:${DB_PORT:3306}/${DB_NAME:loggi}?characterEncoding=utf8&serverTimezone=Asia/Shanghai
+    # preserveInstants=false is the part that matters, and it is not cosmetic.
+    #
+    # Every timestamp in this schema is a LocalDateTime mapped to a MySQL `datetime`. Neither
+    # of those carries a time zone — they are wall-clock readings — so no conversion should
+    # happen in either direction. The driver was doing one anyway: the URL claimed the server
+    # ran on Asia/Shanghai while the container actually runs on UTC, so a value written as
+    # 09:00 came back as 10:00, and rows written by the application were stored an hour before
+    # the moment they describe. The round trip was self-consistent, which is why nothing
+    # looked wrong until S09 turned the string columns into real datetimes and the seed's
+    # literal values stopped matching what the API returned.
+    #
+    # connectionTimeZone=SERVER + preserveInstants=false tells the driver to leave wall-clock
+    # values alone. serverTimezone, which this replaces, is the deprecated spelling and was
+    # also simply untrue.
+    url: jdbc:mysql://${DB_HOST:localhost}:${DB_PORT:3306}/${DB_NAME:loggi}?characterEncoding=utf8&connectionTimeZone=SERVER&preserveInstants=false
     username: ${DB_USERNAME:root}
     password: ${DB_PASSWORD:your-db-password}
   jackson:
