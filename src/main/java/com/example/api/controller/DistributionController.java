@@ -2,12 +2,12 @@ package com.example.api.controller;
 
 import com.example.api.annotation.Log;
 import com.example.api.model.entity.Distribution;
-import com.example.api.model.entity.DistributionStatus;
+import com.example.api.model.entity.DistributionTrack;
 import com.example.api.model.enums.BusincessType;
 import com.example.api.repository.DriverRepository;
 import com.example.api.repository.VehicleRepository;
 import com.example.api.service.DistributionService;
-import com.example.api.service.DistributionStatusService;
+import com.example.api.service.DistributionTrackService;
 import org.springframework.web.bind.annotation.*;
 
 import jakarta.annotation.Resource;
@@ -23,7 +23,7 @@ public class DistributionController {
     private DistributionService distributionService;
 
     @Resource
-    private DistributionStatusService distributionStatusService;
+    private DistributionTrackService distributionTrackService;
 
     @Resource
     private DriverRepository driverRepository;
@@ -52,14 +52,14 @@ public class DistributionController {
     }
 
     @GetMapping("status")
-    public List<DistributionStatus> getStatus(@RequestParam String dis){
-        return distributionStatusService.findByDisId(dis);
+    public List<DistributionTrack> getStatus(@RequestParam String dis){
+        return distributionTrackService.findByDisId(dis);
     }
 
     @Log(moudle = "运输状态",type = BusincessType.INSERT)
     @PostMapping("status")
-    public DistributionStatus saveStatus(@RequestBody DistributionStatus distributionStatus){
-        return distributionStatusService.save(distributionStatus);
+    public DistributionTrack saveStatus(@RequestBody DistributionTrack distributionTrack){
+        return distributionTrackService.save(distributionTrack);
     }
 
 
