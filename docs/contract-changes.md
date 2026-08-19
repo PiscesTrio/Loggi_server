@@ -180,6 +180,52 @@ Was a map with "drivers" and "vehicles". Now a declared type with the same two f
 a list of summaries — the lists are always present, so `available.drivers!.isEmpty` has
 nothing left to force-unwrap.
 
+## Everything else, in one table
+
+Every endpoint now speaks in request and view types. Beyond the transport ones above:
+
+| Resource | Change |
+| --- | --- |
+| all lists | entities replaced by view types; no field reaches a client unless it is declared |
+| `Driver`, `Employee` | **`idCard` removed.** A personal identification number was being sent to every authenticated caller for a field no screen displays |
+| `Driver`, `Vehicle` | `driving` is no longer accepted on create - it follows from approving and completing orders |
+| all creates | **no `id` in the request body.** An id on a create is read by Hibernate as an existing row to update |
+| all creates | no `createAt` / `updateAt` in the request - auditing overwrites them |
+| `Commodity`, `Employee` | `PUT /{id}` instead of `PUT` with the id inside the body |
+| all deletes | `DELETE /{id}` instead of `DELETE?id=x` |
+| `Sale.count` | already an integer since S09; the request now requires it to be positive |
+
+## Status codes
+
+| Operation | Before | After |
+| --- | --- | --- |
+| create | `200` | **`201`**, and the envelope's `code` says 201 too |
+| delete | `200` with an envelope | **`204`, with no body at all** |
+| validation failure | (nothing was validated) | **`400`** with the field's own message in `msg` |
+
+The envelope's `code` used to be hardcoded to 200 on every success. It follows the real
+status now. `204` is the one response with no envelope, because a body contradicting a No
+Content status is worse than an inconsistency.
+
+## Pagination
+
+`GET /api/loginlog` and `GET /api/systemlog` return a page, not a list:
+
+```
+{ "items": [ … ], "page": 0, "size": 20, "totalItems": 137, "totalPages": 7 }
+```
+
+They accept `page` and `size`, and default to twenty, newest first. **These two only** —
+the other lists are bounded and wrapping them would make every caller unwrap something to
+find what it already had.
+
+## `businessType` again
+
+S09 changed it from the Chinese label to the enum name in the database. S10 found the API
+was still sending the label: Jackson 3 serialises enums through `toString()` where Jackson
+2 used `name()`, and the enum had a `toString()` returning its label. The override is gone,
+so the wire and the database finally agree — `QUERY`, not `查询`.
+
 ## Not changed
 
 Paths, the response envelope (`{code, status, data, msg}`), HTTP verbs, authentication, and
