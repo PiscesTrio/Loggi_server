@@ -40,7 +40,7 @@ public class AdminController {
 
     @GetMapping("hasInit")
     public boolean hasInit() {
-        return adminRepository.existsAdminByRoles(Role.ROLE_SUPER_ADMIN.getValue());
+        return adminRepository.existsAdminByRolesContains(Role.ROLE_SUPER_ADMIN);
     }
 
     /**
@@ -54,10 +54,10 @@ public class AdminController {
      */
     @PostMapping("/init")
     public Admin init(@RequestBody Admin admin) throws Exception {
-        if (adminRepository.existsAdminByRoles(Role.ROLE_SUPER_ADMIN.getValue())) {
+        if (adminRepository.existsAdminByRolesContains(Role.ROLE_SUPER_ADMIN)) {
             throw new Exception("系统已初始化");
         }
-        admin.setRoles(Role.ROLE_SUPER_ADMIN.getValue());
+        admin.setRoles(java.util.Set.of(Role.ROLE_SUPER_ADMIN));
         return adminService.save(admin);
     }
 

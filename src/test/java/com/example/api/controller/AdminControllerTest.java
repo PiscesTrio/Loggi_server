@@ -63,7 +63,7 @@ class AdminControllerTest {
     @Test
     @DisplayName("hasInit boolean is wrapped into the {code,status,msg,data} envelope")
     void hasInit_booleanIsWrappedIntoDataField() throws Exception {
-        when(adminRepository.existsAdminByRoles(Role.ROLE_SUPER_ADMIN.getValue())).thenReturn(false);
+        when(adminRepository.existsAdminByRolesContains(Role.ROLE_SUPER_ADMIN)).thenReturn(false);
         mockMvc.perform(get("/api/admin/hasInit"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value(200))

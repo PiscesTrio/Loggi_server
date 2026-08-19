@@ -65,7 +65,7 @@ class FlywayMigrationIT {
         // Named explicitly rather than counted: a count passes while the wrong scripts run.
         // This list has to be extended by hand for every new migration, which is the point —
         // adding a script should be a decision someone made, not something that slid in.
-        assertThat(versions).containsExactly("1", "2", "3", "4", "5", "6");
+        assertThat(versions).containsExactly("1", "2", "3", "4", "5", "6", "7");
     }
 
     @Test

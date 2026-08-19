@@ -27,6 +27,10 @@
 -- and each care token must be one of the eight the client offers. These are wire
 -- values, not display text -- localising them is a separate, deliberate step.
 
+-- Order matters since S09: these tables now have real foreign keys between them, so a
+-- child has to go before its parent. The sequence below is already child-first; it was
+-- arbitrary before and is load-bearing now.
+DELETE FROM admin_roles        WHERE admin_id LIKE 'seed-%';
 DELETE FROM distribution_track WHERE id LIKE 'seed-%';
 DELETE FROM distribution       WHERE id LIKE 'seed-%';
 DELETE FROM inventory_record   WHERE id LIKE 'seed-%';
@@ -38,14 +42,17 @@ DELETE FROM warehouse          WHERE id LIKE 'seed-%';
 DELETE FROM admin              WHERE id LIKE 'seed-%';
 
 -- Demo login. Exists so a fresh clone can be logged into; it is not a credential.
-INSERT INTO admin (id, email, password, roles, create_at) VALUES
+INSERT INTO admin (id, email, password, create_at) VALUES
   -- The password is demo1234, stored as the delegating encoder writes it. It cannot
   -- be seeded in plain text any more: login verifies a hash, and a plaintext column
   -- value simply fails to match. Regenerate with PasswordEncoderFactories
   -- .createDelegatingPasswordEncoder().encode(...) if the demo password changes.
   ('seed-admin-1', 'demo@loggi.example',
    '{bcrypt}$2a$10$Qu7Ns1ky0lClGLYVviA1Fuuz2jEf4PiE/Nv7a9Kh9Sq8F30uStOxC',
-   'ROLE_SUPER_ADMIN', '2026-08-01 09:00:00');
+   '2026-08-01 09:00:00');
+
+-- Roles are rows since S09; admin.roles used to be a semicolon-joined string.
+INSERT INTO admin_roles (admin_id, role) VALUES ('seed-admin-1', 'ROLE_SUPER_ADMIN');
 
 -- Warehouses. Coordinates are WGS-84, which is what the map layer expects.
 --

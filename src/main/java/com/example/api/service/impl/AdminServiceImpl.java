@@ -3,6 +3,7 @@ package com.example.api.service.impl;
 import com.example.api.exception.AccountAndPasswordError;
 import com.example.api.model.dto.LoginDto;
 import com.example.api.model.entity.Admin;
+import com.example.api.model.enums.Role;
 import com.example.api.model.entity.LoginLog;
 import com.example.api.repository.AdminRepository;
 import com.example.api.repository.LoginLogRepository;
@@ -87,10 +88,11 @@ public class AdminServiceImpl implements AdminService {
 
     @Override
     public String createToken(Admin admin, long exp) {
-        String rolesString = admin.getRoles();
-        List<String> roles = rolesString == null || rolesString.isBlank()
-                ? List.of()
-                : List.of(rolesString.split(";"));
+        // No parsing left to do. This used to split a semicolon-joined string, which meant
+        // deciding what null, "" and ";" each meant - three spellings of "no roles" that the
+        // column allowed and the code had to guess at.
+        List<String> roles = admin.getRoles() == null ? List.of()
+                : admin.getRoles().stream().map(Role::getValue).toList();
         return jwtTokenUtil.createToken(admin.getEmail(), roles, exp);
     }
 

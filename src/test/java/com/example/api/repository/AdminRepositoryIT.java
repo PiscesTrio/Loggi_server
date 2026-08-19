@@ -1,6 +1,7 @@
 package com.example.api.repository;
 
 import com.example.api.model.entity.Admin;
+import com.example.api.model.enums.Role;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -11,6 +12,8 @@ import org.springframework.test.context.DynamicPropertySource;
 import org.testcontainers.containers.MySQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
+
+import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.boot.jdbc.test.autoconfigure.AutoConfigureTestDatabase.Replace.NONE;
@@ -58,7 +61,7 @@ class AdminRepositoryIT {
         Admin a = new Admin();
         a.setEmail("admin@logi.com");
         a.setPassword(hash);
-        a.setRoles("ROLE_SUPER_ADMIN");
+        a.setRoles(Set.of(Role.ROLE_SUPER_ADMIN));
         adminRepository.save(a);
 
         Admin found = adminRepository.findAdminByEmail("admin@logi.com");
@@ -71,13 +74,16 @@ class AdminRepositoryIT {
     }
 
     @Test
-    @DisplayName("existsAdminByRoles finds a super admin")
-    void existsAdminByRoles_findsSuperAdmin() {
+    @DisplayName("existsAdminByRolesContains finds a super admin")
+    void existsAdminByRolesContains_findsSuperAdmin() {
         Admin a = new Admin();
         a.setEmail("super@logi.com");
         a.setPassword("p");
-        a.setRoles("ROLE_SUPER_ADMIN");
+        a.setRoles(Set.of(Role.ROLE_SUPER_ADMIN));
         adminRepository.save(a);
-        assertThat(adminRepository.existsAdminByRoles("ROLE_SUPER_ADMIN")).isTrue();
+        // A membership test over a join table now, not an equality test against a
+        // semicolon-joined string - so it cannot be fooled by a role whose name merely
+        // starts with this one.
+        assertThat(adminRepository.existsAdminByRolesContains(Role.ROLE_SUPER_ADMIN)).isTrue();
     }
 }
