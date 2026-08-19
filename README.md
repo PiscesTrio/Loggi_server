@@ -6,11 +6,13 @@ Loggi Server is the REST API backend for a logistics management system. It provi
 
 ## Tech Stack
 
-- **Java 11**
-- **Spring Boot 2.7.2**
+- **Java 21**
+- **Spring Boot 4.1.0**
 - **Spring Security** with JWT authentication
-- **Spring Data JPA**
+- **Spring Data JPA** (Hibernate, `ddl-auto: validate`)
+- **Flyway** for schema migrations
 - **MySQL**
+- **Redis** for verification codes and rate limiting
 - **Maven**
 
 ## Features
@@ -38,7 +40,7 @@ Edit `src/main/resources/application.yaml` or set environment variables:
 |--------|-------------|---------|
 | DB Host | `DB_HOST` | `localhost` |
 | DB Port | `DB_PORT` | `3306` |
-| DB Name | `DB_NAME` | `test` |
+| DB Name | `DB_NAME` | `loggi` |
 | DB User | `DB_USERNAME` | `root` |
 | DB Password | `DB_PASSWORD` | `your-db-password` |
 | JWT Secret | `JWT_SECRET` | `CHANGE_ME` |
@@ -81,9 +83,29 @@ com.example.api/
 ├── security/        # JWT filter and Spring Security configuration
 ├── handler/         # Global response wrapper and exception handler
 ├── aspect/          # AOP logging aspect
-├── task/            # Background tasks
 └── utils/           # JWT utilities, IP/browser helpers
 ```
+
+## Database schema
+
+The schema is owned by Flyway, not by Hibernate. Migrations live in
+`src/main/resources/db/migration` and run before anything else touches the datasource:
+
+| Script | What it does |
+| --- | --- |
+| `V1__baseline.sql` | The schema as the entities define it, captured when Flyway took over |
+| `V2__unique_constraints_and_indexes.sql` | The unique constraints and indexes `ddl-auto` could never create |
+
+Two rules follow from that:
+
+- **An applied script is never edited.** Flyway stores a checksum per script; changing one
+  makes every existing database fail validation. Schema changes are appended as `V3`, `V4`, ...
+- **`ddl-auto` is `validate` in every profile.** Hibernate no longer changes the database, it
+  only checks that the entities and the migrations agree — and refuses to start if they do
+  not, so a missing migration fails in CI rather than drifting in production.
+
+An existing database with no `flyway_schema_history` table is adopted rather than rejected:
+`baseline-on-migrate` stamps it as version 1 and applies from `V2` onward.
 
 ## API Notes
 

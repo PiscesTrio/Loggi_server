@@ -47,7 +47,7 @@ class VerificationCodeIT {
 
     @Container
     static final MySQLContainer<?> MYSQL = new MySQLContainer<>("mysql:8.0")
-            .withDatabaseName("test");
+            .withDatabaseName("loggi");
 
     @Container
     static final GenericContainer<?> REDIS = new GenericContainer<>("redis:7-alpine")
@@ -68,7 +68,11 @@ class VerificationCodeIT {
         r.add("spring.datasource.url", MYSQL::getJdbcUrl);
         r.add("spring.datasource.username", MYSQL::getUsername);
         r.add("spring.datasource.password", MYSQL::getPassword);
-        r.add("spring.jpa.hibernate.ddl-auto", () -> "update");
+        // No ddl-auto override. It used to say "update" to match production; production is
+        // Flyway plus validate since S08, so the honest way to match it is to let the real
+        // configuration run. These containers start empty, so Flyway applies V1 onwards and
+        // Hibernate then validates the entities against what the migrations built — which
+        // makes every one of these tests a check that the two still agree.
         r.add("jwt.secret", () -> "integration-test-secret-at-least-32-bytes");
 
         r.add("spring.data.redis.host", REDIS::getHost);
