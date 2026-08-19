@@ -42,7 +42,11 @@ public class OpenApiConfig {
                                 `/api/admin/login`, `/api/admin/init`, `/api/admin/hasInit` \
                                 and `/api/admin/verification-code`, which have to work before \
                                 a token exists.""")
-                        .license(new License().name("MIT")))
+                        // identifier, not just a name. OpenAPI 3.1 wants a SPDX identifier or a URL, and
+                        // openapi-generator refuses to run without one - which is how this was
+                        // found: the document looked fine in Swagger UI and failed validation the
+                        // first time a machine tried to consume it.
+                        .license(new License().name("MIT").identifier("MIT")))
                 .addSecurityItem(new SecurityRequirement().addList(BEARER))
                 .components(new Components().addSecuritySchemes(BEARER,
                         new SecurityScheme()

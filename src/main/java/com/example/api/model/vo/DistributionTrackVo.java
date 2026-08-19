@@ -3,7 +3,6 @@ package com.example.api.model.vo;
 import com.example.api.model.entity.Distribution;
 import com.example.api.model.entity.DistributionTrack;
 import com.example.api.model.enums.DistributionStatus;
-import com.fasterxml.jackson.annotation.JsonFormat;
 
 import java.time.LocalDateTime;
 
@@ -23,7 +22,6 @@ public record DistributionTrackVo(
         double lat,
         double lng,
         String location,
-        @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd HH:mm:ss")
         LocalDateTime time,
         DistributionStatus status) {
 

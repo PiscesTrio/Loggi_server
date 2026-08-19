@@ -1,7 +1,6 @@
 package com.example.api.model.dto;
 
 import com.example.api.model.enums.DistributionStatus;
-import com.fasterxml.jackson.annotation.JsonFormat;
 import jakarta.validation.constraints.DecimalMax;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotBlank;
@@ -45,7 +44,6 @@ public class DistributionRequest {
     private String care;
 
     @NotNull(message = "配送时间不能为空")
-    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime time;
 
     @NotNull(message = "状态不能为空")

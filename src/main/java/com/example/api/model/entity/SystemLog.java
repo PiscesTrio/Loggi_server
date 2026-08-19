@@ -1,7 +1,6 @@
 package com.example.api.model.entity;
 
 import com.example.api.model.enums.BusinessType;
-import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.GenericGenerator;
@@ -51,7 +50,6 @@ public class SystemLog {
     @Column(length = 200, nullable = false)
     private String method;
     //operation time
-    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd HH:mm:ss", timezone = "GMT+8")
     private LocalDateTime time;
 
     //how long the operation took, in milliseconds

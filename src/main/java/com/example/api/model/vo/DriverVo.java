@@ -1,7 +1,6 @@
 package com.example.api.model.vo;
 
 import com.example.api.model.entity.Driver;
-import com.fasterxml.jackson.annotation.JsonFormat;
 
 import java.time.LocalDateTime;
 
@@ -25,9 +24,7 @@ public record DriverVo(
         String license,
         String score,
         boolean driving,
-        @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd HH:mm:ss")
         LocalDateTime createAt,
-        @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd HH:mm:ss")
         LocalDateTime updateAt) {
 
     public static DriverVo from(Driver d) {

@@ -2,7 +2,6 @@ package com.example.api.model.vo;
 
 import com.example.api.model.entity.SystemLog;
 import com.example.api.model.enums.BusinessType;
-import com.fasterxml.jackson.annotation.JsonFormat;
 
 import java.time.LocalDateTime;
 
@@ -22,7 +21,6 @@ public record SystemLogVo(
         String method,
         Long costMs,
         boolean success,
-        @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd HH:mm:ss")
         LocalDateTime time) {
 
     public static SystemLogVo from(SystemLog log) {

@@ -1,7 +1,6 @@
 package com.example.api.model.entity;
 
 
-import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -11,7 +10,7 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
 import java.time.LocalDateTime;
-import java.util.Date;
+import java.time.LocalDateTime;
 
 @Entity
 @Data
@@ -32,9 +31,8 @@ public class LoginLog {
     //user IP address
     private String ip;
 
-    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd HH:mm:ss", timezone = "GMT+8")
     //login time
-    private Date date;
+    private LocalDateTime date;
 
     //browser
     private String browser;
