@@ -2,6 +2,7 @@ package com.example.api.controller;
 
 import com.example.api.exception.AccountAndPasswordError;
 import com.example.api.exception.BizException;
+import com.example.api.model.dto.AdminRequest;
 import com.example.api.model.dto.LoginDto;
 import com.example.api.model.vo.AdminVo;
 import com.example.api.model.vo.LoginVo;
@@ -59,10 +60,15 @@ public class AdminController {
      */
     @PostMapping("/init")
     @ResponseStatus(HttpStatus.CREATED)
-    public AdminVo init(@RequestBody Admin admin) throws Exception {
+    public AdminVo init(@Valid @RequestBody AdminRequest request) throws Exception {
         if (adminRepository.existsAdminByRolesContains(Role.ROLE_SUPER_ADMIN)) {
             throw new Exception("系统已初始化");
         }
+        Admin admin = toEntity(request);
+        // Whatever roles the request named are ignored. There is no sensible answer for the
+        // first account other than super administrator, and this endpoint is anonymous by
+        // necessity - letting the body choose would let a caller pick their own privileges
+        // on a fresh install.
         admin.setRoles(java.util.Set.of(Role.ROLE_SUPER_ADMIN));
         return AdminVo.from(adminService.save(admin));
     }
@@ -83,8 +89,19 @@ public class AdminController {
     @PostMapping("")
     @ResponseStatus(HttpStatus.CREATED)
     @PreAuthorize("hasAnyRole('ROLE_SUPER_ADMIN' ,'ROLE_ADMIN')")
-    public AdminVo save(@RequestBody Admin admin) throws Exception {
-        return AdminVo.from(adminService.save(admin));
+    public AdminVo save(@Valid @RequestBody AdminRequest request) throws Exception {
+        return AdminVo.from(adminService.save(toEntity(request)));
+    }
+
+    /** The request as the entity the service persists. The password is hashed there. */
+    private static Admin toEntity(AdminRequest request) {
+        Admin admin = new Admin();
+        admin.setEmail(request.getEmail());
+        admin.setPassword(request.getPassword());
+        if (request.getRoles() != null) {
+            admin.setRoles(request.getRoles());
+        }
+        return admin;
     }
 
     /**

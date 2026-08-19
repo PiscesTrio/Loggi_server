@@ -1,7 +1,9 @@
 package com.example.api.controller;
 
 import com.example.api.annotation.Log;
+import com.example.api.model.dto.VehicleRequest;
 import com.example.api.model.entity.Vehicle;
+import com.example.api.model.vo.VehicleVo;
 import com.example.api.model.enums.BusinessType;
 import com.example.api.service.VehicleService;
 import org.springframework.http.HttpStatus;
@@ -9,6 +11,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.web.bind.annotation.*;
 
 import jakarta.annotation.Resource;
+import jakarta.validation.Valid;
 import java.util.List;
 
 @Tag(name = "Vehicles", description = "The fleet.")
@@ -22,20 +25,20 @@ public class VehicleController {
     @Log(module = "车辆管理",type = BusinessType.INSERT)
     @PostMapping("")
     @ResponseStatus(HttpStatus.CREATED)
-    public Vehicle save(@RequestBody Vehicle vehicle) {
-        return vehicleService.save(vehicle);
+    public VehicleVo save(@Valid @RequestBody VehicleRequest request) {
+        return VehicleVo.from(vehicleService.save(toEntity(request)));
     }
 
     @Log(module = "车辆管理",type = BusinessType.QUERY)
     @GetMapping("")
-    public List<Vehicle> findAll() {
-        return vehicleService.findAll();
+    public List<VehicleVo> findAll() {
+        return vehicleService.findAll().stream().map(VehicleVo::from).toList();
     }
 
     @Log(module = "车辆管理",type = BusinessType.QUERY)
     @GetMapping("/{id}")
-    public Vehicle findById(@PathVariable String id) {
-        return vehicleService.findById(id);
+    public VehicleVo findById(@PathVariable String id) {
+        return VehicleVo.from(vehicleService.findById(id));
     }
 
     @Log(module = "车辆管理",type = BusinessType.DELETE)
@@ -45,4 +48,12 @@ public class VehicleController {
         vehicleService.delete(id);
     }
 
+
+    /** The request as the entity the service persists. No id: the database assigns it. */
+    private static Vehicle toEntity(VehicleRequest request) {
+        Vehicle e = new Vehicle();
+        e.setNumber(request.getNumber());
+        e.setType(request.getType());
+        return e;
+    }
 }

@@ -3,7 +3,6 @@ package com.example.api.model.entity;
 
 import com.example.api.model.enums.DistributionStatus;
 import com.fasterxml.jackson.annotation.JsonFormat;
-import com.fasterxml.jackson.annotation.JsonIdentityReference;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
@@ -53,13 +52,10 @@ public class DistributionTrack {
      * so a track point could outlive the order it described, and the timeline query that
      * reads them by that column had no way to know.
      */
-    // Serialised as the id alone, not as a nested object. These columns were plain id
-    // strings before this slice (disId, wid, cid), so emitting an id keeps the client seeing
-    // what it saw; inlining the row instead would nest a Distribution — with its own three
-    // associations — inside every track point. Distribution's own driver/vehicle/warehouse
-    // are treated the other way for the same reason: the client used to receive a copied
-    // name and plate there, so it gets the real rows.
-    @JsonIdentityReference(alwaysAsId = true)
+    // The @JsonIdentityReference that used to sit here is gone with S10's view types. It
+    // existed to make an association serialise as a bare id while the entity was itself the
+    // wire format - a workaround for a problem the boundary removed, and it could only ever
+    // work in one direction: it wrote an id and could not read a lone one back.
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "distribution_id")
     private Distribution distribution;
