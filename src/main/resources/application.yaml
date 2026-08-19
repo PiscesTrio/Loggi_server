@@ -69,9 +69,10 @@ spring:
   sql:
     init:
       # The project had no data initialisation path at all: ddl-auto only creates tables,
-      # compose mounts no init script, and the only ApplicationRunner is empty — a fresh clone
-      # came up against an empty database. data.sql deletes-then-inserts by a `seed-` id prefix,
-      # so it is repeatable and never touches rows created through the app.
+      # compose mounts no init script, and the one ApplicationRunner it shipped was an empty
+      # shell (deleted in S07) — a fresh clone came up against an empty database. data.sql
+      # deletes-then-inserts by a `seed-` id prefix, so it is repeatable and never touches
+      # rows created through the app.
       mode: always
   jpa:
     hibernate:
