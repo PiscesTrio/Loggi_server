@@ -3,7 +3,6 @@ package com.example.api.service.impl;
 import com.example.api.model.entity.Driver;
 import com.example.api.repository.DriverRepository;
 import com.example.api.service.DriverService;
-import com.example.api.utils.DataTimeUtil;
 import org.springframework.stereotype.Service;
 
 import jakarta.annotation.Resource;
@@ -17,13 +16,11 @@ public class DriverServiceImpl implements DriverService {
 
     @Override
     public Driver save(Driver driver) {
-        driver.setCreateAt(DataTimeUtil.getNowTimeString());
         return driverRepository.save(driver);
     }
 
     @Override
     public void update(Driver driver) {
-        driver.setUpdateAt(DataTimeUtil.getNowTimeString());
         driverRepository.save(driver);
     }
 

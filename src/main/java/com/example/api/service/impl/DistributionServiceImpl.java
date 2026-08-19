@@ -4,17 +4,18 @@ import com.example.api.exception.BizException;
 import com.example.api.model.entity.Distribution;
 import com.example.api.model.entity.Driver;
 import com.example.api.model.entity.Vehicle;
+import com.example.api.model.entity.Warehouse;
 import com.example.api.model.enums.DistributionStatus;
 import com.example.api.repository.DistributionRepository;
 import com.example.api.repository.DriverRepository;
 import com.example.api.repository.VehicleRepository;
+import com.example.api.repository.WarehouseRepository;
 import com.example.api.service.DistributionService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import jakarta.annotation.Resource;
 import java.util.List;
-import java.util.Objects;
 
 @Service
 public class DistributionServiceImpl implements DistributionService {
@@ -27,6 +28,9 @@ public class DistributionServiceImpl implements DistributionService {
 
     @Resource
     private VehicleRepository vehicleRepository;
+
+    @Resource
+    private WarehouseRepository warehouseRepository;
 
     /**
      * Saves an order and moves the driver and vehicle with it.
@@ -44,14 +48,47 @@ public class DistributionServiceImpl implements DistributionService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public Distribution save(Distribution distribution) {
-        Integer status = distribution.getStatus();
+        resolveReferences(distribution);
 
-        if (Objects.equals(status, DistributionStatus.REVIEW_SUCCESS.getCode())) {
+        DistributionStatus status = distribution.getStatus();
+        if (status == DistributionStatus.REVIEW_SUCCESS) {
             assign(distribution);
-        } else if (Objects.equals(status, DistributionStatus.END.getCode())) {
+        } else if (status == DistributionStatus.END) {
             release(distribution);
         }
         return distributionRepository.save(distribution);
+    }
+
+    /**
+     * Replaces the references the request named with the rows they name.
+     *
+     * <p>Necessary now that these are real foreign keys. A request arrives carrying an id and
+     * nothing else; if it is written straight through, the database is the thing that
+     * discovers the id does not exist, and a constraint violation cannot say which of the
+     * three was wrong. Resolving here turns that into a 404 naming the id.
+     *
+     * <p>It also closes a gap that predates the associations: only approval and completion
+     * checked the driver and vehicle existed. Creating an order - the common case - checked
+     * nothing, so an order could be filed against a driver who was never hired.
+     */
+    private void resolveReferences(Distribution distribution) {
+        distribution.setDriver(requireDriver(idOf(distribution.getDriver())));
+        distribution.setVehicle(requireVehicle(idOf(distribution.getVehicle())));
+
+        // The origin warehouse is optional on an order, so absence is allowed; a named one
+        // that does not exist is not.
+        String warehouseId = idOf(distribution.getWarehouse());
+        if (warehouseId != null) {
+            distribution.setWarehouse(warehouseRepository.findById(warehouseId)
+                    .orElseThrow(() -> new BizException(404, "不存在的仓库id: " + warehouseId)));
+        }
+    }
+
+    private static String idOf(Object entity) {
+        if (entity instanceof Driver driver) return driver.getId();
+        if (entity instanceof Vehicle vehicle) return vehicle.getId();
+        if (entity instanceof Warehouse warehouse) return warehouse.getId();
+        return null;
     }
 
     /**
@@ -69,8 +106,8 @@ public class DistributionServiceImpl implements DistributionService {
      * {@code updateDriving}, whose UPDATE matched no rows and reported success.
      */
     private void assign(Distribution distribution) {
-        Driver driver = requireDriver(distribution.getDid());
-        Vehicle vehicle = requireVehicle(distribution.getVid());
+        Driver driver = distribution.getDriver();
+        Vehicle vehicle = distribution.getVehicle();
 
         // Re-approving an order already approved will be refused here. That is the correct
         // answer for a second driver being handed a busy truck; a retry of the same
@@ -83,17 +120,14 @@ public class DistributionServiceImpl implements DistributionService {
             throw new BizException(409, "货车当前不可用");
         }
 
-        driverRepository.updateDriving(true, distribution.getDid());
-        vehicleRepository.updateDriving(true, distribution.getVid());
+        driverRepository.updateDriving(true, driver.getId());
+        vehicleRepository.updateDriving(true, vehicle.getId());
     }
 
     /** Completion: the driver and vehicle go back into the pool. */
     private void release(Distribution distribution) {
-        requireDriver(distribution.getDid());
-        requireVehicle(distribution.getVid());
-
-        driverRepository.updateDriving(false, distribution.getDid());
-        vehicleRepository.updateDriving(false, distribution.getVid());
+        driverRepository.updateDriving(false, distribution.getDriver().getId());
+        vehicleRepository.updateDriving(false, distribution.getVehicle().getId());
     }
 
     private Driver requireDriver(String did) {

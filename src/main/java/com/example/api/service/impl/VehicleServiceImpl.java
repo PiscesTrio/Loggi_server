@@ -3,7 +3,6 @@ package com.example.api.service.impl;
 import com.example.api.model.entity.Vehicle;
 import com.example.api.repository.VehicleRepository;
 import com.example.api.service.VehicleService;
-import com.example.api.utils.DataTimeUtil;
 import org.springframework.stereotype.Service;
 
 import jakarta.annotation.Resource;
@@ -17,7 +16,6 @@ public class VehicleServiceImpl implements VehicleService {
 
     @Override
     public Vehicle save(Vehicle vehicle) {
-        vehicle.setCreateAt(DataTimeUtil.getNowTimeString());
         return vehicleRepository.save(vehicle);
     }
 

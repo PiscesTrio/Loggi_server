@@ -3,7 +3,6 @@ package com.example.api.service.impl;
 import com.example.api.model.entity.Warehouse;
 import com.example.api.repository.WarehouseRepository;
 import com.example.api.service.WarehouseService;
-import com.example.api.utils.DataTimeUtil;
 import org.springframework.stereotype.Service;
 
 import jakarta.annotation.Resource;
@@ -17,7 +16,6 @@ public class WarehouseServiceImpl implements WarehouseService {
 
     @Override
     public Warehouse save(Warehouse warehouse) {
-        warehouse.setCreateAt(DataTimeUtil.getNowTimeString());
         return warehouseRepository.save(warehouse);
     }
 

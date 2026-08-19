@@ -10,10 +10,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
+import org.springframework.transaction.annotation.Transactional;
 import org.testcontainers.containers.MySQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
+import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -76,16 +78,42 @@ class SeedDataIT {
     }
 
     @Test
-    @DisplayName("A seeded distribution keeps the warehouse NAME in wid and a trailing comma in care")
-    void seededDistribution_honoursTheDenormalisationTraps() {
+    // findById does not fetch the association, and the associations are LAZY on purpose, so
+    // reading one after the repository call needs a session still open. Production never
+    // takes this path — the controller reads through findAll, whose entity graph loads all
+    // three — and the test below is the one that guards that.
+    @Transactional
+    @DisplayName("A seeded distribution resolves its origin warehouse and keeps care's trailing comma")
+    void seededDistribution_resolvesItsWarehouseAndHonoursTheCareTrap() {
         Optional<Distribution> dis = distributionRepository.findById("seed-dis-1");
 
         assertThat(dis).isPresent();
-        // wid is the warehouse name here — an id would render as an id in the UI.
-        assertThat(dis.get().getWid()).isEqualTo("東京江東倉庫");
+        // This assertion used to read getWid() and expect the warehouse NAME, because that
+        // is what the column held — the trap this slice removed. The seed now stores an id
+        // behind a real foreign key, and the name is read through the association.
+        assertThat(dis.get().getWarehouse().getName()).isEqualTo("東京江東倉庫");
         // The client builds this string with a trailing comma; seeded rows must
         // have the same shape as real ones.
         assertThat(dis.get().getCare()).endsWith(",");
         assertThat(dis.get().getToLat()).isBetween(33.0, 34.0);   // Fukuoka
+    }
+
+    @Test
+    @DisplayName("findAll returns orders whose associations survive the closed session")
+    void findAll_loadsAssociationsEagerlyEnoughToSerialise() {
+        // The production path, asserted without a transaction on purpose. The controller
+        // hands these entities to Jackson after the transaction has closed, so anything the
+        // entity graph failed to fetch becomes a LazyInitializationException on a live
+        // request rather than a slow query. Reading each association here is what a
+        // serialiser does; if this passes, serialisation cannot fail for want of a session.
+        List<Distribution> all = distributionRepository.findAll();
+
+        assertThat(all).isNotEmpty();
+        assertThat(all)
+                .allSatisfy(d -> {
+                    assertThat(d.getDriver().getName()).isNotBlank();
+                    assertThat(d.getVehicle().getNumber()).isNotBlank();
+                    assertThat(d.getWarehouse().getName()).isNotBlank();
+                });
     }
 }

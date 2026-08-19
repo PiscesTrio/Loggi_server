@@ -1,6 +1,7 @@
 package com.example.api.controller;
 
 import com.example.api.model.entity.Inventory;
+import com.example.api.model.enums.InventoryType;
 import com.example.api.model.entity.InventoryRecord;
 import com.example.api.model.vo.CommodityChartVo;
 import com.example.api.service.InventoryRecordService;
@@ -26,7 +27,7 @@ public class InventoryController {
     }
 
     @GetMapping("analyze")
-    public List<CommodityChartVo> analyze(Integer type) {
+    public List<CommodityChartVo> analyze(InventoryType type) {
         return recordService.analyzeCommodity(type);
     }
 

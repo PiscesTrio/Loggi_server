@@ -3,12 +3,12 @@ package com.example.api.service.impl;
 import com.example.api.exception.AccountAndPasswordError;
 import com.example.api.model.dto.LoginDto;
 import com.example.api.model.entity.Admin;
+import com.example.api.model.enums.Role;
 import com.example.api.model.entity.LoginLog;
 import com.example.api.repository.AdminRepository;
 import com.example.api.repository.LoginLogRepository;
 import com.example.api.service.AdminService;
 import com.example.api.service.EmailService;
-import com.example.api.utils.DataTimeUtil;
 import com.example.api.utils.JwtTokenUtil;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import lombok.extern.slf4j.Slf4j;
@@ -40,7 +40,6 @@ public class AdminServiceImpl implements AdminService {
         // Encode before anything can persist it. The length check above runs on the
         // password as typed, which is the only point at which that is meaningful.
         admin.setPassword(passwordEncoder.encode(admin.getPassword()));
-        admin.setCreateAt(DataTimeUtil.getNowTimeString());
         return adminRepository.save(admin);
     }
 
@@ -89,10 +88,11 @@ public class AdminServiceImpl implements AdminService {
 
     @Override
     public String createToken(Admin admin, long exp) {
-        String rolesString = admin.getRoles();
-        List<String> roles = rolesString == null || rolesString.isBlank()
-                ? List.of()
-                : List.of(rolesString.split(";"));
+        // No parsing left to do. This used to split a semicolon-joined string, which meant
+        // deciding what null, "" and ";" each meant - three spellings of "no roles" that the
+        // column allowed and the code had to guess at.
+        List<String> roles = admin.getRoles() == null ? List.of()
+                : admin.getRoles().stream().map(Role::getValue).toList();
         return jwtTokenUtil.createToken(admin.getEmail(), roles, exp);
     }
 

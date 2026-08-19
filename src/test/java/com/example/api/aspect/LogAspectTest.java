@@ -75,7 +75,11 @@ class LogAspectTest {
         // read, because SystemLog had no column to put it in.
         assertThat(recorded.getCostMs()).isNotNull().isGreaterThanOrEqualTo(0L);
         assertThat(recorded.getModule()).isEqualTo("测试模块");
-        assertThat(recorded.getBusinessType()).isEqualTo("新增");
+        // The enum, not its label. The aspect used to store annotation.type().getName() —
+        // the Chinese display text — so the audit table held UI language and a reader had to
+        // map it back. BusinessType.toString() still returns "新增"; what changed is that the
+        // label is now a rendering of the value rather than the value itself.
+        assertThat(recorded.getBusinessType()).isEqualTo(BusinessType.INSERT);
     }
 
     @Test

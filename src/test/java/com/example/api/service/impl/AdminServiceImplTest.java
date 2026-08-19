@@ -67,7 +67,9 @@ class AdminServiceImplTest {
         // DelegatingPasswordEncoder prefixes the algorithm; matches() uses it to route.
         assertThat(admin.getPassword()).startsWith("{bcrypt}");
         assertThat(encoder.matches("plaintext123", admin.getPassword())).isTrue();
-        assertThat(admin.getCreateAt()).isNotNull();
+        // createAt is no longer asserted here. The service used to set it by hand; JPA
+        // auditing fills it now, and auditing needs a real persistence context — with a
+        // mocked repository there is nothing to observe. AuditingIT checks it for real.
         verify(adminRepository).save(admin);
     }
 

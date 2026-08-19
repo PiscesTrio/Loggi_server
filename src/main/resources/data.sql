@@ -27,6 +27,10 @@
 -- and each care token must be one of the eight the client offers. These are wire
 -- values, not display text -- localising them is a separate, deliberate step.
 
+-- Order matters since S09: these tables now have real foreign keys between them, so a
+-- child has to go before its parent. The sequence below is already child-first; it was
+-- arbitrary before and is load-bearing now.
+DELETE FROM admin_roles        WHERE admin_id LIKE 'seed-%';
 DELETE FROM distribution_track WHERE id LIKE 'seed-%';
 DELETE FROM distribution       WHERE id LIKE 'seed-%';
 DELETE FROM inventory_record   WHERE id LIKE 'seed-%';
@@ -38,14 +42,17 @@ DELETE FROM warehouse          WHERE id LIKE 'seed-%';
 DELETE FROM admin              WHERE id LIKE 'seed-%';
 
 -- Demo login. Exists so a fresh clone can be logged into; it is not a credential.
-INSERT INTO admin (id, email, password, roles, create_at) VALUES
+INSERT INTO admin (id, email, password, create_at) VALUES
   -- The password is demo1234, stored as the delegating encoder writes it. It cannot
   -- be seeded in plain text any more: login verifies a hash, and a plaintext column
   -- value simply fails to match. Regenerate with PasswordEncoderFactories
   -- .createDelegatingPasswordEncoder().encode(...) if the demo password changes.
   ('seed-admin-1', 'demo@loggi.example',
    '{bcrypt}$2a$10$Qu7Ns1ky0lClGLYVviA1Fuuz2jEf4PiE/Nv7a9Kh9Sq8F30uStOxC',
-   'ROLE_SUPER_ADMIN', '2026-08-01 09:00:00');
+   '2026-08-01 09:00:00');
+
+-- Roles are rows since S09; admin.roles used to be a semicolon-joined string.
+INSERT INTO admin_roles (admin_id, role) VALUES ('seed-admin-1', 'ROLE_SUPER_ADMIN');
 
 -- Warehouses. Coordinates are WGS-84, which is what the map layer expects.
 --
@@ -84,9 +91,9 @@ INSERT INTO commodity (id, name, price, description, count, create_at, update_at
   ('seed-cm-3', '医薬品',      58000.00, '温度記録が必要。',              90, '2026-08-01 09:00:00', '2026-08-01 09:00:00'),
   ('seed-cm-4', '家電製品',     42000.00, '積み重ね不可。',              210, '2026-08-01 09:00:00', '2026-08-01 09:00:00');
 
--- inventory.wid / .cid are ids; inventory.name is a denormalised copy of the
--- commodity name, and it is that copy the UI renders.
-INSERT INTO inventory (id, wid, cid, name, location, count) VALUES
+-- Since S09 these are real foreign keys (warehouse_id / commodity_id); inventory.name is
+-- still a denormalised copy of the commodity name, and it is that copy the UI renders.
+INSERT INTO inventory (id, warehouse_id, commodity_id, name, location, count) VALUES
   ('seed-inv-1', 'seed-wh-tokyo',  'seed-cm-1', '精密機器', 'A-01', 60),
   ('seed-inv-2', 'seed-wh-tokyo',  'seed-cm-2', '冷蔵食品', 'B-03', 200),
   ('seed-inv-3', 'seed-wh-osaka',  'seed-cm-3', '医薬品',   'C-02', 45),
@@ -94,27 +101,30 @@ INSERT INTO inventory (id, wid, cid, name, location, count) VALUES
   ('seed-inv-5', 'seed-wh-nagoya', 'seed-cm-1', '精密機器', 'D-01', 60),
   ('seed-inv-6', 'seed-wh-nagoya', 'seed-cm-2', '冷蔵食品', 'D-02', 280);
 
--- type 1 = inbound, -1 = outbound. The pie chart groups by inventory_record.name,
--- NOT by commodity.name -- so these rows are what the chart legend shows.
-INSERT INTO inventory_record (id, name, wid, cid, count, type, description, create_at) VALUES
-  ('seed-ir-1', '精密機器', 'seed-wh-tokyo',  'seed-cm-1', 80,  1, '初期入庫',       '2026-08-02 10:00:00'),
-  ('seed-ir-2', '精密機器', 'seed-wh-tokyo',  'seed-cm-1', 20, -1, '出庫（東京→福岡）', '2026-08-05 11:30:00'),
-  ('seed-ir-3', '冷蔵食品', 'seed-wh-tokyo',  'seed-cm-2', 200, 1, '初期入庫',       '2026-08-02 10:10:00'),
-  ('seed-ir-4', '医薬品',   'seed-wh-osaka',  'seed-cm-3', 60,  1, '初期入庫',       '2026-08-02 10:20:00'),
-  ('seed-ir-5', '医薬品',   'seed-wh-osaka',  'seed-cm-3', 15, -1, '出庫（大阪→札幌）', '2026-08-06 09:15:00'),
-  ('seed-ir-6', '家電製品', 'seed-wh-osaka',  'seed-cm-4', 110, 1, '初期入庫',       '2026-08-02 10:30:00'),
-  ('seed-ir-7', '精密機器', 'seed-wh-nagoya', 'seed-cm-1', 60,  1, '初期入庫',       '2026-08-02 10:40:00'),
-  ('seed-ir-8', '冷蔵食品', 'seed-wh-nagoya', 'seed-cm-2', 280, 1, '初期入庫',       '2026-08-02 10:50:00');
+-- type is IN / OUT since S09; it was +1 / -1. The pie chart groups by
+-- inventory_record.name, NOT by commodity.name -- so these rows are what the legend shows.
+INSERT INTO inventory_record (id, name, warehouse_id, commodity_id, count, type, description, create_at) VALUES
+  ('seed-ir-1', '精密機器', 'seed-wh-tokyo',  'seed-cm-1', 80,  'IN', '初期入庫',       '2026-08-02 10:00:00'),
+  ('seed-ir-2', '精密機器', 'seed-wh-tokyo',  'seed-cm-1', 20, 'OUT', '出庫（東京→福岡）', '2026-08-05 11:30:00'),
+  ('seed-ir-3', '冷蔵食品', 'seed-wh-tokyo',  'seed-cm-2', 200, 'IN', '初期入庫',       '2026-08-02 10:10:00'),
+  ('seed-ir-4', '医薬品',   'seed-wh-osaka',  'seed-cm-3', 60,  'IN', '初期入庫',       '2026-08-02 10:20:00'),
+  ('seed-ir-5', '医薬品',   'seed-wh-osaka',  'seed-cm-3', 15, 'OUT', '出庫（大阪→札幌）', '2026-08-06 09:15:00'),
+  ('seed-ir-6', '家電製品', 'seed-wh-osaka',  'seed-cm-4', 110, 'IN', '初期入庫',       '2026-08-02 10:30:00'),
+  ('seed-ir-7', '精密機器', 'seed-wh-nagoya', 'seed-cm-1', 60,  'IN', '初期入庫',       '2026-08-02 10:40:00'),
+  ('seed-ir-8', '冷蔵食品', 'seed-wh-nagoya', 'seed-cm-2', 280, 'IN', '初期入庫',       '2026-08-02 10:50:00');
 
--- distribution.wid holds the warehouse NAME (not the id). from_* is the origin
--- warehouse, to_* the destination, both WGS-84.
-INSERT INTO distribution (id, did, vid, wid, driver, number, phone, address, urgent, care, time, status, from_lat, from_lng, to_lat, to_lng) VALUES
-  ('seed-dis-1', 'seed-dr-1', 'seed-vh-1', '東京江東倉庫', '田中 三郎', '品川800へ12-34',  '090-0000-0011', '福岡県福岡市東区ロギ7-1-1',   1, '易碎,防潮,',  '2026-08-05 11:30:00', 1, 35.672000, 139.817000, 33.620000, 130.427000),
-  ('seed-dis-2', 'seed-dr-2', 'seed-vh-2', '大阪此花倉庫', '佐々木 花子', 'なにわ800へ56-78', '090-0000-0012', '北海道札幌市白石区ロギ8-1-1', 0, '冷藏,防高温,', '2026-08-06 09:15:00', 0, 34.687000, 135.448000, 43.048000, 141.402000);
+-- Since S09 the order points at its driver, vehicle and origin warehouse by id, with real
+-- foreign keys behind all three; the driver's name and the plate are no longer copied here.
+-- warehouse_id used to be `wid` and held the warehouse NAME, which is why the migration
+-- resolves it by name rather than renaming the column.
+-- from_* is the origin warehouse, to_* the destination, both WGS-84.
+INSERT INTO distribution (id, driver_id, vehicle_id, warehouse_id, phone, address, urgent, care, time, status, from_lat, from_lng, to_lat, to_lng) VALUES
+  ('seed-dis-1', 'seed-dr-1', 'seed-vh-1', 'seed-wh-tokyo', '090-0000-0011', '福岡県福岡市東区ロギ7-1-1',   1, '易碎,防潮,',  '2026-08-05 11:30:00', 'REVIEW_SUCCESS', 35.672000, 139.817000, 33.620000, 130.427000),
+  ('seed-dis-2', 'seed-dr-2', 'seed-vh-2', 'seed-wh-osaka', '090-0000-0012', '北海道札幌市白石区ロギ8-1-1', 0, '冷藏,防高温,', '2026-08-06 09:15:00', 'REVIEWING',      34.687000, 135.448000, 43.048000, 141.402000);
 
 -- distribution_track.location is the warehouse NAME as well; it is rendered
 -- verbatim in the tracking timeline, so an id here would show up as an id.
-INSERT INTO distribution_track (id, dis_id, lat, lng, location, time, status) VALUES
-  ('seed-ds-1', 'seed-dis-1', 35.672000, 139.817000, '東京江東倉庫', '2026-08-05 11:30:00', 0),
-  ('seed-ds-2', 'seed-dis-1', 34.687000, 135.448000, '大阪此花倉庫', '2026-08-05 19:40:00', 1),
-  ('seed-ds-3', 'seed-dis-2', 34.687000, 135.448000, '大阪此花倉庫', '2026-08-06 09:15:00', 0);
+INSERT INTO distribution_track (id, distribution_id, lat, lng, location, time, status) VALUES
+  ('seed-ds-1', 'seed-dis-1', 35.672000, 139.817000, '東京江東倉庫', '2026-08-05 11:30:00', 'REVIEWING'),
+  ('seed-ds-2', 'seed-dis-1', 34.687000, 135.448000, '大阪此花倉庫', '2026-08-05 19:40:00', 'REVIEW_SUCCESS'),
+  ('seed-ds-3', 'seed-dis-2', 34.687000, 135.448000, '大阪此花倉庫', '2026-08-06 09:15:00', 'REVIEWING');
