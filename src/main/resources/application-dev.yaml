@@ -1,0 +1,17 @@
+# Developer defaults. Loaded when no profile is named, because application.yaml activates
+# `dev` unless SPRING_PROFILES_ACTIVE says otherwise.
+#
+# What is NOT here is the point: no credential, no secret, no schema behaviour. Those live
+# in application.yaml so that they are identical in every environment and can only be
+# changed by an environment variable, not by which profile happens to be active. A profile
+# that can turn off a safety measure is a profile that will.
+spring:
+  jpa:
+    # On locally, because seeing the query a repository method actually produced is how you
+    # find the N+1 you just wrote. Still an override: JPA_SHOW_SQL=false silences it.
+    show-sql: ${JPA_SHOW_SQL:true}
+logging:
+  level:
+    # Which migrations ran, and how long they took. Worth having in the console the first
+    # time a colleague starts the project against an empty database.
+    org.flywaydb: info

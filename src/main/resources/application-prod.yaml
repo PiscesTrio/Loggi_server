@@ -1,0 +1,18 @@
+# Production defaults. Activated with SPRING_PROFILES_ACTIVE=prod.
+#
+# Deliberately small. Everything that must not vary between environments — Flyway, the
+# schema validation, the placeholder-refusing JWT secret — is fixed in application.yaml, so
+# there is no combination of profile settings that produces an unsafe production. This file
+# only makes the logs quieter.
+spring:
+  jpa:
+    # Off. Every statement with its bound parameters would otherwise reach the application
+    # log, including the audit log's own inserts, which carry an operator's account and IP.
+    show-sql: ${JPA_SHOW_SQL:false}
+logging:
+  level:
+    root: ${LOG_LEVEL_ROOT:warn}
+    # Kept at info against the quieter root: a schema migration is one of the few things
+    # worth a line in a production log unconditionally, and "which version is this database
+    # on" is the first question during an incident.
+    org.flywaydb: info

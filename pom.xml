@@ -95,6 +95,29 @@
           a codebase that has otherwise finished its jakarta migration.
         -->
 
+        <!--Flyway owns the schema from S08 on. Version comes from the parent BOM, never
+            pinned here: Flyway and the JDBC driver have to agree about the database, and the
+            BOM is what keeps that pair consistent across a Spring Boot upgrade.
+            flyway-mysql is a separate artifact - flyway-core alone knows no MySQL dialect and
+            fails at startup with "Unsupported Database: MySQL".-->
+        <!--Spring Boot 4 split the autoconfigurations out of spring-boot-autoconfigure into
+            per-technology modules, so flyway-core on its own gives you the migration engine and
+            nothing that runs it: the application starts, Flyway never executes, and the first
+            symptom is Hibernate's "Schema validation: missing table [admin]" — which reads like a
+            broken migration rather than an absent one. This module carries FlywayAutoConfiguration.-->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-flyway</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.flywaydb</groupId>
+            <artifactId>flyway-core</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.flywaydb</groupId>
+            <artifactId>flyway-mysql</artifactId>
+        </dependency>
+
         <!--MySQL driver: since SB3 the parent BOM manages only the new GAV com.mysql:mysql-connector-j; the old mysql:mysql-connector-java is unmanaged-->
         <dependency>
             <groupId>com.mysql</groupId>

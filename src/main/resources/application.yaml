@@ -25,6 +25,25 @@ app:
     lock-seconds: ${VERIFICATION_LOCK_SECONDS:900}
 
 spring:
+  profiles:
+    # dev unless told otherwise. The profiles differ only in developer conveniences —
+    # every one of them is still an environment variable underneath, so a profile sets the
+    # default and the environment still wins. Nothing security-relevant is decided here.
+    active: ${SPRING_PROFILES_ACTIVE:dev}
+  flyway:
+    # Flyway owns the schema. Scripts live in db/migration and run before Hibernate is
+    # allowed to look at the database.
+    enabled: true
+    locations: classpath:db/migration
+    # For a database that already exists and has no history table — the shape every
+    # environment was in when this slice landed. Flyway stamps it as version 1 and starts
+    # applying from V2, instead of refusing to touch a non-empty schema. An empty database
+    # ignores this and runs V1 onwards normally.
+    baseline-on-migrate: true
+    baseline-version: 1
+    # Never wipe a schema because a command was mistyped. Off in every profile; there is no
+    # environment where losing the database quietly is the helpful outcome.
+    clean-disabled: true
   mail:
     host: smtp.qq.com
     protocol: smtp
@@ -51,7 +70,7 @@ spring:
       timeout: 2s
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
-    url: jdbc:mysql://${DB_HOST:localhost}:${DB_PORT:3306}/${DB_NAME:test}?characterEncoding=utf8&serverTimezone=Asia/Shanghai
+    url: jdbc:mysql://${DB_HOST:localhost}:${DB_PORT:3306}/${DB_NAME:loggi}?characterEncoding=utf8&serverTimezone=Asia/Shanghai
     username: ${DB_USERNAME:root}
     password: ${DB_PASSWORD:your-db-password}
   jackson:
@@ -76,13 +95,31 @@ spring:
       mode: always
   jpa:
     hibernate:
-      ddl-auto: update
-    # Required: without it data.sql runs *before* Hibernate creates the tables.
-    defer-datasource-initialization: true
+      # Hibernate no longer changes anything; it only checks. `update` diffed the entities
+      # against the database on every boot and applied the additions — it never dropped a
+      # column, never changed a type, never recorded what it did, and two instances starting
+      # together did it concurrently. What it left behind is visible in any long-lived
+      # database from this project: a `user` and a `company` table whose entities are gone,
+      # and a `busincess_type` column beside the `business_type` that replaced it.
+      # `validate` turns the entity mapping into an assertion: if a migration and an entity
+      # disagree, the application refuses to start, here and in CI, instead of drifting.
+      ddl-auto: validate
+    # defer-datasource-initialization used to be set here and had to go when Flyway arrived.
+    # It exists for the ddl-auto case: Hibernate builds the schema as it creates the
+    # EntityManagerFactory, so data.sql has to be pushed to *after* that. Boot implements
+    # that by making the script initializer depend on the EntityManagerFactory — and, in
+    # consequence, by no longer making the EntityManagerFactory wait on database
+    # initialisers. Flyway is one of those initialisers. Leaving the flag on therefore let
+    # Hibernate validate before Flyway had run: every integration test failed with
+    # "Schema validation: missing table [admin]", which reads like a broken migration and is
+    # actually an unordered one. Flyway now builds the schema before anything else touches
+    # the datasource, and spring.sql.init scripts already run after Flyway by default, so the
+    # flag has nothing left to defer.
     open-in-view: false
-    # Off unless asked for. Every statement, with its parameters, went to stdout on
-    # every request - the audit log's own INSERTs included, which is how a request's
-    # account and IP end up in a log nobody treats as sensitive.
+    # Every statement, with its parameters, went to stdout on every request - the audit
+    # log's own INSERTs included, which is how a request's account and IP end up in a log
+    # nobody treats as sensitive. The default now comes from the active profile; JPA_SHOW_SQL
+    # still overrides either way.
     show-sql: ${JPA_SHOW_SQL:false}
 # Root level, i.e. the level for the application as a whole.
 logging:

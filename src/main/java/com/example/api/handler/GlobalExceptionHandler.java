@@ -5,6 +5,7 @@ import com.example.api.model.support.ResponseResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.TypeMismatchException;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.http.ResponseEntity;
@@ -70,6 +71,30 @@ public class GlobalExceptionHandler {
         log.debug("Requested record does not exist: {}", e.getMessage());
         return ResponseEntity.status(HttpStatus.NOT_FOUND)
                 .body(new ResponseResult<>(404, "请求的资源不存在"));
+    }
+
+    /**
+     * A row the database refused: a duplicate where a unique constraint says there may be
+     * only one.
+     *
+     * <p>Added with the constraints themselves in S08, because a constraint with no handler
+     * is worse than no constraint. Until V2 the uniqueness of an email, a commodity name or
+     * a number plate was checked in Java — read, then write — which two concurrent requests
+     * pass simultaneously. Moving the check into the database closes that race, but it also
+     * changes how a duplicate arrives: no longer a value the service inspected, but a
+     * DataIntegrityViolationException thrown from the flush. That is a RuntimeException, so
+     * without this method it reached the catch-all and a user who typed a plate that already
+     * existed was told the server had broken, with a stack trace filed against it.
+     *
+     * <p>409, because the request was well-formed and the caller can act on the answer: pick
+     * another value. The message deliberately does not name the column — the constraint name
+     * is a schema detail, and echoing the driver's text back would leak the table layout.
+     */
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    public ResponseEntity<ResponseResult<Void>> handleConstraintViolation(DataIntegrityViolationException e) {
+        log.debug("Database rejected the write: {}", e.getMostSpecificCause().getMessage());
+        return ResponseEntity.status(HttpStatus.CONFLICT)
+                .body(new ResponseResult<>(409, "数据已存在，请检查是否重复"));
     }
 
     /**

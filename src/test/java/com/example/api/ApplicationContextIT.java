@@ -33,14 +33,18 @@ class ApplicationContextIT {
 
     @Container
     static final MySQLContainer<?> MYSQL = new MySQLContainer<>("mysql:8.0")
-            .withDatabaseName("test");
+            .withDatabaseName("loggi");
 
     @DynamicPropertySource
     static void props(DynamicPropertyRegistry r) {
         r.add("spring.datasource.url", MYSQL::getJdbcUrl);
         r.add("spring.datasource.username", MYSQL::getUsername);
         r.add("spring.datasource.password", MYSQL::getPassword);
-        r.add("spring.jpa.hibernate.ddl-auto", () -> "update"); // match production
+        // No ddl-auto override. It used to say "update" to match production; production is
+        // Flyway plus validate since S08, so the honest way to match it is to let the real
+        // configuration run. These containers start empty, so Flyway applies V1 onwards and
+        // Hibernate then validates the entities against what the migrations built — which
+        // makes every one of these tests a check that the two still agree.
         // Required, not incidental: JwtTokenUtil refuses to construct on the CHANGE_ME
         // placeholder, so from S02 on the context cannot start without a real secret. That
         // this line is necessary IS the fail-fast working.
