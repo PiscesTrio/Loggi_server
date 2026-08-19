@@ -116,4 +116,27 @@ class ObservabilityIT {
                 .contains("/api/admin/login/password")
                 .contains("/api/inventory/in");
     }
+
+    @Test
+    @DisplayName("The document declares the bearer scheme, which no scanner could have inferred")
+    void openApiDocumentDescribesAuthentication() {
+        String body = client().get().uri("/v3/api-docs").retrieve().body(String.class);
+
+        // The JWT filter lives in the security chain, not on the controllers, so nothing in
+        // the code says these endpoints need a token. Without the declaration the document
+        // describes an API that appears to need no credentials, and every request tried from
+        // Swagger UI answers 401 with no hint why.
+        assertThat(body).contains("bearerAuth").contains("\"bearerFormat\":\"JWT\"");
+    }
+
+    @Test
+    @DisplayName("Sale and Employee are documented as API-only, not left looking unfinished")
+    void apiOnlyResourcesAreLabelledAsSuch() {
+        String body = client().get().uri("/v3/api-docs").retrieve().body(String.class);
+
+        // No client calls either. Keeping them was a decision, and an API-only resource and
+        // an unfinished one look identical in a repository unless someone writes it down -
+        // so it is written down here, in the artefact a reader actually opens.
+        assertThat(body).contains("Sales (API only)").contains("Employees (API only)");
+    }
 }

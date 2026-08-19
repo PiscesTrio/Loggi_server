@@ -6,11 +6,13 @@ import com.example.api.model.enums.BusinessType;
 import com.example.api.service.EmployeeService;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.http.HttpStatus;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.web.bind.annotation.*;
 
 import jakarta.annotation.Resource;
 import java.util.List;
 
+@Tag(name = "Employees (API only)", description = "No client calls these, for the same reason as Sales. Documented and kept deliberately; see the backend README.")
 @RestController
 @RequestMapping("/api/employee")
 @PreAuthorize("hasAnyRole('ROLE_SUPER_ADMIN' ,'ROLE_EMPLOYEE')")

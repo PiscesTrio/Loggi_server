@@ -6,11 +6,13 @@ import com.example.api.model.enums.BusinessType;
 import com.example.api.service.WarehouseService;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.http.HttpStatus;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.web.bind.annotation.*;
 
 import jakarta.annotation.Resource;
 import java.util.List;
 
+@Tag(name = "Warehouses", description = "Sites that hold stock.")
 @RestController
 @RequestMapping("/api/warehouse")
 @PreAuthorize("hasAnyRole('ROLE_SUPER_ADMIN' ,'ROLE_WAREHOUSE')")

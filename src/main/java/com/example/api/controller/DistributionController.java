@@ -17,15 +17,15 @@ import com.example.api.repository.VehicleRepository;
 import com.example.api.service.DistributionService;
 import com.example.api.service.DistributionTrackService;
 import org.springframework.http.HttpStatus;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.web.bind.annotation.*;
 
 import jakarta.annotation.Resource;
 import jakarta.validation.Valid;
 import java.util.function.BiConsumer;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
+@Tag(name = "Delivery orders", description = "Orders, the fleet available to carry them, and their tracking trail.")
 @RestController
 @RequestMapping("/api/distribution")
 public class DistributionController {

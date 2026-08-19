@@ -5,11 +5,13 @@ import com.example.api.model.entity.Driver;
 import com.example.api.model.enums.BusinessType;
 import com.example.api.service.DriverService;
 import org.springframework.http.HttpStatus;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.web.bind.annotation.*;
 
 import jakarta.annotation.Resource;
 import java.util.List;
 
+@Tag(name = "Drivers", description = "The people who drive.")
 @RestController
 @RequestMapping("/api/driver")
 public class DriverController {

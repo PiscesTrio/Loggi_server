@@ -5,11 +5,13 @@ import com.example.api.model.entity.Vehicle;
 import com.example.api.model.enums.BusinessType;
 import com.example.api.service.VehicleService;
 import org.springframework.http.HttpStatus;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.web.bind.annotation.*;
 
 import jakarta.annotation.Resource;
 import java.util.List;
 
+@Tag(name = "Vehicles", description = "The fleet.")
 @RestController
 @RequestMapping("/api/vehicle")
 public class VehicleController {

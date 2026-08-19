@@ -86,6 +86,20 @@ com.example.api/
 └── utils/           # JWT utilities, IP/browser helpers
 ```
 
+## Two APIs with no screens
+
+`Sale` and `Employee` have a complete backend - controller, service, repository, entity,
+and their own `@PreAuthorize` roles - and no client calls them. The Flutter app has never
+had a screen for either.
+
+That is deliberate, and it is worth saying so plainly, because **an API-only resource and
+an unfinished one look identical in a repository**. The decision was to keep them and
+document them rather than build two more CRUD screens or delete two real parts of the
+domain: the endpoints are described in the OpenAPI document, tagged `Sales (API only)` and
+`Employees (API only)`, and that is where their contract lives.
+
+If you are looking for the screens, there aren't any. That is the answer, not an omission.
+
 ## Database schema
 
 The schema is owned by Flyway, not by Hibernate. Migrations live in

@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
@@ -31,6 +32,7 @@ import org.springframework.web.bind.annotation.RestController;
  * every caller unwrap something to find what it already had. Pagination is here because
  * these two grow forever, not because lists should be paginated.
  */
+@Tag(name = "Audit logs", description = "Who did what, and who tried to sign in. Both are paginated.")
 @RestController
 @RequestMapping("/api")
 public class LogController {

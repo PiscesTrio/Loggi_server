@@ -6,11 +6,13 @@ import com.example.api.model.entity.InventoryRecord;
 import com.example.api.model.vo.CommodityChartVo;
 import com.example.api.service.InventoryRecordService;
 import com.example.api.service.InventoryService;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.web.bind.annotation.*;
 
 import jakarta.annotation.Resource;
 import java.util.List;
 
+@Tag(name = "Inventory", description = "Stock levels per warehouse, and the movements that change them.")
 @RestController
 @RequestMapping("/api/inventory")
 public class InventoryController {
