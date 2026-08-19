@@ -47,14 +47,14 @@ public class SystemLogServiceImpl implements SystemLogService {
                 Predicate res = null;
                 if (!StringUtils.isEmpty(systemLogVo.getAccount())) {
                     Predicate like1 = criteriaBuilder.like(account.as(String.class), "%"+systemLogVo.getAccount()+"%");
-                    if (!StringUtils.isEmpty(systemLogVo.getMoudle())) {
-                        Predicate like2 = criteriaBuilder.like(module.as(String.class), "%"+systemLogVo.getMoudle()+"%");
+                    if (!StringUtils.isEmpty(systemLogVo.getModule())) {
+                        Predicate like2 = criteriaBuilder.like(module.as(String.class), "%"+systemLogVo.getModule()+"%");
                         res = criteriaBuilder.and(like1, like2);
                     }else {
                         res = criteriaBuilder.and(like1);
                     }
-                }else if(!StringUtils.isEmpty(systemLogVo.getMoudle())){
-                    Predicate like2 = criteriaBuilder.like(module.as(String.class), "%"+systemLogVo.getMoudle()+"%");
+                }else if(!StringUtils.isEmpty(systemLogVo.getModule())){
+                    Predicate like2 = criteriaBuilder.like(module.as(String.class), "%"+systemLogVo.getModule()+"%");
                     res = criteriaBuilder.and(like2);
                 }
                 return res;

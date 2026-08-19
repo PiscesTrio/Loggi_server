@@ -9,5 +9,5 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class SystemLogVo {
     private String account;
-    private String moudle;
+    private String module;
 }

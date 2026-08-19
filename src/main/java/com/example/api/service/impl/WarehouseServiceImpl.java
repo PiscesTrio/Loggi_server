@@ -1,7 +1,7 @@
 package com.example.api.service.impl;
 
 import com.example.api.model.entity.Warehouse;
-import com.example.api.repository.WareHouseRepository;
+import com.example.api.repository.WarehouseRepository;
 import com.example.api.service.WarehouseService;
 import com.example.api.utils.DataTimeUtil;
 import org.springframework.stereotype.Service;
@@ -13,22 +13,22 @@ import java.util.List;
 public class WarehouseServiceImpl implements WarehouseService {
 
     @Resource
-    private WareHouseRepository wareHouseRepository;
+    private WarehouseRepository warehouseRepository;
 
     @Override
     public Warehouse save(Warehouse warehouse) {
         warehouse.setCreateAt(DataTimeUtil.getNowTimeString());
-        return wareHouseRepository.save(warehouse);
+        return warehouseRepository.save(warehouse);
     }
 
     @Override
     public List<Warehouse> findAll() {
-        return wareHouseRepository.findAll();
+        return warehouseRepository.findAll();
     }
 
     @Override
     public void delete(String id) {
-        wareHouseRepository.deleteById(id);
+        warehouseRepository.deleteById(id);
     }
 
 }

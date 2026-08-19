@@ -1,6 +1,6 @@
 package com.example.api.annotation;
 
-import com.example.api.model.enums.BusincessType;
+import com.example.api.model.enums.BusinessType;
 
 import java.lang.annotation.*;
 
@@ -11,10 +11,10 @@ public @interface Log {
     /*
         module
      */
-    String moudle() default "";
+    String module() default "";
 
     /*
         operation type
      */
-    BusincessType type();
+    BusinessType type();
 }
