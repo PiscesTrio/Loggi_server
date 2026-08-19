@@ -1,13 +1,33 @@
 package com.example.api.model.vo;
 
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import com.example.api.model.entity.SystemLog;
+import com.example.api.model.enums.BusinessType;
+import com.fasterxml.jackson.annotation.JsonFormat;
 
-@Data
-@NoArgsConstructor
-@AllArgsConstructor
-public class SystemLogVo {
-    private String account;
-    private String module;
+import java.time.LocalDateTime;
+
+/**
+ * One audited operation.
+ *
+ * <p>{@code businessType} is the enum name since S09; it used to be the Chinese label,
+ * which put a UI language into stored data. Rendering it belongs to whoever is displaying
+ * it.
+ */
+public record SystemLogVo(
+        String id,
+        String account,
+        String module,
+        BusinessType businessType,
+        String ip,
+        String method,
+        Long costMs,
+        boolean success,
+        @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd HH:mm:ss")
+        LocalDateTime time) {
+
+    public static SystemLogVo from(SystemLog log) {
+        return new SystemLogVo(log.getId(), log.getAccount(), log.getModule(),
+                log.getBusinessType(), log.getIp(), log.getMethod(),
+                log.getCostMs(), log.isSuccess(), log.getTime());
+    }
 }
