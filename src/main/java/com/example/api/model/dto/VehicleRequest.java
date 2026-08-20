@@ -1,5 +1,6 @@
 package com.example.api.model.dto;
 
+import com.example.api.model.enums.VehicleType;
 import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
 
@@ -15,5 +16,5 @@ public class VehicleRequest {
     private String number;
 
     @NotBlank(message = "车辆类型不能为空")
-    private String type;
+    private VehicleType type;
 }

@@ -1,16 +1,22 @@
 package com.example.api.model.entity;
 
+import com.example.api.model.enums.CareTag;
 import com.example.api.model.enums.DistributionStatus;
+import jakarta.persistence.CollectionTable;
 import jakarta.persistence.Column;
+import jakarta.persistence.ElementCollection;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
+import jakarta.persistence.ForeignKey;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import java.time.LocalDateTime;
+import java.util.LinkedHashSet;
+import java.util.Set;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
@@ -70,7 +76,25 @@ public class Distribution extends Auditable {
     // expedited handling
     private boolean urgent;
 
-    private String care;
+    /**
+     * Handling instructions, one row each in {@code distribution_care}.
+     *
+     * <p>Was a single varchar holding the selected Chinese labels comma-joined with a trailing
+     * comma, because that is the string the client's multi-select produced. The column therefore
+     * stored a client's serialisation format, and the seed file needed a comment explaining that
+     * the trailing comma was deliberate. Rows instead — the same move V7 made for admin.roles, for
+     * the same reasons: a tag can be queried, an unknown tag cannot be stored, and "no tags" has
+     * one representation rather than three.
+     */
+    @ElementCollection(fetch = FetchType.LAZY)
+    @CollectionTable(
+            name = "distribution_care",
+            joinColumns = @JoinColumn(name = "distribution_id"),
+            foreignKey = @ForeignKey(name = "fk_distribution_care_distribution"))
+    @Column(name = "tag", length = 30, nullable = false)
+    @Enumerated(EnumType.STRING)
+    private Set<CareTag> care = new LinkedHashSet<>();
+
     // operation time
     private LocalDateTime time;
 

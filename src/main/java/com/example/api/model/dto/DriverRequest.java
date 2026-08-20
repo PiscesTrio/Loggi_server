@@ -1,5 +1,6 @@
 package com.example.api.model.dto;
 
+import com.example.api.model.enums.Gender;
 import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
 
@@ -16,7 +17,7 @@ public class DriverRequest {
     @NotBlank(message = "姓名不能为空")
     private String name;
 
-    private String gender;
+    private Gender gender;
 
     @NotBlank(message = "联系电话不能为空")
     private String phone;

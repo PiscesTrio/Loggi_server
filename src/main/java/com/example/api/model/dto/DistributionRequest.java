@@ -1,11 +1,14 @@
 package com.example.api.model.dto;
 
+import com.example.api.model.enums.CareTag;
 import com.example.api.model.enums.DistributionStatus;
 import jakarta.validation.constraints.DecimalMax;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import java.time.LocalDateTime;
+import java.util.LinkedHashSet;
+import java.util.Set;
 import lombok.Data;
 
 /**
@@ -40,7 +43,13 @@ public class DistributionRequest {
 
     private boolean urgent;
 
-    private String care;
+    /**
+     * Handling instructions. A list, not a comma-joined string.
+     *
+     * <p>Unknown tags are rejected by deserialisation rather than stored: the field's type is the
+     * closed set, so a client cannot invent a ninth.
+     */
+    private Set<CareTag> care = new LinkedHashSet<>();
 
     @NotNull(message = "配送时间不能为空")
     private LocalDateTime time;

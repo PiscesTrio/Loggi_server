@@ -1,13 +1,14 @@
 package com.example.api.model.vo;
 
 import com.example.api.model.entity.Employee;
+import com.example.api.model.enums.Gender;
 import java.time.LocalDateTime;
 
 /** An employee, without their identification number - see {@link DriverVo} for the reasoning. */
 public record EmployeeVo(
         String id,
         String name,
-        String gender,
+        Gender gender,
         String phone,
         String address,
         String department,

@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.example.api.model.entity.Commodity;
 import com.example.api.model.entity.Vehicle;
+import com.example.api.model.enums.VehicleType;
 import com.example.api.repository.CommodityRepository;
 import com.example.api.repository.VehicleRepository;
 import java.util.List;
@@ -65,7 +66,7 @@ class FlywayMigrationIT {
         // Named explicitly rather than counted: a count passes while the wrong scripts run.
         // This list has to be extended by hand for every new migration, which is the point —
         // adding a script should be a decision someone made, not something that slid in.
-        assertThat(versions).containsExactly("1", "2", "3", "4", "5", "6", "7", "8");
+        assertThat(versions).containsExactly("1", "2", "3", "4", "5", "6", "7", "8", "9");
     }
 
     @Test
@@ -137,7 +138,7 @@ class FlywayMigrationIT {
     private static Vehicle vehicleNumbered(String number) {
         Vehicle v = new Vehicle();
         v.setNumber(number);
-        v.setType("货车");
+        v.setType(VehicleType.LIGHT_TRUCK);
         return v;
     }
 }

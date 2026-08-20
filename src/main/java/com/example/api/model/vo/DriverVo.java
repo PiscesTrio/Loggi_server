@@ -1,6 +1,7 @@
 package com.example.api.model.vo;
 
 import com.example.api.model.entity.Driver;
+import com.example.api.model.enums.Gender;
 import java.time.LocalDateTime;
 
 /**
@@ -17,7 +18,7 @@ import java.time.LocalDateTime;
 public record DriverVo(
         String id,
         String name,
-        String gender,
+        Gender gender,
         String phone,
         String address,
         String license,

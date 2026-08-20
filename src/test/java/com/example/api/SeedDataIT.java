@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.example.api.model.entity.Distribution;
 import com.example.api.model.entity.Warehouse;
+import com.example.api.model.enums.CareTag;
 import com.example.api.repository.DistributionRepository;
 import com.example.api.repository.WarehouseRepository;
 import java.util.List;
@@ -90,9 +91,11 @@ class SeedDataIT {
         // is what the column held — the trap this slice removed. The seed now stores an id
         // behind a real foreign key, and the name is read through the association.
         assertThat(dis.get().getWarehouse().getName()).isEqualTo("東京江東倉庫");
-        // The client builds this string with a trailing comma; seeded rows must
-        // have the same shape as real ones.
-        assertThat(dis.get().getCare()).endsWith(",");
+        // The trailing-comma trap this assertion used to guard is gone: care was a
+        // comma-joined varchar and is rows in distribution_care since V9, so "the same
+        // shape as a real row" is now enforced by the schema rather than by a convention
+        // the seed file had to imitate.
+        assertThat(dis.get().getCare()).containsExactly(CareTag.FRAGILE, CareTag.KEEP_DRY);
         assertThat(dis.get().getToLat()).isBetween(33.0, 34.0); // Fukuoka
     }
 

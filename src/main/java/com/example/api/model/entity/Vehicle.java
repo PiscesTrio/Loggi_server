@@ -1,6 +1,10 @@
 package com.example.api.model.entity;
 
+import com.example.api.model.enums.VehicleType;
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
 import lombok.Data;
@@ -28,7 +32,9 @@ public class Vehicle extends Auditable {
     private String number;
 
     // vehicle type
-    private String type;
+    @Enumerated(EnumType.STRING)
+    @Column(length = 20)
+    private VehicleType type;
 
     // whether it is currently in transit
     private boolean driving;
