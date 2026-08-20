@@ -11,12 +11,17 @@ import com.example.api.model.enums.Role;
  * change what the API should expose and you are editing an enum that security rules depend on.
  * Worse, it exposes whatever fields the enum happens to grow.
  *
- * <p>A separate view type lets the enum be an enum. The JSON is unchanged — the same two keys the
- * {@code @JsonFormat} produced — so this is a change of ownership, not of contract.
+ * <p>A separate view type lets the enum be an enum.
+ *
+ * <p>It carried a second key, {@code description}, holding Chinese display text. That key is gone:
+ * a role's label belongs to whichever locale the reader is in, and the server does not know which
+ * that is. A record rather than a bare {@code List<String>} because the endpoint has room to grow —
+ * whether the caller may grant a given role, for instance — and that is a property of the role, not
+ * a second parallel array.
  */
-public record RoleVo(String value, String description) {
+public record RoleVo(String value) {
 
     public static RoleVo of(Role role) {
-        return new RoleVo(role.getValue(), role.getDescription());
+        return new RoleVo(role.getValue());
     }
 }

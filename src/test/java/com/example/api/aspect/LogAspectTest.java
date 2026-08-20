@@ -77,10 +77,10 @@ class LogAspectTest {
         assertThat(recorded.getModule()).isEqualTo("测试模块");
         // The enum, not its label. The aspect used to store annotation.type().getName() —
         // the Chinese display text — so the audit table held UI language and a reader had to
-        // map it back. The label is reachable through getName(); what changed is that it is
-        // a rendering of the value rather than the value itself - and since S10 the enum has
-        // no toString() override either, because Jackson 3 serialises through toString() and
-        // was therefore putting the label on the wire while the database held the name.
+        // map it back. S10 dropped the toString() override for the same reason (Jackson 3
+        // serialises through toString(), so the wire carried the label while the database
+        // held the name); the label field itself is gone as of S20, because after S10 nothing
+        // read it and the client maps the value to display text in its own locale.
         assertThat(recorded.getBusinessType()).isEqualTo(BusinessType.INSERT);
     }
 
