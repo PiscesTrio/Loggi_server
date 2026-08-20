@@ -43,6 +43,7 @@ public enum ErrorCode {
     CODE_REQUESTED_TOO_SOON(429),
     CODE_ATTEMPTS_EXHAUSTED(429),
     CODE_DELIVERY_FAILED(502),
+    VERIFICATION_CODE_INVALID(400),
 
     // --- credentials -------------------------------------------------------------------
     // Two, because they are different situations for the caller: one has not signed in, the

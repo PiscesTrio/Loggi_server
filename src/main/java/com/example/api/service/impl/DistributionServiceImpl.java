@@ -82,7 +82,7 @@ public class DistributionServiceImpl implements DistributionService {
                                     () ->
                                             new BizException(
                                                     ErrorCode.WAREHOUSE_NOT_FOUND,
-                                                    "不存在的仓库id: " + warehouseId)));
+                                                    "no warehouse with id " + warehouseId)));
         }
     }
 
@@ -116,10 +116,11 @@ public class DistributionServiceImpl implements DistributionService {
         // approval is the case it also catches, and telling the caller the assignment did
         // not go through is safer than silently reassigning.
         if (driver.isDriving()) {
-            throw new BizException(ErrorCode.DRIVER_UNAVAILABLE, "司机当前不可用");
+            throw new BizException(ErrorCode.DRIVER_UNAVAILABLE, "that driver is already assigned");
         }
         if (vehicle.isDriving()) {
-            throw new BizException(ErrorCode.VEHICLE_UNAVAILABLE, "货车当前不可用");
+            throw new BizException(
+                    ErrorCode.VEHICLE_UNAVAILABLE, "that vehicle is already assigned");
         }
 
         driverRepository.updateDriving(true, driver.getId());
@@ -136,14 +137,18 @@ public class DistributionServiceImpl implements DistributionService {
         return driverRepository
                 .findById(did == null ? "" : did)
                 .orElseThrow(
-                        () -> new BizException(ErrorCode.DRIVER_NOT_FOUND, "不存在的司机id: " + did));
+                        () ->
+                                new BizException(
+                                        ErrorCode.DRIVER_NOT_FOUND, "no driver with id " + did));
     }
 
     private Vehicle requireVehicle(String vid) {
         return vehicleRepository
                 .findById(vid == null ? "" : vid)
                 .orElseThrow(
-                        () -> new BizException(ErrorCode.VEHICLE_NOT_FOUND, "不存在的货车id: " + vid));
+                        () ->
+                                new BizException(
+                                        ErrorCode.VEHICLE_NOT_FOUND, "no vehicle with id " + vid));
     }
 
     @Override

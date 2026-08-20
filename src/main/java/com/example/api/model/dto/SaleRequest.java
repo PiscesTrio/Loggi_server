@@ -11,20 +11,20 @@ import lombok.Data;
 @Data
 public class SaleRequest {
 
-    @NotBlank(message = "客户公司不能为空")
+    @NotBlank(message = "company is required")
     private String company;
 
     private String number;
 
-    @NotBlank(message = "商品不能为空")
+    @NotBlank(message = "commodityId is required")
     private String commodity;
 
-    @NotNull(message = "数量不能为空")
-    @Positive(message = "数量必须大于 0")
+    @NotNull(message = "count is required")
+    @Positive(message = "count must be greater than zero")
     private Integer count;
 
-    @NotNull(message = "金额不能为空")
-    @DecimalMin(value = "0.0", message = "金额不能为负")
+    @NotNull(message = "price is required")
+    @DecimalMin(value = "0.0", message = "price cannot be negative")
     private BigDecimal price;
 
     private String phone;

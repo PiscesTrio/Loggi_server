@@ -48,7 +48,7 @@ public class DistributionTrackServiceImpl implements DistributionTrackService {
                                 () ->
                                         new BizException(
                                                 ErrorCode.DISTRIBUTION_NOT_FOUND,
-                                                "不存在的配送单id: " + distributionId));
+                                                "no delivery order with id " + distributionId));
 
         track.setDistribution(parent);
         track.setTime(LocalDateTime.now());

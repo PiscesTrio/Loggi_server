@@ -14,12 +14,12 @@ import lombok.Data;
 @Data
 public class DriverRequest {
 
-    @NotBlank(message = "姓名不能为空")
+    @NotBlank(message = "name is required")
     private String name;
 
     private Gender gender;
 
-    @NotBlank(message = "联系电话不能为空")
+    @NotBlank(message = "phone is required")
     private String phone;
 
     private String address;

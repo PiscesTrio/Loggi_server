@@ -19,12 +19,12 @@ import lombok.Data;
 @Data
 public class AdminRequest {
 
-    @NotBlank(message = "邮箱不能为空")
-    @Email(message = "邮箱格式不正确")
+    @NotBlank(message = "email is required")
+    @Email(message = "email is not a valid address")
     private String email;
 
-    @NotBlank(message = "密码不能为空")
-    @Size(min = 8, message = "密码至少 8 位")
+    @NotBlank(message = "password is required")
+    @Size(min = 8, message = "password must be at least 8 characters")
     private String password;
 
     /**

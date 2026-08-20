@@ -9,6 +9,7 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import com.example.api.exception.BizException;
+import com.example.api.exception.ErrorCode;
 import com.example.api.model.entity.Distribution;
 import com.example.api.model.entity.Driver;
 import com.example.api.model.entity.Vehicle;
@@ -121,7 +122,7 @@ class DistributionServiceImplTest {
 
         assertThatThrownBy(() -> service.save(order(STATUS_APPROVED)))
                 .isInstanceOf(BizException.class)
-                .hasMessage("司机当前不可用")
+                .hasMessage("that driver is already assigned")
                 .extracting(e -> ((BizException) e).getStatus())
                 .isEqualTo(409);
 
@@ -141,7 +142,7 @@ class DistributionServiceImplTest {
 
         assertThatThrownBy(() -> service.save(order(STATUS_APPROVED)))
                 .isInstanceOf(BizException.class)
-                .hasMessage("货车当前不可用");
+                .hasMessage("that vehicle is already assigned");
 
         verify(driverRepository, never()).updateDriving(any(Boolean.class), any());
         verifyNoInteractions(distributionRepository);
@@ -156,9 +157,11 @@ class DistributionServiceImplTest {
 
         assertThatThrownBy(() -> service.save(order(STATUS_APPROVED)))
                 .isInstanceOf(BizException.class)
-                .hasMessageContaining("不存在的司机id")
-                .extracting(e -> ((BizException) e).getStatus())
-                .isEqualTo(404);
+                // The code, not the sentence. The status says 404 and the sentence says which
+                // 404 — but only one of the two is something a client can branch on, and it
+                // is the one worth pinning.
+                .extracting(e -> ((BizException) e).getErrorCode())
+                .isEqualTo(ErrorCode.DRIVER_NOT_FOUND);
 
         verifyNoInteractions(distributionRepository);
     }

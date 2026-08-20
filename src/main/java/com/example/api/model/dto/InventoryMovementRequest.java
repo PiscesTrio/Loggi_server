@@ -21,14 +21,14 @@ import lombok.Data;
 @Data
 public class InventoryMovementRequest {
 
-    @NotBlank(message = "仓库不能为空")
+    @NotBlank(message = "warehouseId is required")
     private String warehouseId;
 
-    @NotBlank(message = "商品不能为空")
+    @NotBlank(message = "commodityId is required")
     private String commodityId;
 
-    @NotNull(message = "数量不能为空")
-    @Min(value = 1, message = "数量必须大于 0")
+    @NotNull(message = "count is required")
+    @Min(value = 1, message = "count must be greater than zero")
     private Integer count;
 
     private String description;

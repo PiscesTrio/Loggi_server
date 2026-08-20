@@ -98,7 +98,7 @@ class AdminControllerTest {
                 .andExpect(status().isForbidden())
                 .andExpect(jsonPath("$.code").value(403))
                 .andExpect(jsonPath("$.status").value(false))
-                .andExpect(jsonPath("$.msg").value("你没有访问权限"));
+                .andExpect(jsonPath("$.msg").value("access denied"));
     }
 
     @Test
@@ -145,7 +145,7 @@ class AdminControllerTest {
                                 .content("{\"email\":\"\",\"password\":\"whatever\"}"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value(400))
-                .andExpect(jsonPath("$.msg").value("邮箱不能为空"));
+                .andExpect(jsonPath("$.msg").value("email is required"));
     }
 
     @Test
@@ -157,7 +157,7 @@ class AdminControllerTest {
                                 .content(
                                         "{\"email\":\"not-an-address\",\"password\":\"whatever\"}"))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.msg").value("邮箱格式不正确"));
+                .andExpect(jsonPath("$.msg").value("email is not a valid address"));
 
         // The point of validating at the boundary: the service is not consulted at all, so a
         // request that could never succeed costs no password hash and no login-log row.

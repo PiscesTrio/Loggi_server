@@ -1,5 +1,7 @@
 package com.example.api.service.impl;
 
+import com.example.api.exception.BizException;
+import com.example.api.exception.ErrorCode;
 import com.example.api.model.dto.LoginDto;
 import com.example.api.model.entity.Admin;
 import com.example.api.model.enums.Role;
@@ -28,7 +30,7 @@ public class AdminServiceImpl implements AdminService {
     @Override
     public Admin save(Admin admin) throws Exception {
         if (admin.getEmail().length() < 8 || admin.getPassword().length() < 5)
-            throw new Exception("请求参数异常");
+            throw new BizException(ErrorCode.VALIDATION_FAILED, "email or password too short");
         // Encode before anything can persist it. The length check above runs on the
         // password as typed, which is the only point at which that is meaningful.
         admin.setPassword(passwordEncoder.encode(admin.getPassword()));
@@ -61,7 +63,7 @@ public class AdminServiceImpl implements AdminService {
         // One message for both branches on purpose: distinguishing "no such account"
         // from "wrong password" tells an attacker which addresses are registered.
         if (one == null || !passwordEncoder.matches(dto.getPassword(), one.getPassword())) {
-            throw new Exception("邮箱或密码错误");
+            throw new Exception("wrong email or password");
         }
         return one;
     }
@@ -69,7 +71,11 @@ public class AdminServiceImpl implements AdminService {
     @Override
     public Admin loginByEmail(LoginDto dto) throws Exception {
         boolean status = emailService.checkVerificationCode(dto.getEmail(), dto.getCode());
-        if (!status) throw new Exception("验证码错误");
+        // A code of its own: "the code you typed is wrong" is the one failure on this path a
+        // user can actually act on, and a generic 400 cannot tell it from a malformed request.
+        if (!status) {
+            throw new BizException(ErrorCode.VERIFICATION_CODE_INVALID, "wrong verification code");
+        }
         return adminRepository.findAdminByEmail(dto.getEmail());
     }
 

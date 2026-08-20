@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 import com.example.api.exception.BizException;
+import com.example.api.exception.ErrorCode;
 import com.example.api.model.entity.Commodity;
 import com.example.api.model.entity.Inventory;
 import com.example.api.model.entity.InventoryRecord;
@@ -70,7 +71,7 @@ class InventoryRecordServiceImplTest {
         // body, which is the difference between "ask for fewer" and "fix your code".
         assertThatThrownBy(() -> service.out(rec))
                 .isInstanceOf(BizException.class)
-                .hasMessage("出库失败，库存数量不足")
+                .hasMessage("not enough stock to send out")
                 .extracting(e -> ((BizException) e).getStatus())
                 .isEqualTo(409);
     }
@@ -86,7 +87,7 @@ class InventoryRecordServiceImplTest {
 
         assertThatThrownBy(() -> service.out(rec))
                 .isInstanceOf(BizException.class)
-                .hasMessage("仓库内不存在该商品")
+                .hasMessage("the warehouse does not hold that commodity")
                 .extracting(e -> ((BizException) e).getStatus())
                 .isEqualTo(404);
     }
@@ -160,9 +161,11 @@ class InventoryRecordServiceImplTest {
 
         assertThatThrownBy(() -> service.in(rec))
                 .isInstanceOf(BizException.class)
-                .hasMessageContaining("不存在的商品id")
-                .extracting(e -> ((BizException) e).getStatus())
-                .isEqualTo(404);
+                // The code, not the sentence. The status says 404 and the sentence says which
+                // 404 — but only one of the two is something a client can branch on, and it
+                // is the one worth pinning.
+                .extracting(e -> ((BizException) e).getErrorCode())
+                .isEqualTo(ErrorCode.COMMODITY_NOT_FOUND);
         verifyNoInteractions(inventoryRepository, recordRepository);
     }
 

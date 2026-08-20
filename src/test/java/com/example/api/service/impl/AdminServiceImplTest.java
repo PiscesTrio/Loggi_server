@@ -8,6 +8,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
+import com.example.api.exception.BizException;
 import com.example.api.model.dto.LoginDto;
 import com.example.api.model.entity.Admin;
 import com.example.api.repository.AdminRepository;
@@ -106,7 +107,7 @@ class AdminServiceImplTest {
 
         assertThatThrownBy(() -> service().loginByPassword(dto))
                 .isExactlyInstanceOf(Exception.class)
-                .hasMessage("邮箱或密码错误");
+                .hasMessage("wrong email or password");
     }
 
     @Test
@@ -122,7 +123,7 @@ class AdminServiceImplTest {
         // e-mail addresses have accounts.
         assertThatThrownBy(() -> service().loginByPassword(dto))
                 .isExactlyInstanceOf(Exception.class)
-                .hasMessage("邮箱或密码错误");
+                .hasMessage("wrong email or password");
     }
 
     @Test
@@ -153,9 +154,11 @@ class AdminServiceImplTest {
         Admin admin = new Admin();
         admin.setEmail("a@b.com"); // length 7 < 8
         admin.setPassword("123456");
+        // A BizException now, not a bare Exception: the caller can act on this one, and it
+        // carries the code that says which failure it is.
         assertThatThrownBy(() -> service().save(admin))
-                .isExactlyInstanceOf(Exception.class)
-                .hasMessage("请求参数异常");
+                .isExactlyInstanceOf(BizException.class)
+                .hasMessage("email or password too short");
         verifyNoInteractions(adminRepository); // not persisted when validation fails
     }
 }

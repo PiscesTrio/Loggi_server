@@ -63,7 +63,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(AccessDeniedException.class)
     public ResponseEntity<ResponseResult<Void>> handleAccessDenied(AccessDeniedException e) {
         return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                .body(new ResponseResult<>(403, "你没有访问权限", ErrorCode.ACCESS_DENIED));
+                .body(new ResponseResult<>(403, "access denied", ErrorCode.ACCESS_DENIED));
     }
 
     /** Optional.get() on an absent record; the inventory paths reach it through a missing id. */
@@ -71,16 +71,16 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ResponseResult<Void>> handleNotFound(NoSuchElementException e) {
         log.debug("Requested record does not exist: {}", e.getMessage());
         return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                .body(new ResponseResult<>(404, "请求的资源不存在", ErrorCode.NOT_FOUND));
+                .body(new ResponseResult<>(404, "not found", ErrorCode.NOT_FOUND));
     }
 
     /**
      * A request that failed its constraints, answered with the constraint that failed.
      *
      * <p>Without this it would reach the catch-all below, be recognised as an {@link
-     * ErrorResponse}, and come back as a flat "请求参数错误". That is true and useless: the DTO declares
-     * which field is wrong and why, and discarding that at the boundary means the caller has to
-     * guess which of five fields the server disliked.
+     * ErrorResponse}, and come back as a flat "the request could not be read". That is true and
+     * useless: the DTO declares which field is wrong and why, and discarding that at the boundary
+     * means the caller has to guess which of five fields the server disliked.
      *
      * <p>Only the first violation is returned. Validation order is not defined, so the set is not
      * stable between runs, and a caller fixing one field at a time gets a coherent conversation
@@ -93,7 +93,7 @@ public class GlobalExceptionHandler {
                 e.getBindingResult().getFieldErrors().stream()
                         .map(FieldError::getDefaultMessage)
                         .findFirst()
-                        .orElse("请求参数错误");
+                        .orElse("the request could not be read");
         log.debug("Request rejected by validation: {}", e.getBindingResult().getAllErrors());
         return ResponseEntity.badRequest()
                 .body(new ResponseResult<>(400, message, ErrorCode.VALIDATION_FAILED));
@@ -120,7 +120,7 @@ public class GlobalExceptionHandler {
             DataIntegrityViolationException e) {
         log.debug("Database rejected the write: {}", e.getMostSpecificCause().getMessage());
         return ResponseEntity.status(HttpStatus.CONFLICT)
-                .body(new ResponseResult<>(409, "数据已存在，请检查是否重复", ErrorCode.ALREADY_EXISTS));
+                .body(new ResponseResult<>(409, "that already exists", ErrorCode.ALREADY_EXISTS));
     }
 
     /**
@@ -136,7 +136,9 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ResponseResult<Void>> handleUnreadableRequest(Exception e) {
         log.debug("Request could not be read: {}", e.getMessage());
         return ResponseEntity.badRequest()
-                .body(new ResponseResult<>(400, "请求参数错误", ErrorCode.MALFORMED_REQUEST));
+                .body(
+                        new ResponseResult<>(
+                                400, "the request could not be read", ErrorCode.MALFORMED_REQUEST));
     }
 
     /**
@@ -184,13 +186,14 @@ public class GlobalExceptionHandler {
         // says BAD_REQUEST is worse than either alone, and two lists drift.
         var answer =
                 switch (status) {
-                    case 404 -> new Answer("请求的资源不存在", ErrorCode.NOT_FOUND);
-                    case 405 -> new Answer("不支持的请求方法", ErrorCode.METHOD_NOT_ALLOWED);
-                    case 415 -> new Answer("不支持的媒体类型", ErrorCode.MALFORMED_REQUEST);
+                    case 404 -> new Answer("not found", ErrorCode.NOT_FOUND);
+                    case 405 -> new Answer("method not allowed", ErrorCode.METHOD_NOT_ALLOWED);
+                    case 415 -> new Answer("unsupported media type", ErrorCode.MALFORMED_REQUEST);
                     default ->
                             errorResponse.getStatusCode().is4xxClientError()
-                                    ? new Answer("请求参数错误", ErrorCode.BAD_REQUEST)
-                                    : new Answer("服务器内部错误", ErrorCode.INTERNAL_ERROR);
+                                    ? new Answer(
+                                            "the request could not be read", ErrorCode.BAD_REQUEST)
+                                    : new Answer("internal server error", ErrorCode.INTERNAL_ERROR);
                 };
         if (errorResponse.getStatusCode().is5xxServerError()) {
             log.error("Spring MVC reported a server-side failure", e);
@@ -215,7 +218,7 @@ public class GlobalExceptionHandler {
     private ResponseEntity<ResponseResult<Void>> handleUnexpected(Exception e) {
         log.error("Unhandled exception while serving a request", e);
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(new ResponseResult<>(500, "服务器内部错误", ErrorCode.INTERNAL_ERROR));
+                .body(new ResponseResult<>(500, "internal server error", ErrorCode.INTERNAL_ERROR));
     }
 
     /** A status's message and its code, chosen together. */

@@ -9,21 +9,21 @@ import lombok.Data;
 @Data
 public class WarehouseRequest {
 
-    @NotBlank(message = "仓库名称不能为空")
+    @NotBlank(message = "warehouse name is required")
     private String name;
 
     private String principle;
 
-    @NotBlank(message = "仓库地址不能为空")
+    @NotBlank(message = "warehouse address is required")
     private String location;
 
     // Bounded, because the map draws whatever arrives. An unchecked coordinate puts a
     // warehouse in the ocean and the screen simply shows it there.
-    @DecimalMin(value = "-90.0", message = "纬度超出范围")
-    @DecimalMax(value = "90.0", message = "纬度超出范围")
+    @DecimalMin(value = "-90.0", message = "latitude is out of range")
+    @DecimalMax(value = "90.0", message = "latitude is out of range")
     private double lat;
 
-    @DecimalMin(value = "-180.0", message = "经度超出范围")
-    @DecimalMax(value = "180.0", message = "经度超出范围")
+    @DecimalMin(value = "-180.0", message = "longitude is out of range")
+    @DecimalMax(value = "180.0", message = "longitude is out of range")
     private double lng;
 }

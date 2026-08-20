@@ -73,7 +73,7 @@ class ErrorResponseTest {
 
         @GetMapping("/biz")
         public String biz() {
-            throw new BizException(ErrorCode.INSUFFICIENT_STOCK, "库存不足");
+            throw new BizException(ErrorCode.INSUFFICIENT_STOCK, "not enough stock");
         }
 
         @GetMapping("/not-found")
@@ -125,7 +125,7 @@ class ErrorResponseTest {
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.code").value(409))
                 .andExpect(jsonPath("$.status").value(false))
-                .andExpect(jsonPath("$.msg").value("库存不足"))
+                .andExpect(jsonPath("$.msg").value("not enough stock"))
                 // The code is what a client branches on; msg is what it falls back to. 409
                 // alone cannot separate "that driver is already out" from "that movement
                 // would go negative", and both are things a UI wants to phrase differently.
@@ -153,7 +153,7 @@ class ErrorResponseTest {
         mockMvc.perform(get("/api/test-errors/unexpected"))
                 .andExpect(status().isInternalServerError())
                 .andExpect(jsonPath("$.code").value(500))
-                .andExpect(jsonPath("$.msg").value("服务器内部错误"))
+                .andExpect(jsonPath("$.msg").value("internal server error"))
                 .andExpect(jsonPath("$.errorCode").value("INTERNAL_ERROR"));
     }
 
@@ -201,7 +201,7 @@ class ErrorResponseTest {
         mockMvc.perform(get("/api/test-errors/does-not-exist"))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.code").value(404))
-                .andExpect(jsonPath("$.msg").value("请求的资源不存在"));
+                .andExpect(jsonPath("$.msg").value("not found"));
     }
 
     @Test
@@ -226,7 +226,7 @@ class ErrorResponseTest {
         mockMvc.perform(post("/api/test-errors/ok"))
                 .andExpect(status().isMethodNotAllowed())
                 .andExpect(jsonPath("$.code").value(405))
-                .andExpect(jsonPath("$.msg").value("不支持的请求方法"));
+                .andExpect(jsonPath("$.msg").value("method not allowed"));
     }
 
     @Test
