@@ -1,20 +1,19 @@
 package com.example.api.annotation;
 
 import com.example.api.model.enums.BusinessType;
-
 import java.lang.annotation.*;
 
-@Target(ElementType.METHOD)   //target type
-@Retention(RetentionPolicy.RUNTIME)  //retention policy
+@Target(ElementType.METHOD) // target type
+@Retention(RetentionPolicy.RUNTIME) // retention policy
 @Documented
 public @interface Log {
     /*
-        module
-     */
+       module
+    */
     String module() default "";
 
     /*
-        operation type
-     */
+       operation type
+    */
     BusinessType type();
 }

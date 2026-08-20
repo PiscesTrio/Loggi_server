@@ -1,5 +1,13 @@
 package com.example.api.controller;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.verify;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
 import com.example.api.handler.GlobalResponseHandler;
 import com.example.api.model.entity.SystemLog;
 import com.example.api.model.enums.BusinessType;
@@ -7,6 +15,8 @@ import com.example.api.security.SecurityConfiguration;
 import com.example.api.service.LoginLogService;
 import com.example.api.service.SystemLogService;
 import com.example.api.utils.JwtTokenUtil;
+import java.time.LocalDateTime;
+import java.util.List;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -22,23 +32,12 @@ import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
-import java.time.LocalDateTime;
-import java.util.List;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.verify;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
-
 /**
  * The two logs are paginated, and the page says how much more there is.
  *
- * <p>Both endpoints returned every row before S10. These tables grow by a row per audited
- * request and a row per login attempt, so "every row" is a response that gets slower for the
- * whole life of the deployment and is unusable long before it gets slow enough to notice.
+ * <p>Both endpoints returned every row before S10. These tables grow by a row per audited request
+ * and a row per login attempt, so "every row" is a response that gets slower for the whole life of
+ * the deployment and is unusable long before it gets slow enough to notice.
  */
 @WebMvcTest(LogController.class)
 @Import({SecurityConfiguration.class, GlobalResponseHandler.class})
@@ -87,7 +86,8 @@ class LogControllerTest {
 
     @Test
     @WithMockUser
-    @DisplayName("An unasked-for page is the newest twenty, because a log read backwards is not a log")
+    @DisplayName(
+            "An unasked-for page is the newest twenty, because a log read backwards is not a log")
     void systemLog_defaultsToNewestFirst() throws Exception {
         given(systemLogService.getAll(any(Pageable.class)))
                 .willReturn(new PageImpl<>(List.of(entry()), PageRequest.of(0, 20), 1));
@@ -98,8 +98,10 @@ class LogControllerTest {
         verify(systemLogService).getAll(captor.capture());
         Pageable used = captor.getValue();
         assertThat(used.getPageSize()).isEqualTo(20);
-        assertThat(used.getSort().getOrderFor("time")).isNotNull()
-                .extracting(Sort.Order::getDirection).isEqualTo(Sort.Direction.DESC);
+        assertThat(used.getSort().getOrderFor("time"))
+                .isNotNull()
+                .extracting(Sort.Order::getDirection)
+                .isEqualTo(Sort.Direction.DESC);
     }
 
     @Test

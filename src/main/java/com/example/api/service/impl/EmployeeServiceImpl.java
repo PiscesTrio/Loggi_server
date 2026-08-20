@@ -3,16 +3,14 @@ package com.example.api.service.impl;
 import com.example.api.model.entity.Employee;
 import com.example.api.repository.EmployeeRepository;
 import com.example.api.service.EmployeeService;
-import org.springframework.stereotype.Service;
-
 import jakarta.annotation.Resource;
 import java.util.List;
+import org.springframework.stereotype.Service;
 
 @Service
 public class EmployeeServiceImpl implements EmployeeService {
 
-    @Resource
-    private EmployeeRepository employeeRepository;
+    @Resource private EmployeeRepository employeeRepository;
 
     @Override
     public Employee save(Employee employee) {
@@ -38,5 +36,4 @@ public class EmployeeServiceImpl implements EmployeeService {
     public List<Employee> findAll() {
         return employeeRepository.findAll();
     }
-
 }

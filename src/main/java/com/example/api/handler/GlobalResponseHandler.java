@@ -12,12 +12,9 @@ import org.springframework.http.server.ServerHttpResponse;
 import org.springframework.http.server.ServletServerHttpResponse;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseBodyAdvice;
-
 import tools.jackson.databind.ObjectMapper;
 
-/**
- * Wraps a controller's return value in the {@code {code,status,msg,data}} envelope.
- */
+/** Wraps a controller's return value in the {@code {code,status,msg,data}} envelope. */
 @ControllerAdvice(value = "com.example.api.controller")
 public class GlobalResponseHandler implements ResponseBodyAdvice<Object> {
 
@@ -31,15 +28,15 @@ public class GlobalResponseHandler implements ResponseBodyAdvice<Object> {
      * {@code hasMethodAnnotation}, not {@code hasParameterAnnotation}.
      *
      * <p>{@link DisableBaseResponse} targets METHOD, and the MethodParameter handed to a
-     * ResponseBodyAdvice describes the <em>return value</em>, whose parameter index is -1
-     * and whose parameter annotations are therefore always empty. The check could never
-     * match, so the annotation did nothing wherever it was applied — the sort of defect
-     * that leaves no trace, because an annotation that is silently ignored looks exactly
-     * like one that is being honoured until you inspect the body.
+     * ResponseBodyAdvice describes the <em>return value</em>, whose parameter index is -1 and whose
+     * parameter annotations are therefore always empty. The check could never match, so the
+     * annotation did nothing wherever it was applied — the sort of defect that leaves no trace,
+     * because an annotation that is silently ignored looks exactly like one that is being honoured
+     * until you inspect the body.
      */
     @Override
-    public boolean supports(MethodParameter returnType,
-                            Class<? extends HttpMessageConverter<?>> converterType) {
+    public boolean supports(
+            MethodParameter returnType, Class<? extends HttpMessageConverter<?>> converterType) {
         if (returnType.hasMethodAnnotation(DisableBaseResponse.class)) {
             return false;
         }
@@ -54,9 +51,13 @@ public class GlobalResponseHandler implements ResponseBodyAdvice<Object> {
     }
 
     @Override
-    public Object beforeBodyWrite(Object body, MethodParameter returnType, MediaType mediaType,
-                                  Class<? extends HttpMessageConverter<?>> converterType,
-                                  ServerHttpRequest request, ServerHttpResponse response) {
+    public Object beforeBodyWrite(
+            Object body,
+            MethodParameter returnType,
+            MediaType mediaType,
+            Class<? extends HttpMessageConverter<?>> converterType,
+            ServerHttpRequest request,
+            ServerHttpResponse response) {
         int status = statusOf(response);
 
         // 204 means no content, and that is not a suggestion: writing an envelope with a

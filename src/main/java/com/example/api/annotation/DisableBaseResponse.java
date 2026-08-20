@@ -5,10 +5,7 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
-/**
- * Annotated methods skip the global response envelope.
- */
+/** Annotated methods skip the global response envelope. */
 @Target(ElementType.METHOD)
 @Retention(RetentionPolicy.RUNTIME)
-public @interface DisableBaseResponse {
-}
+public @interface DisableBaseResponse {}

@@ -6,9 +6,9 @@ import lombok.Data;
 /**
  * What a caller sends to create a driver.
  *
- * <p>{@code driving} is absent deliberately. Whether a driver is out on a delivery is
- * decided by approving and completing orders, not by whoever is editing the driver record -
- * accepting it here would let a caller mark a busy driver free and dispatch them twice.
+ * <p>{@code driving} is absent deliberately. Whether a driver is out on a delivery is decided by
+ * approving and completing orders, not by whoever is editing the driver record - accepting it here
+ * would let a caller mark a busy driver free and dispatch them twice.
  */
 @Data
 public class DriverRequest {

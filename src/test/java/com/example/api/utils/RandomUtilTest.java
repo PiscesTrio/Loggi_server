@@ -1,23 +1,21 @@
 package com.example.api.utils;
 
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Test;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.HashSet;
 import java.util.Set;
 import java.util.stream.IntStream;
-
-import static org.assertj.core.api.Assertions.assertThat;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
 
 /**
  * The generator behind the one-time code.
  *
- * <p>The slice plan said to start calling this class, which had existed unused while the
- * service hardcoded {@code "123456"}. Calling it as it stood would have swapped a constant
- * for a {@link java.util.Random} — a 48-bit LCG whose whole state is recoverable from a
- * couple of outputs, after which the rest is arithmetic. These tests describe what a code
- * generator has to be, so that a future "simplification" back to {@code Random} has
- * something to fail.
+ * <p>The slice plan said to start calling this class, which had existed unused while the service
+ * hardcoded {@code "123456"}. Calling it as it stood would have swapped a constant for a {@link
+ * java.util.Random} — a 48-bit LCG whose whole state is recoverable from a couple of outputs, after
+ * which the rest is arithmetic. These tests describe what a code generator has to be, so that a
+ * future "simplification" back to {@code Random} has something to fail.
  */
 class RandomUtilTest {
 
@@ -27,8 +25,7 @@ class RandomUtilTest {
         // Assembled digit by digit this was already true; formatted from an int it is the
         // part that is easy to get wrong, because 000123 is a legitimate code and printing
         // it as 123 quietly removes those codes from the space.
-        IntStream.range(0, 2000).forEach(i ->
-                assertThat(RandomUtil.next()).matches("\\d{6}"));
+        IntStream.range(0, 2000).forEach(i -> assertThat(RandomUtil.next()).matches("\\d{6}"));
     }
 
     @Test

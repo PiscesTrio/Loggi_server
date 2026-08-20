@@ -3,16 +3,14 @@ package com.example.api.service.impl;
 import com.example.api.model.entity.Vehicle;
 import com.example.api.repository.VehicleRepository;
 import com.example.api.service.VehicleService;
-import org.springframework.stereotype.Service;
-
 import jakarta.annotation.Resource;
 import java.util.List;
+import org.springframework.stereotype.Service;
 
 @Service
 public class VehicleServiceImpl implements VehicleService {
 
-    @Resource
-    private VehicleRepository vehicleRepository;
+    @Resource private VehicleRepository vehicleRepository;
 
     @Override
     public Vehicle save(Vehicle vehicle) {
@@ -38,5 +36,4 @@ public class VehicleServiceImpl implements VehicleService {
     public List<Vehicle> findAll() {
         return vehicleRepository.findAll();
     }
-
 }

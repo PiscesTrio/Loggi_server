@@ -1,11 +1,20 @@
 package com.example.api.security;
 
+import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
 import com.example.api.repository.AdminRepository;
 import com.example.api.service.AdminService;
 import com.example.api.service.LoginLogService;
 import com.example.api.utils.JwtTokenUtil;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
+import java.nio.charset.StandardCharsets;
+import java.util.Date;
+import java.util.List;
+import javax.crypto.SecretKey;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -15,16 +24,6 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
-
-import javax.crypto.SecretKey;
-import java.nio.charset.StandardCharsets;
-import java.util.Date;
-import java.util.List;
-
-import static org.mockito.Mockito.when;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
  * What the filter does to a request, end to end through the real security chain.
@@ -44,15 +43,16 @@ class JwtAuthorizationFilterTest {
 
     /** A permitAll endpoint — no {@code @PreAuthorize} on {@code hasInit()}. */
     private static final String OPEN = "/api/admin/hasInit";
+
     /** Guarded by {@code @PreAuthorize} only; there is no URL-level rule. */
     private static final String GUARDED = "/api/admin";
 
     @TestConfiguration
     static class RealTokenUtil {
         /**
-         * A real one, not a mock. Mocking the thing under test here would mean asserting that
-         * the filter calls a method, when the question is what a genuine signature check does
-         * to the response.
+         * A real one, not a mock. Mocking the thing under test here would mean asserting that the
+         * filter calls a method, when the question is what a genuine signature check does to the
+         * response.
          */
         @Bean
         JwtTokenUtil jwtTokenUtil() {
@@ -84,12 +84,13 @@ class JwtAuthorizationFilterTest {
     @DisplayName("A token signed with another secret gets 401, not 500")
     void forgedSignature_returns401() throws Exception {
         SecretKey attacker = Keys.hmacShaKeyFor(ATTACKER_SECRET.getBytes(StandardCharsets.UTF_8));
-        String forged = Jwts.builder()
-                .subject("mallory")
-                .claim("roles", List.of("ROLE_SUPER_ADMIN"))
-                .expiration(new Date(System.currentTimeMillis() + 60_000))
-                .signWith(attacker)
-                .compact();
+        String forged =
+                Jwts.builder()
+                        .subject("mallory")
+                        .claim("roles", List.of("ROLE_SUPER_ADMIN"))
+                        .expiration(new Date(System.currentTimeMillis() + 60_000))
+                        .signWith(attacker)
+                        .compact();
 
         mockMvc.perform(get(OPEN).header("Authorization", "Bearer " + forged))
                 .andExpect(status().isUnauthorized())
@@ -117,8 +118,9 @@ class JwtAuthorizationFilterTest {
     @Test
     @DisplayName("The old logistics: format is no longer accepted as a scheme")
     void legacyPrefixedToken_isNotTreatedAsBearer() throws Exception {
-        String valid = jwtTokenUtil.createToken("alice", List.of("ROLE_ADMIN"),
-                JwtTokenUtil.EXPIRATION_TIME);
+        String valid =
+                jwtTokenUtil.createToken(
+                        "alice", List.of("ROLE_ADMIN"), JwtTokenUtil.EXPIRATION_TIME);
 
         // Not a Bearer header, so it is ignored entirely: no authentication is established.
         // Every token issued before this slice stops working, which is the cost of removing a
@@ -130,8 +132,11 @@ class JwtAuthorizationFilterTest {
     @Test
     @DisplayName("A valid token grants the authorities in its roles claim")
     void validToken_grantsTheRolesItCarries() throws Exception {
-        String token = jwtTokenUtil.createToken("root@example.com",
-                List.of("ROLE_SUPER_ADMIN"), JwtTokenUtil.EXPIRATION_TIME);
+        String token =
+                jwtTokenUtil.createToken(
+                        "root@example.com",
+                        List.of("ROLE_SUPER_ADMIN"),
+                        JwtTokenUtil.EXPIRATION_TIME);
 
         // The whole chain in one assertion: the token verifies, ROLE_SUPER_ADMIN is installed as
         // an authority, and @PreAuthorize("hasAnyRole('ROLE_SUPER_ADMIN', 'ROLE_ADMIN')") admits

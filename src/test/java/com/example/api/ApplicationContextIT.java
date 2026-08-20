@@ -1,5 +1,7 @@
 package com.example.api;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -12,15 +14,13 @@ import org.testcontainers.containers.MySQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
 /**
  * The most direct smoke test for a framework upgrade: boot the <b>whole</b> ApplicationContext.
  *
  * <p>Other tests each cover one slice — @WebMvcTest web, @DataJpaTest JPA, the two Mockito unit
  * tests never start Spring — so before S01 <b>nothing asserted</b> that AOP aspects, mail,
- * background tasks and the security filter chain all still wire together across the
- * major-version jump.
+ * background tasks and the security filter chain all still wire together across the major-version
+ * jump.
  *
  * <p>RANDOM_PORT, not the default MOCK: it <b>actually starts the embedded web container</b>,
  * making the S01 acceptance item "`spring-boot:run` starts cleanly" a per-build regression.
@@ -32,8 +32,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 class ApplicationContextIT {
 
     @Container
-    static final MySQLContainer<?> MYSQL = new MySQLContainer<>("mysql:8.0")
-            .withDatabaseName("loggi");
+    static final MySQLContainer<?> MYSQL =
+            new MySQLContainer<>("mysql:8.0").withDatabaseName("loggi");
 
     @DynamicPropertySource
     static void props(DynamicPropertyRegistry r) {

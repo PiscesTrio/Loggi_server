@@ -1,17 +1,14 @@
 package com.example.api.model.entity;
 
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.Id;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.GenericGenerator;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.Id;
-
-/**
- * Employee
- */
+/** Employee */
 @Data
 // Identity is the id and nothing else: two rows with the same id are the same row,
 // whatever their other columns say. callSuper = false because the superclass holds
@@ -26,16 +23,17 @@ public class Employee extends Auditable {
     @GeneratedValue(generator = "uuid2")
     @GenericGenerator(name = "uuid2", strategy = "org.hibernate.id.UUIDGenerator")
     private String id;
-    //name
+
+    // name
     private String name;
-    //gender
+    // gender
     private String gender;
-    //mobile number
+    // mobile number
     private String phone;
-    //home address
+    // home address
     private String address;
-    //ID card number
+    // ID card number
     private String idCard;
-    //department
+    // department
     private String department;
 }

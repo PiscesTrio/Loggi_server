@@ -1,7 +1,6 @@
 package com.example.api.service;
 
 import com.example.api.model.entity.Vehicle;
-
 import java.util.List;
 
 public interface VehicleService {
@@ -15,5 +14,4 @@ public interface VehicleService {
     Vehicle findById(String id);
 
     List<Vehicle> findAll();
-
 }

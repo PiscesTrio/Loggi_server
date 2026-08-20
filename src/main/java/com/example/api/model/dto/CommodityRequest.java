@@ -4,19 +4,17 @@ import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.PositiveOrZero;
-import lombok.Data;
-
 import java.math.BigDecimal;
+import lombok.Data;
 
 /**
  * What a caller sends to create or update a commodity.
  *
- * <p>No id, no timestamps. Accepting the entity meant a caller could set any field on it,
- * including the ones the server owns: an id on a create is read by Hibernate as "an existing
- * row to update" and refused, which is exactly how creating a delivery order failed silently
- * for the whole life of this project. The timestamps are written by auditing and a value
- * supplied here would be overwritten anyway - accepting it only invites the belief that it
- * meant something.
+ * <p>No id, no timestamps. Accepting the entity meant a caller could set any field on it, including
+ * the ones the server owns: an id on a create is read by Hibernate as "an existing row to update"
+ * and refused, which is exactly how creating a delivery order failed silently for the whole life of
+ * this project. The timestamps are written by auditing and a value supplied here would be
+ * overwritten anyway - accepting it only invites the belief that it meant something.
  */
 @Data
 public class CommodityRequest {

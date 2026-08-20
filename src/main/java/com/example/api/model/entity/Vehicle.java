@@ -1,17 +1,14 @@
 package com.example.api.model.entity;
 
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.Id;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.GenericGenerator;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.Id;
-
-/**
- * Vehicle
- */
+/** Vehicle */
 @Data
 // Identity is the id and nothing else: two rows with the same id are the same row,
 // whatever their other columns say. callSuper = false because the superclass holds
@@ -27,13 +24,12 @@ public class Vehicle extends Auditable {
     @GenericGenerator(name = "uuid2", strategy = "org.hibernate.id.UUIDGenerator")
     private String id;
 
-    //license plate number
+    // license plate number
     private String number;
 
-    //vehicle type
+    // vehicle type
     private String type;
 
-    //whether it is currently in transit
+    // whether it is currently in transit
     private boolean driving;
-
 }

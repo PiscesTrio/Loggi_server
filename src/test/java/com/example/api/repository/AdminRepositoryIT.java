@@ -1,32 +1,30 @@
 package com.example.api.repository;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.springframework.boot.jdbc.test.autoconfigure.AutoConfigureTestDatabase.Replace.NONE;
+
 import com.example.api.model.entity.Admin;
 import com.example.api.model.enums.Role;
+import java.util.Set;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.jdbc.test.autoconfigure.AutoConfigureTestDatabase;
 import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
+import org.springframework.boot.jdbc.test.autoconfigure.AutoConfigureTestDatabase;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.testcontainers.containers.MySQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
-import java.util.Set;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.springframework.boot.jdbc.test.autoconfigure.AutoConfigureTestDatabase.Replace.NONE;
-
 /**
- * Integration tests (*IT, run by failsafe in the verify phase) that pin the derived-query
- * behavior against a real mysql:8.0 via Testcontainers.
+ * Integration tests (*IT, run by failsafe in the verify phase) that pin the derived-query behavior
+ * against a real mysql:8.0 via Testcontainers. @AutoConfigureTestDatabase(replace = NONE) is the
+ * key: it stops @DataJpaTest from swapping in an in-memory H2, otherwise MySQL dialect specifics
+ * (Admin's columnDefinition="varchar(30) default 'LTD' not null") would be masked.
  *
- * @AutoConfigureTestDatabase(replace = NONE) is the key: it stops @DataJpaTest from
- * swapping in an in-memory H2, otherwise MySQL dialect specifics (Admin's
- * columnDefinition="varchar(30) default 'LTD' not null") would be masked.
- *
- * Requires Docker (CI's ubuntu-latest has it). Without Docker, run `mvn test` to skip this class.
+ * <p>Requires Docker (CI's ubuntu-latest has it). Without Docker, run `mvn test` to skip this
+ * class.
  */
 @Testcontainers
 @DataJpaTest
@@ -34,8 +32,8 @@ import static org.springframework.boot.jdbc.test.autoconfigure.AutoConfigureTest
 class AdminRepositoryIT {
 
     @Container
-    static final MySQLContainer<?> MYSQL = new MySQLContainer<>("mysql:8.0")
-            .withDatabaseName("loggi");
+    static final MySQLContainer<?> MYSQL =
+            new MySQLContainer<>("mysql:8.0").withDatabaseName("loggi");
 
     @DynamicPropertySource
     static void props(DynamicPropertyRegistry r) {

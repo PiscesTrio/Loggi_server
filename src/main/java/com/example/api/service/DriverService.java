@@ -1,7 +1,6 @@
 package com.example.api.service;
 
 import com.example.api.model.entity.Driver;
-
 import java.util.List;
 
 public interface DriverService {
@@ -15,5 +14,4 @@ public interface DriverService {
     Driver findById(String id);
 
     List<Driver> findAll();
-
 }

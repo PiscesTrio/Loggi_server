@@ -1,7 +1,6 @@
 package com.example.api.service;
 
 import com.example.api.model.entity.Warehouse;
-
 import java.util.List;
 
 public interface WarehouseService {
@@ -11,5 +10,4 @@ public interface WarehouseService {
     List<Warehouse> findAll();
 
     void delete(String id);
-
 }

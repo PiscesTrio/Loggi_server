@@ -1,5 +1,14 @@
 package com.example.api.controller;
 
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+
 import com.example.api.model.entity.Admin;
 import com.example.api.model.enums.Role;
 import com.example.api.repository.AdminRepository;
@@ -11,43 +20,30 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
-
 /**
- * Characterization tests pinning routing, the {code,status,msg,data} response
- * envelope, and the security-filter behavior under the CURRENT implementation.
+ * Characterization tests pinning routing, the {code,status,msg,data} response envelope, and the
+ * security-filter behavior under the CURRENT implementation.
  *
- * Notes:
- *  - @WebMvcTest auto-registers @ControllerAdvice (GlobalResponseHandler /
- *    GlobalExceptionHandler), so do NOT @Import GlobalResponseHandler (that would
- *    duplicate the bean and trigger BeanDefinitionOverrideException).
- *  - SecurityConfiguration must be @Import-ed explicitly. Under Spring Boot 2.7 the
- *    @WebMvcTest slice picked it up on its own (it was a WebSecurityConfigurerAdapter,
- *    a type the slice filter includes). After S01 it is a plain @Configuration that
- *    merely DECLARES a SecurityFilterChain bean, which the slice filter does not match,
- *    so the slice fell back to auto-configured security (anyRequest().authenticated())
- *    and every unauthenticated request became 401. The @Import restores exactly the
- *    wiring these assertions were written against — the assertions themselves are
- *    unchanged.
+ * <p>Notes: - @WebMvcTest auto-registers @ControllerAdvice (GlobalResponseHandler /
+ * GlobalExceptionHandler), so do NOT @Import GlobalResponseHandler (that would duplicate the bean
+ * and trigger BeanDefinitionOverrideException). - SecurityConfiguration must be @Import-ed
+ * explicitly. Under Spring Boot 2.7 the @WebMvcTest slice picked it up on its own (it was a
+ * WebSecurityConfigurerAdapter, a type the slice filter includes). After S01 it is a
+ * plain @Configuration that merely DECLARES a SecurityFilterChain bean, which the slice filter does
+ * not match, so the slice fell back to auto-configured security (anyRequest().authenticated()) and
+ * every unauthenticated request became 401. The @Import restores exactly the wiring these
+ * assertions were written against — the assertions themselves are unchanged.
  *
- * WARNING: this is the highest-risk item in S00 (it depends on the Spring
- * Web/Security slice context loading). On first run, execute
- * `mvn -Dtest=AdminControllerTest test`, observe the real status codes, and tighten
- * the assertions to match — the essence of a characterization test: observe first,
- * then freeze.
+ * <p>WARNING: this is the highest-risk item in S00 (it depends on the Spring Web/Security slice
+ * context loading). On first run, execute `mvn -Dtest=AdminControllerTest test`, observe the real
+ * status codes, and tighten the assertions to match — the essence of a characterization test:
+ * observe first, then freeze.
  */
 @WebMvcTest(AdminController.class)
 @Import(SecurityConfiguration.class)
@@ -118,9 +114,11 @@ class AdminControllerTest {
         when(adminService.loginByPassword(any())).thenReturn(new Admin());
         when(adminService.createToken(any(), anyLong())).thenReturn("stub.jwt.token");
 
-        mockMvc.perform(post("/api/admin/login/password")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"email\":\"a@b.c\",\"password\":\"p\",\"code\":null,\"remember\":null}"))
+        mockMvc.perform(
+                        post("/api/admin/login/password")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(
+                                        "{\"email\":\"a@b.c\",\"password\":\"p\",\"code\":null,\"remember\":null}"))
                 .andExpect(status().isOk())
                 // Wrapped by GlobalResponseHandler, so the token sits under data.
                 .andExpect(jsonPath("$.data.token").exists());
@@ -131,8 +129,7 @@ class AdminControllerTest {
     @DisplayName("findAll with ROLE_SUPER_ADMIN is allowed (200)")
     void findAll_withSuperAdminRole_returns200() throws Exception {
         // @PreAuthorize("hasAnyRole('ROLE_SUPER_ADMIN', ...)"); Spring adds the ROLE_ prefix.
-        mockMvc.perform(get("/api/admin"))
-                .andExpect(status().isOk());
+        mockMvc.perform(get("/api/admin")).andExpect(status().isOk());
     }
 
     @Test
@@ -142,9 +139,10 @@ class AdminControllerTest {
         // and came back as "wrong e-mail or password" - the same answer a real address with
         // a wrong password gets. A caller who simply left the field out was told their
         // credentials were bad.
-        mockMvc.perform(post("/api/admin/login/password")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"email\":\"\",\"password\":\"whatever\"}"))
+        mockMvc.perform(
+                        post("/api/admin/login/password")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content("{\"email\":\"\",\"password\":\"whatever\"}"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value(400))
                 .andExpect(jsonPath("$.msg").value("邮箱不能为空"));
@@ -153,9 +151,11 @@ class AdminControllerTest {
     @Test
     @DisplayName("A malformed e-mail is refused before authentication is attempted")
     void login_withMalformedEmail_neverReachesTheService() throws Exception {
-        mockMvc.perform(post("/api/admin/login/password")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"email\":\"not-an-address\",\"password\":\"whatever\"}"))
+        mockMvc.perform(
+                        post("/api/admin/login/password")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(
+                                        "{\"email\":\"not-an-address\",\"password\":\"whatever\"}"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.msg").value("邮箱格式不正确"));
 
@@ -175,9 +175,11 @@ class AdminControllerTest {
         when(adminService.loginByPassword(any())).thenReturn(admin);
         when(adminService.createToken(any(), anyLong())).thenReturn("a-token");
 
-        mockMvc.perform(post("/api/admin/login/password")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"email\":\"demo@loggi.example\",\"password\":\"demo1234\"}"))
+        mockMvc.perform(
+                        post("/api/admin/login/password")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(
+                                        "{\"email\":\"demo@loggi.example\",\"password\":\"demo1234\"}"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.token").value("a-token"))
                 .andExpect(jsonPath("$.data.admin.email").value("demo@loggi.example"))

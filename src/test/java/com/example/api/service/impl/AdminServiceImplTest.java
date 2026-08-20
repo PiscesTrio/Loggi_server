@@ -1,5 +1,13 @@
 package com.example.api.service.impl;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.when;
+
 import com.example.api.model.dto.LoginDto;
 import com.example.api.model.entity.Admin;
 import com.example.api.repository.AdminRepository;
@@ -14,25 +22,17 @@ import org.springframework.security.crypto.factory.PasswordEncoderFactories;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.util.ReflectionTestUtils;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoInteractions;
-import static org.mockito.Mockito.when;
-
 /**
  * Passwords are hashed now, so these assertions replace the ones S00 wrote.
  *
- * <p>S00 deliberately pinned the plaintext behaviour — a derived query comparing the
- * raw password, and a {@code save} that stored whatever it was handed — and said in
- * its own comment that the BCrypt slice would turn them red. It did. Those two tests
- * are gone with the behaviour they described.
+ * <p>S00 deliberately pinned the plaintext behaviour — a derived query comparing the raw password,
+ * and a {@code save} that stored whatever it was handed — and said in its own comment that the
+ * BCrypt slice would turn them red. It did. Those two tests are gone with the behaviour they
+ * described.
  *
- * <p>The encoder here is real, not a mock. Mocking it would assert that the service
- * calls a method; the question worth asking is whether what reaches the database can
- * still be read back, and only a real hash answers that.
+ * <p>The encoder here is real, not a mock. Mocking it would assert that the service calls a method;
+ * the question worth asking is whether what reaches the database can still be read back, and only a
+ * real hash answers that.
  */
 @ExtendWith(MockitoExtension.class)
 class AdminServiceImplTest {

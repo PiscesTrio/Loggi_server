@@ -1,9 +1,8 @@
 package com.example.api.utils;
 
+import jakarta.servlet.http.HttpServletRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import jakarta.servlet.http.HttpServletRequest;
 
 public class IpUtil {
 
@@ -33,7 +32,7 @@ public class IpUtil {
             if (ip == null || ip.length() == 0 || "unknown".equalsIgnoreCase(ip)) {
                 ip = request.getRemoteAddr();
             }
-            //on Windows, localhost comes back as IPv6 0:0:0:0:0:0:0:1; normalize it to 127.0.0.1
+            // on Windows, localhost comes back as IPv6 0:0:0:0:0:0:0:1; normalize it to 127.0.0.1
             if (IPV6_ADDRESS.equals(ip)) {
                 ip = LOOPBACK_ADDRESS;
             }

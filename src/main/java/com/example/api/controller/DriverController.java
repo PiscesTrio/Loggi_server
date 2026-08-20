@@ -3,51 +3,48 @@ package com.example.api.controller;
 import com.example.api.annotation.Log;
 import com.example.api.model.dto.DriverRequest;
 import com.example.api.model.entity.Driver;
-import com.example.api.model.vo.DriverVo;
 import com.example.api.model.enums.BusinessType;
+import com.example.api.model.vo.DriverVo;
 import com.example.api.service.DriverService;
-import org.springframework.http.HttpStatus;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import org.springframework.web.bind.annotation.*;
-
 import jakarta.annotation.Resource;
 import jakarta.validation.Valid;
 import java.util.List;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.bind.annotation.*;
 
 @Tag(name = "Drivers", description = "The people who drive.")
 @RestController
 @RequestMapping("/api/driver")
 public class DriverController {
 
-    @Resource
-    private DriverService driverService;
+    @Resource private DriverService driverService;
 
-    @Log(module = "驾驶员管理",type = BusinessType.INSERT)
+    @Log(module = "驾驶员管理", type = BusinessType.INSERT)
     @PostMapping("")
     @ResponseStatus(HttpStatus.CREATED)
     public DriverVo save(@Valid @RequestBody DriverRequest request) {
         return DriverVo.from(driverService.save(toEntity(request)));
     }
 
-    @Log(module = "驾驶员管理",type = BusinessType.QUERY)
+    @Log(module = "驾驶员管理", type = BusinessType.QUERY)
     @GetMapping("")
     public List<DriverVo> findAll() {
         return driverService.findAll().stream().map(DriverVo::from).toList();
     }
 
-    @Log(module = "驾驶员管理",type = BusinessType.QUERY)
+    @Log(module = "驾驶员管理", type = BusinessType.QUERY)
     @GetMapping("/{id}")
     public DriverVo findById(@PathVariable String id) {
         return DriverVo.from(driverService.findById(id));
     }
 
-    @Log(module = "驾驶员管理",type = BusinessType.DELETE)
+    @Log(module = "驾驶员管理", type = BusinessType.DELETE)
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void delete(@PathVariable String id) {
         driverService.delete(id);
     }
-
 
     /** The request as the entity the service persists. No id: the database assigns it. */
     private static Driver toEntity(DriverRequest request) {

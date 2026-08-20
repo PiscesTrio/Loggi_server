@@ -4,12 +4,9 @@ import com.example.api.model.entity.Commodity;
 import com.example.api.model.entity.InventoryRecord;
 import com.example.api.model.entity.Warehouse;
 import com.example.api.model.enums.InventoryType;
-
 import java.time.LocalDateTime;
 
-/**
- * One stock movement, in or out.
- */
+/** One stock movement, in or out. */
 public record InventoryRecordVo(
         String id,
         String warehouseId,

@@ -1,7 +1,10 @@
 package com.example.api;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import com.example.api.model.entity.Commodity;
 import com.example.api.repository.CommodityRepository;
+import java.time.LocalDateTime;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -12,27 +15,22 @@ import org.testcontainers.containers.MySQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
-import java.math.BigDecimal;
-import java.time.LocalDateTime;
-
-import static org.assertj.core.api.Assertions.assertThat;
-
 /**
  * Timestamps are written by the database layer, not by whoever remembered to call a setter.
  *
  * <p>This exists because the responsibility moved. Every service used to set {@code createAt}
- * itself, so a unit test with a mocked repository could see it happen; auditing runs inside a
- * real persistence context, so those assertions had nothing left to observe and were removed
- * from the service tests rather than weakened. The check belongs here now — against a real
- * database, which is also the only place the column type is exercised.
+ * itself, so a unit test with a mocked repository could see it happen; auditing runs inside a real
+ * persistence context, so those assertions had nothing left to observe and were removed from the
+ * service tests rather than weakened. The check belongs here now — against a real database, which
+ * is also the only place the column type is exercised.
  */
 @Testcontainers
 @SpringBootTest
 class AuditingIT {
 
     @Container
-    static final MySQLContainer<?> MYSQL = new MySQLContainer<>("mysql:8.0")
-            .withDatabaseName("loggi");
+    static final MySQLContainer<?> MYSQL =
+            new MySQLContainer<>("mysql:8.0").withDatabaseName("loggi");
 
     @DynamicPropertySource
     static void props(DynamicPropertyRegistry r) {

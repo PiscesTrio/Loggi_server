@@ -1,5 +1,3 @@
 package com.example.api.exception;
 
-public class AccountAndPasswordError extends Exception{
-
-}
+public class AccountAndPasswordError extends Exception {}

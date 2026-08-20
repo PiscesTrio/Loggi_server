@@ -1,5 +1,14 @@
 package com.example.api.controller;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.verify;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
 import com.example.api.handler.GlobalResponseHandler;
 import com.example.api.model.entity.Distribution;
 import com.example.api.model.entity.DistributionTrack;
@@ -10,6 +19,8 @@ import com.example.api.security.SecurityConfiguration;
 import com.example.api.service.DistributionService;
 import com.example.api.service.DistributionTrackService;
 import com.example.api.utils.JwtTokenUtil;
+import java.time.LocalDateTime;
+import java.util.List;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -21,36 +32,24 @@ import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
-import java.time.LocalDateTime;
-import java.util.List;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.verify;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
-
 /**
  * The delivery-track endpoints, asserted at the wire.
  *
- * <p>This slice renamed the entity behind them from {@code DistributionStatus} to
- * {@link DistributionTrack}, which in JPA also renames its table. A rename is only safe if
- * nothing outside the JVM can tell, and the app depends on these two endpoints for the
- * order timeline — so the contract is pinned here rather than assumed: same paths, same
- * JSON keys, same date format, in both directions.
+ * <p>This slice renamed the entity behind them from {@code DistributionStatus} to {@link
+ * DistributionTrack}, which in JPA also renames its table. A rename is only safe if nothing outside
+ * the JVM can tell, and the app depends on these two endpoints for the order timeline — so the
+ * contract is pinned here rather than assumed: same paths, same JSON keys, same date format, in
+ * both directions.
  *
- * <p>Written against the renamed code, so it cannot prove the rename introduced no change
- * by itself. What it does is make the contract explicit from now on, and it was run against
- * the pre-rename tree first (with the old type name) to confirm it passed there too.
+ * <p>Written against the renamed code, so it cannot prove the rename introduced no change by
+ * itself. What it does is make the contract explicit from now on, and it was run against the
+ * pre-rename tree first (with the old type name) to confirm it passed there too.
  *
- * <p><b>S09 changed this contract deliberately</b>, and this test is where that is recorded:
- * {@code disId} is now {@code distribution} (the same id, behind a real foreign key) and
- * {@code status} is the enum name rather than 0/1/2. The client has not been updated — the
- * frontend realignment is its own slice — so these assertions are the written form of what
- * it will have to change to. See docs/contract-changes.md.
+ * <p><b>S09 changed this contract deliberately</b>, and this test is where that is recorded: {@code
+ * disId} is now {@code distribution} (the same id, behind a real foreign key) and {@code status} is
+ * the enum name rather than 0/1/2. The client has not been updated — the frontend realignment is
+ * its own slice — so these assertions are the written form of what it will have to change to. See
+ * docs/contract-changes.md.
  */
 @WebMvcTest(DistributionController.class)
 @Import({SecurityConfiguration.class, GlobalResponseHandler.class})
@@ -114,15 +113,19 @@ class DistributionTrackContractTest {
     // request had to send it as an object, because @JsonIdentityReference can write an id
     // but cannot read a lone one back. A view type is not an entity and has no such
     // constraint: one field, one shape, both directions. This test is where that is checked.
-    @DisplayName("POST /api/distribution/status takes the parent id in the same shape it returns it")
+    @DisplayName(
+            "POST /api/distribution/status takes the parent id in the same shape it returns it")
     void saveStatus_bindsTheSameRequestBody() throws Exception {
         given(distributionTrackService.save(any(DistributionTrack.class))).willReturn(sample());
 
-        mockMvc.perform(post("/api/distribution/status")
-                        .with(org.springframework.security.test.web.servlet.request
-                                .SecurityMockMvcRequestPostProcessors.csrf())
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("""
+        mockMvc.perform(
+                        post("/api/distribution/status")
+                                .with(
+                                        org.springframework.security.test.web.servlet.request
+                                                .SecurityMockMvcRequestPostProcessors.csrf())
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(
+                                        """
                                 {"distributionId":"dis-1","lat":35.672,"lng":139.817,
                                  "location":"東京江東倉庫","status":"REVIEWING"}"""))
                 .andExpect(status().isOk())

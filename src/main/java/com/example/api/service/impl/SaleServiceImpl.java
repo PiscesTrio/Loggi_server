@@ -3,16 +3,14 @@ package com.example.api.service.impl;
 import com.example.api.model.entity.Sale;
 import com.example.api.repository.SaleRepository;
 import com.example.api.service.SaleService;
-import org.springframework.stereotype.Service;
-
 import jakarta.annotation.Resource;
 import java.util.List;
+import org.springframework.stereotype.Service;
 
 @Service
 public class SaleServiceImpl implements SaleService {
 
-    @Resource
-    private SaleRepository saleRepository;
+    @Resource private SaleRepository saleRepository;
 
     @Override
     public Sale save(Sale sale) {
@@ -28,5 +26,4 @@ public class SaleServiceImpl implements SaleService {
     public List<Sale> searchByCompany(String name) {
         return saleRepository.findAllByCompanyLike(name);
     }
-
 }

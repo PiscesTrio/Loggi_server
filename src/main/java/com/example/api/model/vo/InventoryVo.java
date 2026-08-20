@@ -7,14 +7,14 @@ import com.example.api.model.entity.Warehouse;
 /**
  * How much of one commodity a warehouse holds.
  *
- * <p>Ids for the two references, as this endpoint has always sent - the columns were
- * {@code wid} and {@code cid}. S09 made them associations and kept the id shape with
- * {@code @JsonIdentityReference}, which writes an id but cannot read a lone one back; a
- * view type is not an entity, so the field is simply a String in both directions.
+ * <p>Ids for the two references, as this endpoint has always sent - the columns were {@code wid}
+ * and {@code cid}. S09 made them associations and kept the id shape with
+ * {@code @JsonIdentityReference}, which writes an id but cannot read a lone one back; a view type
+ * is not an entity, so the field is simply a String in both directions.
  *
- * <p>{@code name} stays. It is a denormalised copy of the commodity's name and it is what
- * the stock screen renders, so removing it here would mean the client fetching every
- * commodity to label a list it already has.
+ * <p>{@code name} stays. It is a denormalised copy of the commodity's name and it is what the stock
+ * screen renders, so removing it here would mean the client fetching every commodity to label a
+ * list it already has.
  */
 public record InventoryVo(
         String id,

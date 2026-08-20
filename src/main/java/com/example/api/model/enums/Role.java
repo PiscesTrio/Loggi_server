@@ -5,7 +5,7 @@ import lombok.Getter;
 @Getter
 public enum Role {
 
-    //super admin: no public method is exposed for granting this role
+    // super admin: no public method is exposed for granting this role
     ROLE_SUPER_ADMIN("ROLE_SUPER_ADMIN", "超级管理员"),
 
     ROLE_ADMIN("ROLE_ADMIN", "操作员相关权限"),
@@ -23,16 +23,11 @@ public enum Role {
     private final String description;
 
     public static final Role[] ROLES = {
-            ROLE_ADMIN,
-            ROLE_COMMODITY,
-            ROLE_EMPLOYEE,
-            ROLE_SALE,
-            ROLE_WAREHOUSE
+        ROLE_ADMIN, ROLE_COMMODITY, ROLE_EMPLOYEE, ROLE_SALE, ROLE_WAREHOUSE
     };
 
     Role(String value, String description) {
         this.value = value;
         this.description = description;
     }
-
 }

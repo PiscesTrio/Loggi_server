@@ -1,16 +1,24 @@
 package com.example.api.security;
 
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.Mockito.lenient;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
 import com.example.api.controller.AdminController;
 import com.example.api.controller.CommodityController;
 import com.example.api.controller.WarehouseController;
+import com.example.api.model.entity.Admin;
+import com.example.api.model.enums.Role;
 import com.example.api.repository.AdminRepository;
 import com.example.api.service.AdminService;
 import com.example.api.service.CommodityService;
 import com.example.api.service.LoginLogService;
 import com.example.api.service.WarehouseService;
 import com.example.api.utils.JwtTokenUtil;
-import com.example.api.model.entity.Admin;
-import com.example.api.model.enums.Role;
+import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -20,28 +28,18 @@ import org.springframework.context.annotation.Import;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
-import java.util.Set;
-
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.Mockito.lenient;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
-
 /**
  * What an unauthenticated request may reach.
  *
- * <p>Until this slice the answer was "everything": the filter chain ended in
- * {@code anyRequest().permitAll()}, so URL-level authorization did not exist and the
- * only thing standing between an anonymous caller and the data was whatever
- * {@code @PreAuthorize} a controller happened to carry. Seven of the thirteen
- * controllers carry none, and WarehouseController's was commented out.
+ * <p>Until this slice the answer was "everything": the filter chain ended in {@code
+ * anyRequest().permitAll()}, so URL-level authorization did not exist and the only thing standing
+ * between an anonymous caller and the data was whatever {@code @PreAuthorize} a controller happened
+ * to carry. Seven of the thirteen controllers carry none, and WarehouseController's was commented
+ * out.
  *
- * <p>These cases are the matrix itself, not a sample of it. A permit list is exactly
- * the kind of configuration where a wrong path silently opens or closes a door — the
- * mistake produces a working application either way, and only an assertion of the
- * intended answer catches it.
+ * <p>These cases are the matrix itself, not a sample of it. A permit list is exactly the kind of
+ * configuration where a wrong path silently opens or closes a door — the mistake produces a working
+ * application either way, and only an assertion of the intended answer catches it.
  */
 @WebMvcTest({AdminController.class, CommodityController.class, WarehouseController.class})
 @Import(SecurityConfiguration.class)
@@ -61,11 +59,11 @@ class AuthorizationMatrixTest {
     /**
      * The login and init cases need the service to return an administrator.
      *
-     * <p>They did not before S10, when the response was a Map that held whatever it was
-     * given and serialised a null admin without complaint. The response is a view type now,
-     * built from the entity, so an unstubbed mock returning null becomes a NullPointerException
-     * and a 500 - and these tests assert who may reach an endpoint, not what it answers, so
-     * a 500 tells them nothing they are asking about.
+     * <p>They did not before S10, when the response was a Map that held whatever it was given and
+     * serialised a null admin without complaint. The response is a view type now, built from the
+     * entity, so an unstubbed mock returning null becomes a NullPointerException and a 500 - and
+     * these tests assert who may reach an endpoint, not what it answers, so a 500 tells them
+     * nothing they are asking about.
      */
     @BeforeEach
     void authenticationSucceeds() throws Exception {
@@ -82,9 +80,11 @@ class AuthorizationMatrixTest {
     @Test
     @DisplayName("Password login is reachable without a token — it is where tokens come from")
     void loginByPassword_isPublic() throws Exception {
-        mockMvc.perform(post("/api/admin/login/password")
-                        .contentType("application/json")
-                        .content("{\"email\":\"a@b.c\",\"password\":\"p\",\"code\":null,\"remember\":null}"))
+        mockMvc.perform(
+                        post("/api/admin/login/password")
+                                .contentType("application/json")
+                                .content(
+                                        "{\"email\":\"a@b.c\",\"password\":\"p\",\"code\":null,\"remember\":null}"))
                 .andExpect(status().isOk());
     }
 
@@ -94,27 +94,33 @@ class AuthorizationMatrixTest {
         // The single /login endpoint took a bare `type` string with no @RequestParam, so
         // omitting it reached type.equals("email") on a null. Two routes, no parameter to
         // forget, and each can be rate-limited and documented on its own terms.
-        mockMvc.perform(post("/api/admin/login/email")
-                        .contentType("application/json")
-                        .content("{\"email\":\"a@b.c\",\"password\":null,\"code\":\"000000\",\"remember\":null}"))
+        mockMvc.perform(
+                        post("/api/admin/login/email")
+                                .contentType("application/json")
+                                .content(
+                                        "{\"email\":\"a@b.c\",\"password\":null,\"code\":\"000000\",\"remember\":null}"))
                 .andExpect(status().isOk());
     }
 
     @Test
-    @DisplayName("hasInit is reachable without a token — a fresh install has no account to authenticate as")
+    @DisplayName(
+            "hasInit is reachable without a token — a fresh install has no account to authenticate as")
     void hasInit_isPublic() throws Exception {
         mockMvc.perform(get("/api/admin/hasInit")).andExpect(status().isOk());
     }
 
     @Test
-    @DisplayName("init is reachable without a token; the guard against abuse is the initialised check, not authentication")
+    @DisplayName(
+            "init is reachable without a token; the guard against abuse is the initialised check, not authentication")
     void init_isPublic() throws Exception {
         // Any 2xx, not a specific one. This case asks whether an anonymous caller may reach
         // the endpoint; which success code it answers with is a different question, decided
         // in S10 (201, because it creates something) and asserted where that belongs.
-        mockMvc.perform(post("/api/admin/init")
-                        .contentType("application/json")
-                        .content("{\"email\":\"admin@loggi.example\",\"password\":\"password\"}"))
+        mockMvc.perform(
+                        post("/api/admin/init")
+                                .contentType("application/json")
+                                .content(
+                                        "{\"email\":\"admin@loggi.example\",\"password\":\"password\"}"))
                 .andExpect(status().is2xxSuccessful());
     }
 
