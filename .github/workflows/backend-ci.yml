@@ -22,6 +22,10 @@ jobs:
       # Docker Engine 29+ needs >= 1.44 — "client version 1.32 is too old". Testcontainers 2.0
       # (S01) raised that default, so it is redundant now but harmless; kept as a guard rail.
       # Property name is api.version; docker-java ignores DOCKER_API_VERSION.
+      # Before the build, so a formatting failure is reported as a formatting failure
+      # rather than as whatever the compiler says next. `spotless:apply` fixes it.
+      - name: Check formatting (Spotless)
+        run: ./mvnw -B spotless:check
       - name: Build & verify (单测 + *IT 集成测试[Testcontainers] + JaCoCo 门禁)
         run: ./mvnw -B verify -Dapi.version=1.44
       - name: Upload JaCoCo report

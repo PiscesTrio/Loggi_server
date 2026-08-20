@@ -1,5 +1,10 @@
 # Loggi Server
 
+[![Backend CI](https://github.com/PiscesTrio/Loggi_server/actions/workflows/backend-ci.yml/badge.svg)](https://github.com/PiscesTrio/Loggi_server/actions/workflows/backend-ci.yml)
+[![Java](https://img.shields.io/badge/Java-21-informational)](https://adoptium.net/)
+[![Spring Boot](https://img.shields.io/badge/Spring%20Boot-4.1-informational)](https://spring.io/projects/spring-boot)
+[![License](https://img.shields.io/badge/License-MIT-informational)](LICENSE)
+
 > **A personal practice project, not production software.**
 > Not hardened for deployment; do not point it at real data.
 
