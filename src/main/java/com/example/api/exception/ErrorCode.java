@@ -44,6 +44,13 @@ public enum ErrorCode {
     CODE_ATTEMPTS_EXHAUSTED(429),
     CODE_DELIVERY_FAILED(502),
 
+    // --- credentials -------------------------------------------------------------------
+    // Two, because they are different situations for the caller: one has not signed in, the
+    // other has and the credential no longer works. Both are 401, which is why the status
+    // alone could not tell them apart.
+    AUTHENTICATION_REQUIRED(401),
+    TOKEN_INVALID(401),
+
     // --- everything else ---------------------------------------------------------------
     ACCESS_DENIED(403),
     METHOD_NOT_ALLOWED(405),

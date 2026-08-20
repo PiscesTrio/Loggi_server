@@ -176,7 +176,8 @@ public class SecurityConfiguration {
             response.setContentType("application/json;charset=UTF-8");
             response.getWriter()
                     .write(
-                            "{\"code\":401,\"status\":false,\"msg\":\"Authentication required\",\"data\":null}");
+                            "{\"code\":401,\"status\":false,\"msg\":\"Authentication required\","
+                                    + "\"errorCode\":\"AUTHENTICATION_REQUIRED\",\"data\":null}");
         };
     }
 

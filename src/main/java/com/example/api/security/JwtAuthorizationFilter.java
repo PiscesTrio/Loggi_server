@@ -93,6 +93,7 @@ public class JwtAuthorizationFilter extends OncePerRequestFilter {
         response.setContentType("application/json;charset=UTF-8");
         response.getWriter()
                 .write(
-                        "{\"code\":401,\"status\":false,\"msg\":\"Invalid or expired token\",\"data\":null}");
+                        "{\"code\":401,\"status\":false,\"msg\":\"Invalid or expired token\","
+                                + "\"errorCode\":\"TOKEN_INVALID\",\"data\":null}");
     }
 }
