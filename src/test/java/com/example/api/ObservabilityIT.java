@@ -1,5 +1,7 @@
 package com.example.api;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -15,44 +17,41 @@ import org.testcontainers.containers.MySQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
 /**
  * Health and API documentation, asserted over real HTTP.
  *
- * <p>Both are new in S10 and both have a failure mode that a green build would otherwise
- * hide. Health has to answer without a token, because an orchestrator probes it before the
- * application can issue one - and it has to answer UP, which it did not at first: Actuator's
- * mail indicator authenticates against SMTP, the credentials here are placeholders by
- * design, and the failing indicator dragged the aggregate to DOWN. A readiness probe would
- * have kept the container out of service forever, on a fresh clone, with the application
- * itself working perfectly.
+ * <p>Both are new in S10 and both have a failure mode that a green build would otherwise hide.
+ * Health has to answer without a token, because an orchestrator probes it before the application
+ * can issue one - and it has to answer UP, which it did not at first: Actuator's mail indicator
+ * authenticates against SMTP, the credentials here are placeholders by design, and the failing
+ * indicator dragged the aggregate to DOWN. A readiness probe would have kept the container out of
+ * service forever, on a fresh clone, with the application itself working perfectly.
  *
  * <p>The rest of /actuator must stay closed. Exposing health publicly is a decision; letting
- * /actuator/metrics follow it out is an accident, and the two are one line apart in the
- * security configuration.
+ * /actuator/metrics follow it out is an accident, and the two are one line apart in the security
+ * configuration.
  */
 @Testcontainers
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 class ObservabilityIT {
 
     @Container
-    static final MySQLContainer<?> MYSQL = new MySQLContainer<>("mysql:8.0")
-            .withDatabaseName("loggi");
+    static final MySQLContainer<?> MYSQL =
+            new MySQLContainer<>("mysql:8.0").withDatabaseName("loggi");
 
     /**
      * Redis has to be here, and finding out why was the point.
      *
-     * <p>Without it the health endpoint answers DOWN - correctly. Redis holds the one-time
-     * codes and their rate-limit counters, so an application that cannot reach it cannot
-     * serve the e-mail login path, and saying UP would be a lie. That is the difference
-     * between this indicator and the mail one that had to be switched off: an unreachable
-     * SMTP server is a third party being unavailable, while an unreachable Redis is this
-     * application being unable to do part of its job.
+     * <p>Without it the health endpoint answers DOWN - correctly. Redis holds the one-time codes
+     * and their rate-limit counters, so an application that cannot reach it cannot serve the e-mail
+     * login path, and saying UP would be a lie. That is the difference between this indicator and
+     * the mail one that had to be switched off: an unreachable SMTP server is a third party being
+     * unavailable, while an unreachable Redis is this application being unable to do part of its
+     * job.
      */
     @Container
-    static final GenericContainer<?> REDIS = new GenericContainer<>("redis:7-alpine")
-            .withExposedPorts(6379);
+    static final GenericContainer<?> REDIS =
+            new GenericContainer<>("redis:7-alpine").withExposedPorts(6379);
 
     @DynamicPropertySource
     static void props(DynamicPropertyRegistry r) {
@@ -70,21 +69,23 @@ class ObservabilityIT {
         return RestClient.builder()
                 .baseUrl("http://localhost:" + port)
                 // Statuses are the assertion here, so nothing may throw on any of them.
-                .defaultStatusHandler(HttpStatusCode::isError, (req, res) -> { })
+                .defaultStatusHandler(HttpStatusCode::isError, (req, res) -> {})
                 .build();
     }
 
     @Test
     @DisplayName("Health answers UP without a token, because a probe has no way to get one")
     void healthIsPublicAndUp() {
-        ResponseEntity<String> response = client().get().uri("/actuator/health").retrieve().toEntity(String.class);
+        ResponseEntity<String> response =
+                client().get().uri("/actuator/health").retrieve().toEntity(String.class);
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(response.getBody()).contains("\"status\":\"UP\"");
     }
 
     @Test
-    @DisplayName("Health names no component, so an anonymous caller learns nothing about the internals")
+    @DisplayName(
+            "Health names no component, so an anonymous caller learns nothing about the internals")
     void healthDoesNotDescribeItsComponents() {
         String body = client().get().uri("/actuator/health").retrieve().body(String.class);
 
@@ -96,16 +97,27 @@ class ObservabilityIT {
     @Test
     @DisplayName("The rest of /actuator is not public just because health is")
     void otherActuatorEndpointsStayProtected() {
-        assertThat(client().get().uri("/actuator/metrics").retrieve().toBodilessEntity().getStatusCode())
+        assertThat(
+                        client().get()
+                                .uri("/actuator/metrics")
+                                .retrieve()
+                                .toBodilessEntity()
+                                .getStatusCode())
                 .isEqualTo(HttpStatus.UNAUTHORIZED);
-        assertThat(client().get().uri("/actuator/env").retrieve().toBodilessEntity().getStatusCode())
+        assertThat(
+                        client().get()
+                                .uri("/actuator/env")
+                                .retrieve()
+                                .toBodilessEntity()
+                                .getStatusCode())
                 .isEqualTo(HttpStatus.UNAUTHORIZED);
     }
 
     @Test
     @DisplayName("The OpenAPI document is served and describes the real API")
     void openApiDocumentIsServed() {
-        ResponseEntity<String> response = client().get().uri("/v3/api-docs").retrieve().toEntity(String.class);
+        ResponseEntity<String> response =
+                client().get().uri("/v3/api-docs").retrieve().toEntity(String.class);
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
         String body = response.getBody();

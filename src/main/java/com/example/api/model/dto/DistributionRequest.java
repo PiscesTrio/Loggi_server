@@ -5,17 +5,16 @@ import jakarta.validation.constraints.DecimalMax;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
-import lombok.Data;
-
 import java.time.LocalDateTime;
+import lombok.Data;
 
 /**
  * What a caller sends to file or update a delivery order.
  *
- * <p>References arrive as plain ids. The entity was accepted directly before, which meant a
- * request had to name a driver as {@code {"driver": {"id": "..."}}} - an object standing in
- * for an id, because the field's type was an entity. Naming a row by its id is what a request
- * does; the service resolves it.
+ * <p>References arrive as plain ids. The entity was accepted directly before, which meant a request
+ * had to name a driver as {@code {"driver": {"id": "..."}}} - an object standing in for an id,
+ * because the field's type was an entity. Naming a row by its id is what a request does; the
+ * service resolves it.
  *
  * <p>Note what is absent: no {@code id}. Creating a row was a POST carrying an id the client
  * invented, which Hibernate read as "an existing row to update" and refused. The id is the

@@ -3,16 +3,14 @@ package com.example.api.service.impl;
 import com.example.api.model.entity.Commodity;
 import com.example.api.repository.CommodityRepository;
 import com.example.api.service.CommodityService;
-import org.springframework.stereotype.Service;
-
 import jakarta.annotation.Resource;
 import java.util.List;
+import org.springframework.stereotype.Service;
 
 @Service
 public class CommodityServiceImpl implements CommodityService {
 
-    @Resource
-    private CommodityRepository commodityRepository;
+    @Resource private CommodityRepository commodityRepository;
 
     @Override
     public Commodity save(Commodity commodity) {
@@ -43,5 +41,4 @@ public class CommodityServiceImpl implements CommodityService {
     public List<Commodity> findAllByLikeName(String name) {
         return commodityRepository.findByNameLike("%" + name + "%");
     }
-
 }

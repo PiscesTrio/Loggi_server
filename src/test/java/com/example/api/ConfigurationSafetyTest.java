@@ -1,21 +1,20 @@
 package com.example.api;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+
+import java.util.List;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.env.YamlPropertySourceLoader;
 import org.springframework.core.env.PropertySource;
 import org.springframework.core.io.ClassPathResource;
 
-import java.util.List;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-
 /**
  * Two things that are only wrong until someone puts them back.
  *
- * <p>Neither is caught by any other test: a dependency nobody imports still ships, and a
- * debug switch that defaults to on still starts.
+ * <p>Neither is caught by any other test: a dependency nobody imports still ships, and a debug
+ * switch that defaults to on still starts.
  */
 class ConfigurationSafetyTest {
 
@@ -48,8 +47,9 @@ class ConfigurationSafetyTest {
         // Placeholders rather than a dev/prod profile split on purpose - profiles are
         // S08's subject, and this slice should not do that work twice with a different
         // answer.
-        List<PropertySource<?>> sources = new YamlPropertySourceLoader()
-                .load("application", new ClassPathResource("application.yaml"));
+        List<PropertySource<?>> sources =
+                new YamlPropertySourceLoader()
+                        .load("application", new ClassPathResource("application.yaml"));
         assertThat(sources).isNotEmpty();
 
         PropertySource<?> yaml = sources.get(0);

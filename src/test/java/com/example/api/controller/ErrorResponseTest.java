@@ -1,67 +1,68 @@
 package com.example.api.controller;
 
-import com.example.api.annotation.DisableBaseResponse;
-import com.example.api.exception.BizException;
-import com.example.api.handler.GlobalResponseHandler;
-import com.example.api.security.SecurityConfiguration;
-import com.example.api.utils.JwtTokenUtil;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
-import org.springframework.context.annotation.Import;
-import org.springframework.security.test.context.support.WithMockUser;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
-import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.ResponseStatus;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
-
-import java.util.Map;
-import java.util.NoSuchElementException;
-
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import com.example.api.annotation.DisableBaseResponse;
+import com.example.api.exception.BizException;
+import com.example.api.handler.GlobalResponseHandler;
+import com.example.api.security.SecurityConfiguration;
+import com.example.api.utils.JwtTokenUtil;
+import java.util.Map;
+import java.util.NoSuchElementException;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.context.annotation.Import;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.security.test.context.support.WithMockUser;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseStatus;
+import org.springframework.web.bind.annotation.RestController;
+
 /**
  * The HTTP status has to mean something.
  *
  * <p>Every failure used to leave as HTTP 200 with a code in the body, because
- * GlobalExceptionHandler returned an object and nothing ever set a status. A client
- * cannot branch on that: Dio, retrofit, fetch and curl all decide success from the
- * status line, so "the server said no" arrived indistinguishable from "the server said
- * yes". It is the root of three separate defects already recorded in this project — the
- * login screen reporting every failure as a wrong password, the home screen unwrapping
- * a null after a failed request, and an authorization denial that looked like success.
+ * GlobalExceptionHandler returned an object and nothing ever set a status. A client cannot branch
+ * on that: Dio, retrofit, fetch and curl all decide success from the status line, so "the server
+ * said no" arrived indistinguishable from "the server said yes". It is the root of three separate
+ * defects already recorded in this project — the login screen reporting every failure as a wrong
+ * password, the home screen unwrapping a null after a failed request, and an authorization denial
+ * that looked like success.
  *
- * <p>Driven through a controller that exists only here, so the assertions are about the
- * handlers rather than about whichever real endpoint happens to throw today.
+ * <p>Driven through a controller that exists only here, so the assertions are about the handlers
+ * rather than about whichever real endpoint happens to throw today.
  *
  * <p>In this package on purpose. GlobalResponseHandler is a
- * {@code @ControllerAdvice("com.example.api.controller")}, so a fixture controller
- * anywhere else is never advised — the envelope assertions passed vacuously against
- * one in the handler package, which is the failure mode this comment exists to stop
- * anyone repeating.
+ * {@code @ControllerAdvice("com.example.api.controller")}, so a fixture controller anywhere else is
+ * never advised — the envelope assertions passed vacuously against one in the handler package,
+ * which is the failure mode this comment exists to stop anyone repeating.
  */
 @WebMvcTest(ErrorResponseTest.ThrowingController.class)
 // ThrowingController is imported, not merely named in @WebMvcTest's controllers
 // attribute: that attribute is a component-scan FILTER, and a controller nested in a
 // test class is never scanned, so the filter had nothing to keep. Every request came
 // back as "No static resource ..." — a 404 dressed up as 400 by the old handler.
-@Import({ErrorResponseTest.ThrowingController.class, SecurityConfiguration.class,
-        GlobalResponseHandler.class})
+@Import({
+    ErrorResponseTest.ThrowingController.class,
+    SecurityConfiguration.class,
+    GlobalResponseHandler.class
+})
 class ErrorResponseTest {
 
     @RestController
@@ -96,8 +97,7 @@ class ErrorResponseTest {
 
         @DeleteMapping("/gone")
         @ResponseStatus(HttpStatus.NO_CONTENT)
-        public void gone() {
-        }
+        public void gone() {}
 
         @GetMapping("/raw")
         @DisableBaseResponse
@@ -201,9 +201,10 @@ class ErrorResponseTest {
         // HttpMessageNotReadableException is a RuntimeException, so the fallback sent it
         // to the 500 branch: the caller was told the server had broken when in fact they
         // had sent something the server could not read.
-        mockMvc.perform(post("/api/test-errors/echo?size=1")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{ this is not json "))
+        mockMvc.perform(
+                        post("/api/test-errors/echo?size=1")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content("{ this is not json "))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value(400));
     }
@@ -222,9 +223,10 @@ class ErrorResponseTest {
     @WithMockUser
     @DisplayName("A parameter that will not convert is 400, not 500")
     void unconvertibleParameter_is400() throws Exception {
-        mockMvc.perform(post("/api/test-errors/echo?size=abc")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{}"))
+        mockMvc.perform(
+                        post("/api/test-errors/echo?size=abc")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content("{}"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value(400));
     }

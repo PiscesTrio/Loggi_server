@@ -1,31 +1,27 @@
 package com.example.api.model.entity;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
-
-import lombok.AllArgsConstructor;
 import com.example.api.model.enums.Role;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
-import lombok.NoArgsConstructor;
-import org.hibernate.annotations.GenericGenerator;
-
-import jakarta.persistence.Column;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.CollectionTable;
+import jakarta.persistence.Column;
 import jakarta.persistence.ElementCollection;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.ForeignKey;
-import jakarta.persistence.JoinColumn;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
 import java.util.LinkedHashSet;
 import java.util.Set;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
+import lombok.NoArgsConstructor;
+import org.hibernate.annotations.GenericGenerator;
 
-/**
- * Administrator
- */
+/** Administrator */
 @Data
 // Identity is the id and nothing else: two rows with the same id are the same row,
 // whatever their other columns say. callSuper = false because the superclass holds
@@ -34,7 +30,6 @@ import java.util.Set;
 @Entity
 @NoArgsConstructor
 @AllArgsConstructor
-
 public class Admin extends Auditable {
 
     @Id
@@ -61,23 +56,23 @@ public class Admin extends Auditable {
     /**
      * The roles granted to this administrator.
      *
-     * <p>Was a single String holding them semicolon-joined, parsed with {@code split(";")}
-     * wherever anyone needed them. That representation cannot be queried — "who has
-     * ROLE_ADMIN" is a LIKE over a text column that also matches ROLE_ADMIN_SOMETHING — it
-     * cannot be constrained, so a typo'd role name was stored as happily as a real one, and
-     * it made the empty case ambiguous: null, "" and ";" all mean no roles.
+     * <p>Was a single String holding them semicolon-joined, parsed with {@code split(";")} wherever
+     * anyone needed them. That representation cannot be queried — "who has ROLE_ADMIN" is a LIKE
+     * over a text column that also matches ROLE_ADMIN_SOMETHING — it cannot be constrained, so a
+     * typo'd role name was stored as happily as a real one, and it made the empty case ambiguous:
+     * null, "" and ";" all mean no roles.
      *
-     * <p>An element collection instead: a join table with a foreign key back to the admin
-     * and the role stored as its enum name. EAGER because authentication needs them on every
-     * request and there is at most a handful per administrator — the one place where lazy
-     * loading would buy a second query for nothing.
+     * <p>An element collection instead: a join table with a foreign key back to the admin and the
+     * role stored as its enum name. EAGER because authentication needs them on every request and
+     * there is at most a handful per administrator — the one place where lazy loading would buy a
+     * second query for nothing.
      */
     @ElementCollection(fetch = FetchType.EAGER)
-    @CollectionTable(name = "admin_roles",
+    @CollectionTable(
+            name = "admin_roles",
             joinColumns = @JoinColumn(name = "admin_id"),
             foreignKey = @ForeignKey(name = "fk_admin_roles_admin"))
     @Column(name = "role", length = 30, nullable = false)
     @Enumerated(EnumType.STRING)
     private Set<Role> roles = new LinkedHashSet<>();
-
 }

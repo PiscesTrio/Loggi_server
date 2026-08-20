@@ -1,17 +1,14 @@
 package com.example.api.model.entity;
 
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.Id;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.GenericGenerator;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.Id;
-
-/**
- * Driver
- */
+/** Driver */
 @Data
 // Identity is the id and nothing else: two rows with the same id are the same row,
 // whatever their other columns say. callSuper = false because the superclass holds
@@ -33,19 +30,18 @@ public class Driver extends Auditable {
 
     private String phone;
 
-    //Home address
+    // Home address
     private String address;
 
-    //ID card number
+    // ID card number
     private String idCard;
 
-    //Driver's license
+    // Driver's license
     private String license;
 
-    //License points, out of 12
+    // License points, out of 12
     private String score;
 
-    //Currently driving
+    // Currently driving
     private boolean driving;
-
 }

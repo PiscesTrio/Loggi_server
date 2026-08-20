@@ -1,16 +1,16 @@
 package com.example.api.service;
 
-import com.example.api.model.entity.SystemLog;
 import com.example.api.model.dto.SystemLogQuery;
-import org.springframework.data.domain.Pageable;
+import com.example.api.model.entity.SystemLog;
 import org.springframework.data.domain.Page;
-import org.springframework.data.jpa.repository.Query;
-
-import java.util.List;
+import org.springframework.data.domain.Pageable;
 
 public interface SystemLogService {
     public void record(SystemLog log);
+
     Page<SystemLog> getAll(Pageable pageable);
+
     public void delete(String id);
+
     Page<SystemLog> query(SystemLogQuery filter, Pageable pageable);
 }

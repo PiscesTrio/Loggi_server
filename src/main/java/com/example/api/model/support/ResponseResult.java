@@ -20,7 +20,7 @@ public class ResponseResult<T> {
         this.data = null;
     }
 
-    //return data without a msg
+    // return data without a msg
     public ResponseResult(T data) {
         this.code = 200;
         this.status = true;
@@ -28,7 +28,7 @@ public class ResponseResult<T> {
         this.data = data;
     }
 
-    //carries msg and data by default
+    // carries msg and data by default
     public ResponseResult(String msg, T data) {
         this.code = 200;
         this.status = true;
@@ -36,12 +36,11 @@ public class ResponseResult<T> {
         this.data = data;
     }
 
-    //default error response
+    // default error response
     public ResponseResult(Integer code, String msg) {
         this.code = code;
         this.status = false;
         this.msg = msg;
         this.data = null;
     }
-
 }

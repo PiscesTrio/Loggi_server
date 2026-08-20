@@ -1,9 +1,13 @@
 package com.example.api;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import com.example.api.model.entity.Distribution;
 import com.example.api.model.entity.Warehouse;
 import com.example.api.repository.DistributionRepository;
 import com.example.api.repository.WarehouseRepository;
+import java.util.List;
+import java.util.Optional;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -15,31 +19,24 @@ import org.testcontainers.containers.MySQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
-import java.util.List;
-import java.util.Optional;
-
-import static org.assertj.core.api.Assertions.assertThat;
-
 /**
  * Proves that {@code data.sql} actually ran.
  *
- * <p>Without this, a green build says nothing about the seed: the script is executed
- * by ScriptUtils at DEBUG level, so a run that never happened and a run that
- * succeeded look identical in the log. "No error" is not evidence of execution —
- * only reading the rows back is.
+ * <p>Without this, a green build says nothing about the seed: the script is executed by ScriptUtils
+ * at DEBUG level, so a run that never happened and a run that succeeded look identical in the log.
+ * "No error" is not evidence of execution — only reading the rows back is.
  *
- * <p>It also pins the two denormalisation traps the seed has to honour, because both
- * are invisible until something renders them: {@code distribution.wid} holds the
- * warehouse NAME (while {@code inventory.wid} holds the id), and {@code care} is
- * comma-joined WITH a trailing comma.
+ * <p>It also pins the two denormalisation traps the seed has to honour, because both are invisible
+ * until something renders them: {@code distribution.wid} holds the warehouse NAME (while {@code
+ * inventory.wid} holds the id), and {@code care} is comma-joined WITH a trailing comma.
  */
 @Testcontainers
 @SpringBootTest
 class SeedDataIT {
 
     @Container
-    static final MySQLContainer<?> MYSQL = new MySQLContainer<>("mysql:8.0")
-            .withDatabaseName("loggi");
+    static final MySQLContainer<?> MYSQL =
+            new MySQLContainer<>("mysql:8.0").withDatabaseName("loggi");
 
     @DynamicPropertySource
     static void props(DynamicPropertyRegistry r) {
@@ -83,7 +80,8 @@ class SeedDataIT {
     // takes this path — the controller reads through findAll, whose entity graph loads all
     // three — and the test below is the one that guards that.
     @Transactional
-    @DisplayName("A seeded distribution resolves its origin warehouse and keeps care's trailing comma")
+    @DisplayName(
+            "A seeded distribution resolves its origin warehouse and keeps care's trailing comma")
     void seededDistribution_resolvesItsWarehouseAndHonoursTheCareTrap() {
         Optional<Distribution> dis = distributionRepository.findById("seed-dis-1");
 
@@ -95,7 +93,7 @@ class SeedDataIT {
         // The client builds this string with a trailing comma; seeded rows must
         // have the same shape as real ones.
         assertThat(dis.get().getCare()).endsWith(",");
-        assertThat(dis.get().getToLat()).isBetween(33.0, 34.0);   // Fukuoka
+        assertThat(dis.get().getToLat()).isBetween(33.0, 34.0); // Fukuoka
     }
 
     @Test
@@ -110,10 +108,11 @@ class SeedDataIT {
 
         assertThat(all).isNotEmpty();
         assertThat(all)
-                .allSatisfy(d -> {
-                    assertThat(d.getDriver().getName()).isNotBlank();
-                    assertThat(d.getVehicle().getNumber()).isNotBlank();
-                    assertThat(d.getWarehouse().getName()).isNotBlank();
-                });
+                .allSatisfy(
+                        d -> {
+                            assertThat(d.getDriver().getName()).isNotBlank();
+                            assertThat(d.getVehicle().getNumber()).isNotBlank();
+                            assertThat(d.getWarehouse().getName()).isNotBlank();
+                        });
     }
 }

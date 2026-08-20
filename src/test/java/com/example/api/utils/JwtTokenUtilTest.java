@@ -1,29 +1,28 @@
 package com.example.api.utils;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+
 import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.MalformedJwtException;
 import io.jsonwebtoken.security.Keys;
 import io.jsonwebtoken.security.SignatureException;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Test;
-
-import javax.crypto.SecretKey;
 import java.nio.charset.StandardCharsets;
 import java.util.Date;
 import java.util.List;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatCode;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import javax.crypto.SecretKey;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
 
 /**
  * Pins the issue/verify contract.
  *
  * <p>Every case here is written against a plain {@code new JwtTokenUtil(secret)}. That is only
  * possible because the class stopped being static: the previous version copied its secret into a
- * static field from a {@code @PostConstruct} hook, so a test had to reach in with
- * {@code ReflectionTestUtils} and hope no other test had already populated it.
+ * static field from a {@code @PostConstruct} hook, so a test had to reach in with {@code
+ * ReflectionTestUtils} and hope no other test had already populated it.
  */
 class JwtTokenUtilTest {
 
@@ -35,8 +34,9 @@ class JwtTokenUtilTest {
     @Test
     @DisplayName("A freshly issued token round-trips back to the same subject and roles")
     void createToken_thenParse_returnsSameSubjectAndRoles() {
-        String token = util.createToken(
-                "alice@example.com", List.of("ROLE_ADMIN"), JwtTokenUtil.EXPIRATION_TIME);
+        String token =
+                util.createToken(
+                        "alice@example.com", List.of("ROLE_ADMIN"), JwtTokenUtil.EXPIRATION_TIME);
 
         assertThat(util.getUsername(token)).isEqualTo("alice@example.com");
         assertThat(util.getRoles(token)).containsExactly("ROLE_ADMIN");
@@ -56,12 +56,13 @@ class JwtTokenUtilTest {
     @DisplayName("A token signed with another secret fails verification")
     void parse_withForeignSignature_throws() {
         SecretKey attacker = Keys.hmacShaKeyFor(OTHER_SECRET.getBytes(StandardCharsets.UTF_8));
-        String forged = Jwts.builder()
-                .subject("mallory")
-                .claim("roles", List.of("ROLE_SUPER_ADMIN"))
-                .expiration(new Date(System.currentTimeMillis() + 60_000))
-                .signWith(attacker)
-                .compact();
+        String forged =
+                Jwts.builder()
+                        .subject("mallory")
+                        .claim("roles", List.of("ROLE_SUPER_ADMIN"))
+                        .expiration(new Date(System.currentTimeMillis() + 60_000))
+                        .signWith(attacker)
+                        .compact();
 
         assertThatThrownBy(() -> util.parse(forged)).isInstanceOf(SignatureException.class);
     }
@@ -116,11 +117,12 @@ class JwtTokenUtilTest {
     @DisplayName("A token with no roles claim yields no authorities rather than failing")
     void getRoles_withoutRolesClaim_returnsEmpty() {
         SecretKey key = Keys.hmacShaKeyFor(SECRET.getBytes(StandardCharsets.UTF_8));
-        String rolelessButValid = Jwts.builder()
-                .subject("carol")
-                .expiration(new Date(System.currentTimeMillis() + 60_000))
-                .signWith(key)
-                .compact();
+        String rolelessButValid =
+                Jwts.builder()
+                        .subject("carol")
+                        .expiration(new Date(System.currentTimeMillis() + 60_000))
+                        .signWith(key)
+                        .compact();
 
         assertThatCode(() -> util.getRoles(rolelessButValid)).doesNotThrowAnyException();
         assertThat(util.getRoles(rolelessButValid)).isEmpty();

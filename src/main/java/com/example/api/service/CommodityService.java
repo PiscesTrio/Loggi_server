@@ -1,7 +1,6 @@
 package com.example.api.service;
 
 import com.example.api.model.entity.Commodity;
-
 import java.util.List;
 
 public interface CommodityService {
@@ -17,5 +16,4 @@ public interface CommodityService {
     List<Commodity> findAll();
 
     List<Commodity> findAllByLikeName(String name);
-
 }

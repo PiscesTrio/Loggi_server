@@ -1,5 +1,10 @@
 package com.example.api.controller;
 
+import static org.hamcrest.Matchers.hasSize;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
 import com.example.api.handler.GlobalResponseHandler;
 import com.example.api.model.enums.Role;
 import com.example.api.security.SecurityConfiguration;
@@ -13,17 +18,12 @@ import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
-import static org.hamcrest.Matchers.hasSize;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
-
 /**
  * {@code GET /api/role} answers with a view type rather than the domain enum.
  *
- * <p>The point of the change is that the enum no longer decides the JSON, so the test that
- * matters is the one asserting the response carries exactly the two documented keys — that
- * is what stops a field added to {@link Role} tomorrow from silently appearing on the wire.
+ * <p>The point of the change is that the enum no longer decides the JSON, so the test that matters
+ * is the one asserting the response carries exactly the two documented keys — that is what stops a
+ * field added to {@link Role} tomorrow from silently appearing on the wire.
  */
 @WebMvcTest(RoleController.class)
 @Import({SecurityConfiguration.class, GlobalResponseHandler.class})

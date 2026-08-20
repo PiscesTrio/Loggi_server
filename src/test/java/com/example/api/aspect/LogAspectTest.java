@@ -1,9 +1,17 @@
 package com.example.api.aspect;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
 import com.example.api.annotation.Log;
 import com.example.api.model.entity.SystemLog;
 import com.example.api.model.enums.BusinessType;
 import com.example.api.service.SystemLogService;
+import java.lang.reflect.Method;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.reflect.MethodSignature;
 import org.junit.jupiter.api.BeforeEach;
@@ -17,22 +25,13 @@ import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
 import org.springframework.test.util.ReflectionTestUtils;
 
-import java.lang.reflect.Method;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-
 /**
  * The audit log records what happened; it must not become what happened.
  *
- * <p>The aspect wrote its record from a bare {@code finally} with no try/catch, so an
- * exception from the audit write propagated out of that block — replacing whatever the
- * request was already doing. A logging failure became the caller's failure, and if the
- * request was itself failing, the audit write erased the exception it existed to record.
+ * <p>The aspect wrote its record from a bare {@code finally} with no try/catch, so an exception
+ * from the audit write propagated out of that block — replacing whatever the request was already
+ * doing. A logging failure became the caller's failure, and if the request was itself failing, the
+ * audit write erased the exception it existed to record.
  */
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
@@ -56,7 +55,8 @@ class LogAspectTest {
         Method method = Fixture.class.getMethod("annotated");
         when(point.getSignature()).thenReturn(signature);
         when(signature.getMethod()).thenReturn(method);
-        when(signature.getDeclaringTypeName()).thenReturn("com.example.api.controller.WarehouseController");
+        when(signature.getDeclaringTypeName())
+                .thenReturn("com.example.api.controller.WarehouseController");
         when(signature.getName()).thenReturn("save");
     }
 
@@ -126,7 +126,8 @@ class LogAspectTest {
     }
 
     @Test
-    @DisplayName("The stored method name drops the shared package prefix without counting characters")
+    @DisplayName(
+            "The stored method name drops the shared package prefix without counting characters")
     void methodName_stripsThePackagePrefix() throws Throwable {
         when(point.proceed()).thenReturn(null);
 

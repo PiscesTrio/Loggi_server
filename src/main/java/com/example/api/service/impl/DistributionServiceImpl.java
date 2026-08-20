@@ -11,39 +11,34 @@ import com.example.api.repository.DriverRepository;
 import com.example.api.repository.VehicleRepository;
 import com.example.api.repository.WarehouseRepository;
 import com.example.api.service.DistributionService;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
 import jakarta.annotation.Resource;
 import java.util.List;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class DistributionServiceImpl implements DistributionService {
 
-    @Resource
-    private DistributionRepository distributionRepository;
+    @Resource private DistributionRepository distributionRepository;
 
-    @Resource
-    private DriverRepository driverRepository;
+    @Resource private DriverRepository driverRepository;
 
-    @Resource
-    private VehicleRepository vehicleRepository;
+    @Resource private VehicleRepository vehicleRepository;
 
-    @Resource
-    private WarehouseRepository warehouseRepository;
+    @Resource private WarehouseRepository warehouseRepository;
 
     /**
      * Saves an order and moves the driver and vehicle with it.
      *
-     * <p>Approving an order marks both as driving; completing it releases them. Those are
-     * two writes plus the order itself, and without a transaction they committed
-     * separately: a failure after the driver update left a driver marked busy for a trip
-     * that was never recorded, and {@code /api/distribution/can} - which lists whoever is
-     * not driving - hid them from every later dispatch with nothing to explain why.
+     * <p>Approving an order marks both as driving; completing it releases them. Those are two
+     * writes plus the order itself, and without a transaction they committed separately: a failure
+     * after the driver update left a driver marked busy for a trip that was never recorded, and
+     * {@code /api/distribution/can} - which lists whoever is not driving - hid them from every
+     * later dispatch with nothing to explain why.
      *
      * <p>The status codes were bare 1 and 2. {@link DistributionStatus} had spelled them
-     * REVIEW_SUCCESS and END since the first version of this project and was referenced
-     * from nowhere.
+     * REVIEW_SUCCESS and END since the first version of this project and was referenced from
+     * nowhere.
      */
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -63,13 +58,13 @@ public class DistributionServiceImpl implements DistributionService {
      * Replaces the references the request named with the rows they name.
      *
      * <p>Necessary now that these are real foreign keys. A request arrives carrying an id and
-     * nothing else; if it is written straight through, the database is the thing that
-     * discovers the id does not exist, and a constraint violation cannot say which of the
-     * three was wrong. Resolving here turns that into a 404 naming the id.
+     * nothing else; if it is written straight through, the database is the thing that discovers the
+     * id does not exist, and a constraint violation cannot say which of the three was wrong.
+     * Resolving here turns that into a 404 naming the id.
      *
-     * <p>It also closes a gap that predates the associations: only approval and completion
-     * checked the driver and vehicle existed. Creating an order - the common case - checked
-     * nothing, so an order could be filed against a driver who was never hired.
+     * <p>It also closes a gap that predates the associations: only approval and completion checked
+     * the driver and vehicle existed. Creating an order - the common case - checked nothing, so an
+     * order could be filed against a driver who was never hired.
      */
     private void resolveReferences(Distribution distribution) {
         distribution.setDriver(requireDriver(idOf(distribution.getDriver())));
@@ -79,8 +74,10 @@ public class DistributionServiceImpl implements DistributionService {
         // that does not exist is not.
         String warehouseId = idOf(distribution.getWarehouse());
         if (warehouseId != null) {
-            distribution.setWarehouse(warehouseRepository.findById(warehouseId)
-                    .orElseThrow(() -> new BizException(404, "不存在的仓库id: " + warehouseId)));
+            distribution.setWarehouse(
+                    warehouseRepository
+                            .findById(warehouseId)
+                            .orElseThrow(() -> new BizException(404, "不存在的仓库id: " + warehouseId)));
         }
     }
 
@@ -94,16 +91,16 @@ public class DistributionServiceImpl implements DistributionService {
     /**
      * Approval: the driver and vehicle are taken.
      *
-     * <p>This is where the availability check belongs, and it is worth saying why it was
-     * not simply uncommented where it was found. The commented-out lines sat in the
-     * <em>completion</em> branch and read "if the driver is driving, refuse" - but a driver
-     * completing a delivery is by definition driving, having been marked so on approval, so
-     * restoring them there would have rejected every completion the system can produce.
-     * Dead code is not a spare part; it was commented out because it did not work, and the
-     * question is what it was reaching for rather than where it happened to sit.
+     * <p>This is where the availability check belongs, and it is worth saying why it was not simply
+     * uncommented where it was found. The commented-out lines sat in the <em>completion</em> branch
+     * and read "if the driver is driving, refuse" - but a driver completing a delivery is by
+     * definition driving, having been marked so on approval, so restoring them there would have
+     * rejected every completion the system can produce. Dead code is not a spare part; it was
+     * commented out because it did not work, and the question is what it was reaching for rather
+     * than where it happened to sit.
      *
-     * <p>Existence is checked in both directions. A missing id used to reach
-     * {@code updateDriving}, whose UPDATE matched no rows and reported success.
+     * <p>Existence is checked in both directions. A missing id used to reach {@code updateDriving},
+     * whose UPDATE matched no rows and reported success.
      */
     private void assign(Distribution distribution) {
         Driver driver = distribution.getDriver();
@@ -131,12 +128,14 @@ public class DistributionServiceImpl implements DistributionService {
     }
 
     private Driver requireDriver(String did) {
-        return driverRepository.findById(did == null ? "" : did)
+        return driverRepository
+                .findById(did == null ? "" : did)
                 .orElseThrow(() -> new BizException(404, "不存在的司机id: " + did));
     }
 
     private Vehicle requireVehicle(String vid) {
-        return vehicleRepository.findById(vid == null ? "" : vid)
+        return vehicleRepository
+                .findById(vid == null ? "" : vid)
                 .orElseThrow(() -> new BizException(404, "不存在的货车id: " + vid));
     }
 

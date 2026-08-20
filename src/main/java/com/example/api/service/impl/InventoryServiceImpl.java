@@ -3,16 +3,14 @@ package com.example.api.service.impl;
 import com.example.api.model.entity.Inventory;
 import com.example.api.repository.InventoryRepository;
 import com.example.api.service.InventoryService;
-import org.springframework.stereotype.Service;
-
 import jakarta.annotation.Resource;
 import java.util.List;
+import org.springframework.stereotype.Service;
 
 @Service
 public class InventoryServiceImpl implements InventoryService {
 
-    @Resource
-    private InventoryRepository inventoryRepository;
+    @Resource private InventoryRepository inventoryRepository;
 
     @Override
     public Inventory save(Inventory inventory) {
@@ -33,5 +31,4 @@ public class InventoryServiceImpl implements InventoryService {
     public List<Inventory> findByWarehouseId(String wid) {
         return inventoryRepository.findAllByWarehouseId(wid);
     }
-
 }

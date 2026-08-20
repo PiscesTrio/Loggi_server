@@ -1,25 +1,22 @@
 package com.example.api.model.entity;
 
 import com.example.api.model.enums.InventoryType;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
 import org.hibernate.annotations.GenericGenerator;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
-import jakarta.persistence.FetchType;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.Id;
-
-/**
- * Inventory record: stock-out / stock-in movement
- */
+/** Inventory record: stock-out / stock-in movement */
 @Data
 @ToString(exclude = {"warehouse", "commodity"})
 // Identity is the id and nothing else: two rows with the same id are the same row,
@@ -48,20 +45,19 @@ public class InventoryRecord extends Auditable {
     @JoinColumn(name = "commodity_id")
     private Commodity commodity;
 
-    //commodity name
+    // commodity name
     private String name;
 
     private Integer count;
 
     /**
-     * Which way the stock moved. Was an Integer holding +1 or -1, with the two constants
-     * private to InventoryRecordServiceImpl.
+     * Which way the stock moved. Was an Integer holding +1 or -1, with the two constants private to
+     * InventoryRecordServiceImpl.
      */
     @Enumerated(EnumType.STRING)
     @Column(length = 10)
     private InventoryType type;
 
-    //description
+    // description
     private String description;
-
 }

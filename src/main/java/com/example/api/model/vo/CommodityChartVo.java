@@ -7,10 +7,9 @@ import lombok.Data;
 @AllArgsConstructor
 public class CommodityChartVo {
 
-    //commodity name
+    // commodity name
     private Integer value;
 
-    //quantity
+    // quantity
     private String name;
-
 }

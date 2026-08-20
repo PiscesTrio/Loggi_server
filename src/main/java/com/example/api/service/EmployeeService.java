@@ -1,7 +1,6 @@
 package com.example.api.service;
 
 import com.example.api.model.entity.Employee;
-
 import java.util.List;
 
 public interface EmployeeService {
@@ -15,5 +14,4 @@ public interface EmployeeService {
     Employee findById(String id);
 
     List<Employee> findAll();
-
 }

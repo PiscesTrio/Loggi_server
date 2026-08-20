@@ -1,10 +1,15 @@
 package com.example.api.service;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+
 import com.example.api.exception.BizException;
 import com.icegreen.greenmail.configuration.GreenMailConfiguration;
 import com.icegreen.greenmail.junit5.GreenMailExtension;
 import com.icegreen.greenmail.util.ServerSetupTest;
 import jakarta.mail.internet.MimeMessage;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -19,25 +24,19 @@ import org.testcontainers.containers.MySQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-
 /**
  * The one-time code flow, against a real Redis and a real SMTP server.
  *
- * <p>Written as an integration test rather than a unit test on purpose. Every property that
- * matters here is a property of the interaction: that the message is genuinely handed to a
- * mail server, that the value in the store is not the value in the message, that a second
- * send inside the cooldown is refused, that the sixth wrong guess locks the address. Mocking
- * {@code StringRedisTemplate} would let all four assertions pass against a service that does
- * nothing, which is roughly the state this slice found the code in — {@code mailSender.send}
- * had been commented out and no test noticed for the life of the project.
+ * <p>Written as an integration test rather than a unit test on purpose. Every property that matters
+ * here is a property of the interaction: that the message is genuinely handed to a mail server,
+ * that the value in the store is not the value in the message, that a second send inside the
+ * cooldown is refused, that the sixth wrong guess locks the address. Mocking {@code
+ * StringRedisTemplate} would let all four assertions pass against a service that does nothing,
+ * which is roughly the state this slice found the code in — {@code mailSender.send} had been
+ * commented out and no test noticed for the life of the project.
  *
- * <p>GreenMail is an in-process SMTP server, so "was the mail sent" is answered by reading
- * the mail.
+ * <p>GreenMail is an in-process SMTP server, so "was the mail sent" is answered by reading the
+ * mail.
  */
 @Testcontainers
 @SpringBootTest
@@ -46,12 +45,12 @@ class VerificationCodeIT {
     private static final String EMAIL = "code-it@loggi.example";
 
     @Container
-    static final MySQLContainer<?> MYSQL = new MySQLContainer<>("mysql:8.0")
-            .withDatabaseName("loggi");
+    static final MySQLContainer<?> MYSQL =
+            new MySQLContainer<>("mysql:8.0").withDatabaseName("loggi");
 
     @Container
-    static final GenericContainer<?> REDIS = new GenericContainer<>("redis:7-alpine")
-            .withExposedPorts(6379);
+    static final GenericContainer<?> REDIS =
+            new GenericContainer<>("redis:7-alpine").withExposedPorts(6379);
 
     private static final String SMTP_USER = "loggi@loggi.example";
     private static final String SMTP_PASSWORD = "smtp-test-password";
@@ -60,8 +59,10 @@ class VerificationCodeIT {
     // is non-empty, regardless of mail.smtp.auth, and an empty username is not an option here
     // because the same property supplies the From address.
     @RegisterExtension
-    static final GreenMailExtension SMTP = new GreenMailExtension(ServerSetupTest.SMTP)
-            .withConfiguration(GreenMailConfiguration.aConfig().withUser(SMTP_USER, SMTP_PASSWORD));
+    static final GreenMailExtension SMTP =
+            new GreenMailExtension(ServerSetupTest.SMTP)
+                    .withConfiguration(
+                            GreenMailConfiguration.aConfig().withUser(SMTP_USER, SMTP_PASSWORD));
 
     @DynamicPropertySource
     static void props(DynamicPropertyRegistry r) {
@@ -145,7 +146,8 @@ class VerificationCodeIT {
         // names, and they reset the code often enough to matter for guessing too.
         assertThatThrownBy(() -> emailService.sendVerificationCode(EMAIL))
                 .isInstanceOf(BizException.class)
-                .extracting(e -> ((BizException) e).getStatus()).isEqualTo(429);
+                .extracting(e -> ((BizException) e).getStatus())
+                .isEqualTo(429);
     }
 
     @Test
@@ -162,7 +164,8 @@ class VerificationCodeIT {
         assertThatThrownBy(() -> emailService.checkVerificationCode(EMAIL, code))
                 .as("even the correct code is refused once the address is locked")
                 .isInstanceOf(BizException.class)
-                .extracting(e -> ((BizException) e).getStatus()).isEqualTo(429);
+                .extracting(e -> ((BizException) e).getStatus())
+                .isEqualTo(429);
     }
 
     @Test

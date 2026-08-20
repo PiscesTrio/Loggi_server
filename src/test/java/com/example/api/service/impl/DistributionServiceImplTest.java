@@ -1,22 +1,5 @@
 package com.example.api.service.impl;
 
-import com.example.api.exception.BizException;
-import com.example.api.model.entity.Distribution;
-import com.example.api.model.entity.Driver;
-import com.example.api.model.entity.Vehicle;
-import com.example.api.model.enums.DistributionStatus;
-import com.example.api.repository.DistributionRepository;
-import com.example.api.repository.DriverRepository;
-import com.example.api.repository.VehicleRepository;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
-
-import java.util.Optional;
-
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
@@ -25,14 +8,30 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
+import com.example.api.exception.BizException;
+import com.example.api.model.entity.Distribution;
+import com.example.api.model.entity.Driver;
+import com.example.api.model.entity.Vehicle;
+import com.example.api.model.enums.DistributionStatus;
+import com.example.api.repository.DistributionRepository;
+import com.example.api.repository.DriverRepository;
+import com.example.api.repository.VehicleRepository;
+import java.util.Optional;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+
 /**
  * Approving an order takes a driver and a truck; completing it gives them back.
  *
- * <p>The driver/vehicle validation existed in this service as four commented-out lines. It
- * was not restored where it was found: it sat in the <em>completion</em> branch and read
- * "if the driver is driving, refuse", and a driver completing a delivery is driving by
- * definition, having been marked so on approval. Uncommenting it would have rejected every
- * completion the system can produce — which is the likeliest reason it was commented out.
+ * <p>The driver/vehicle validation existed in this service as four commented-out lines. It was not
+ * restored where it was found: it sat in the <em>completion</em> branch and read "if the driver is
+ * driving, refuse", and a driver completing a delivery is driving by definition, having been marked
+ * so on approval. Uncommenting it would have rejected every completion the system can produce —
+ * which is the likeliest reason it was commented out.
  *
  * <p>So the two halves went where each is true: existence is checked on both transitions,
  * availability only on approval. The first two tests below are what keeps them there.
@@ -51,10 +50,9 @@ class DistributionServiceImplTest {
     /**
      * An order naming a driver and a vehicle by id, which is all a request carries.
      *
-     * <p>Since S09 these are associations rather than the strings did/vid, so the reference
-     * arrives as an entity holding nothing but an id — and the service replaces it with the
-     * row it names before doing anything else. That is what the repository stubs below are
-     * standing in for.
+     * <p>Since S09 these are associations rather than the strings did/vid, so the reference arrives
+     * as an entity holding nothing but an id — and the service replaces it with the row it names
+     * before doing anything else. That is what the repository stubs below are standing in for.
      */
     private Distribution order(DistributionStatus status) {
         Distribution d = new Distribution();
@@ -124,7 +122,8 @@ class DistributionServiceImplTest {
         assertThatThrownBy(() -> service.save(order(STATUS_APPROVED)))
                 .isInstanceOf(BizException.class)
                 .hasMessage("司机当前不可用")
-                .extracting(e -> ((BizException) e).getStatus()).isEqualTo(409);
+                .extracting(e -> ((BizException) e).getStatus())
+                .isEqualTo(409);
 
         verify(driverRepository, never()).updateDriving(any(Boolean.class), any());
         verifyNoInteractions(distributionRepository);
@@ -158,7 +157,8 @@ class DistributionServiceImplTest {
         assertThatThrownBy(() -> service.save(order(STATUS_APPROVED)))
                 .isInstanceOf(BizException.class)
                 .hasMessageContaining("不存在的司机id")
-                .extracting(e -> ((BizException) e).getStatus()).isEqualTo(404);
+                .extracting(e -> ((BizException) e).getStatus())
+                .isEqualTo(404);
 
         verifyNoInteractions(distributionRepository);
     }
