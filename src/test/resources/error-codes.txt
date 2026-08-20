@@ -1,0 +1,41 @@
+# Every ErrorCode the API can send, one per line, in declaration order.
+#
+# This file exists to make a contract change impossible to land quietly. ErrorCode is read by
+# a second repository: Loggi_app maps each of these to a sentence in three languages, and its
+# error_messages_test reads the list out of the OpenAPI document it has committed. That test
+# cannot notice a code added here -- its copy of the document is simply older.
+#
+# So the gate is on this side. Add or rename a code and ErrorCodeSnapshotTest goes red until
+# this file is updated, and updating it is where you are told the rest:
+#
+#   1. refresh Loggi_app/tool/openapi.json from a running server
+#   2. add the code to Loggi_app/lib/features/errors/error_messages.dart
+#   3. add its sentence to app_zh.arb, app_en.arb and app_ja.arb
+#
+# A reminder in a file is weaker than a check -- nothing here can fail the other repository's
+# build. What it does is turn "nobody remembered" into "someone decided".
+WAREHOUSE_NOT_FOUND
+DRIVER_NOT_FOUND
+VEHICLE_NOT_FOUND
+DISTRIBUTION_NOT_FOUND
+COMMODITY_NOT_IN_WAREHOUSE
+COMMODITY_NOT_FOUND
+NOT_FOUND
+DRIVER_UNAVAILABLE
+VEHICLE_UNAVAILABLE
+INSUFFICIENT_STOCK
+ALREADY_EXISTS
+QUANTITY_NOT_POSITIVE
+VALIDATION_FAILED
+MALFORMED_REQUEST
+BAD_REQUEST
+CODE_REQUESTED_TOO_SOON
+CODE_ATTEMPTS_EXHAUSTED
+CODE_DELIVERY_FAILED
+VERIFICATION_CODE_INVALID
+AUTHENTICATION_REQUIRED
+TOKEN_INVALID
+ACCESS_DENIED
+METHOD_NOT_ALLOWED
+UNSUPPORTED_MEDIA_TYPE
+INTERNAL_ERROR

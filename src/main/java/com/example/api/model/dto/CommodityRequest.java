@@ -19,17 +19,17 @@ import lombok.Data;
 @Data
 public class CommodityRequest {
 
-    @NotBlank(message = "商品名称不能为空")
+    @NotBlank(message = "commodity name is required")
     private String name;
 
-    @NotNull(message = "单价不能为空")
-    @DecimalMin(value = "0.0", message = "单价不能为负")
+    @NotNull(message = "unit price is required")
+    @DecimalMin(value = "0.0", message = "unit price cannot be negative")
     private BigDecimal price;
 
     private String description;
 
     // Zero is allowed - a commodity can exist with nothing in stock. Negative is not: there
     // is no such thing as minus three of something on a shelf.
-    @PositiveOrZero(message = "库存数量不能为负")
+    @PositiveOrZero(message = "stock cannot be negative")
     private int count;
 }

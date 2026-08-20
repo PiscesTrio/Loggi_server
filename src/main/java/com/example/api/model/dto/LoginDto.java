@@ -20,8 +20,8 @@ import lombok.Data;
 @Data
 public class LoginDto {
 
-    @NotBlank(message = "邮箱不能为空")
-    @Email(message = "邮箱格式不正确")
+    @NotBlank(message = "email is required")
+    @Email(message = "email is not a valid address")
     private String email;
 
     private String password;

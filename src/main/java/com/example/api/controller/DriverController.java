@@ -4,6 +4,7 @@ import com.example.api.annotation.Log;
 import com.example.api.model.dto.DriverRequest;
 import com.example.api.model.entity.Driver;
 import com.example.api.model.enums.BusinessType;
+import com.example.api.model.enums.LogModule;
 import com.example.api.model.vo.DriverVo;
 import com.example.api.service.DriverService;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -20,26 +21,26 @@ public class DriverController {
 
     @Resource private DriverService driverService;
 
-    @Log(module = "驾驶员管理", type = BusinessType.INSERT)
+    @Log(module = LogModule.DRIVER, type = BusinessType.INSERT)
     @PostMapping("")
     @ResponseStatus(HttpStatus.CREATED)
     public DriverVo save(@Valid @RequestBody DriverRequest request) {
         return DriverVo.from(driverService.save(toEntity(request)));
     }
 
-    @Log(module = "驾驶员管理", type = BusinessType.QUERY)
+    @Log(module = LogModule.DRIVER, type = BusinessType.QUERY)
     @GetMapping("")
     public List<DriverVo> findAll() {
         return driverService.findAll().stream().map(DriverVo::from).toList();
     }
 
-    @Log(module = "驾驶员管理", type = BusinessType.QUERY)
+    @Log(module = LogModule.DRIVER, type = BusinessType.QUERY)
     @GetMapping("/{id}")
     public DriverVo findById(@PathVariable String id) {
         return DriverVo.from(driverService.findById(id));
     }
 
-    @Log(module = "驾驶员管理", type = BusinessType.DELETE)
+    @Log(module = LogModule.DRIVER, type = BusinessType.DELETE)
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void delete(@PathVariable String id) {

@@ -20,18 +20,15 @@
 -- on every boot, recording a single inventory movement was enough to stop the application
 -- from ever starting again -- a fresh clone worked, and using it was what broke it.
 --
--- Two field-naming traps this file has to respect, both inherited:
---   * distribution.wid holds the warehouse *name* (see the warehouse dropdown),
---     while inventory.wid / inventory_record.wid hold the warehouse *id*.
---     Same column name, different meaning in different tables.
---   * distribution.care is a comma-joined list *with a trailing comma*, because
---     that is what the client produces. Writing it without one would make seeded
---     rows differ in shape from real ones.
---
--- Values that must stay exactly as they are, because the client compares against
--- them: vehicle.type is one of 货车 / 卡车 / 重卡, driver.gender is 男性 / 女性,
--- and each care token must be one of the eight the client offers. These are wire
--- values, not display text -- localising them is a separate, deliberate step.
+-- A field-naming trap this file has to respect, inherited: distribution.wid holds
+-- the warehouse *name* (see the warehouse dropdown), while inventory.wid and
+-- inventory_record.wid hold the warehouse *id* -- same column name, different
+-- meaning in different tables.
+-- One trap this file used to have to respect is gone as of V9: distribution.care
+-- was a comma-joined list with a trailing comma, and vehicle.type / driver.gender
+-- held Chinese strings the client compared against character for character. All
+-- three are closed sets of identifiers now, care is rows in distribution_care,
+-- and an invalid value fails to load instead of quietly taking a wrong branch.
 
 -- Order matters since S09: these tables have real foreign keys between them, so a parent
 -- has to be written before its child. The sequence below is parent-first and load-bearing.
@@ -77,9 +74,9 @@ INSERT INTO warehouse (id, name, principle, location, lat, lng, create_at) VALUE
     create_at = VALUES(create_at);
 
 INSERT INTO driver (id, name, gender, phone, address, id_card, license, score, driving, create_at, update_at) VALUES
-  ('seed-dr-1', '田中 三郎', '男性', '090-0000-0001', '東京都江東区ロギ4-2-1',       'JP-A-100001', '第一種大型', '12', 0, '2026-08-01 09:00:00', '2026-08-01 09:00:00'),
-  ('seed-dr-2', '佐々木 花子', '女性', '090-0000-0002', '大阪府大阪市此花区ロギ5-3-2', 'JP-A-100002', '第一種中型', '10', 0, '2026-08-01 09:00:00', '2026-08-01 09:00:00'),
-  ('seed-dr-3', '小林 五郎', '男性', '090-0000-0003', '愛知県名古屋市港区ロギ6-4-3', 'JP-A-100003', '第一種大型', '15', 0, '2026-08-01 09:00:00', '2026-08-01 09:00:00')
+  ('seed-dr-1', '田中 三郎', 'MALE', '090-0000-0001', '東京都江東区ロギ4-2-1',       'JP-A-100001', '第一種大型', '12', 0, '2026-08-01 09:00:00', '2026-08-01 09:00:00'),
+  ('seed-dr-2', '佐々木 花子', 'FEMALE', '090-0000-0002', '大阪府大阪市此花区ロギ5-3-2', 'JP-A-100002', '第一種中型', '10', 0, '2026-08-01 09:00:00', '2026-08-01 09:00:00'),
+  ('seed-dr-3', '小林 五郎', 'MALE', '090-0000-0003', '愛知県名古屋市港区ロギ6-4-3', 'JP-A-100003', '第一種大型', '15', 0, '2026-08-01 09:00:00', '2026-08-01 09:00:00')
   ON DUPLICATE KEY UPDATE
     name = VALUES(name),
     gender = VALUES(gender),
@@ -92,15 +89,15 @@ INSERT INTO driver (id, name, gender, phone, address, id_card, license, score, d
     create_at = VALUES(create_at),
     update_at = VALUES(update_at);
 
--- vehicle.type must remain one of the three values the client's dropdown offers.
+-- vehicle.type is a VehicleType name since V9; the column rejects anything else.
 --
 -- The hiragana is `へ` on every plate on purpose: Japanese plates never use お, し, へ or
 -- ん, so these read as plates while being ones that cannot have been issued. Same idea as
 -- the 0900 phone numbers above.
 INSERT INTO vehicle (id, number, type, driving, create_at) VALUES
-  ('seed-vh-1', '品川800へ12-34', '货车', 0, '2026-08-01 09:00:00'),
-  ('seed-vh-2', 'なにわ800へ56-78', '卡车', 0, '2026-08-01 09:00:00'),
-  ('seed-vh-3', '名古屋800へ90-12', '重卡', 0, '2026-08-01 09:00:00')
+  ('seed-vh-1', '品川800へ12-34', 'LIGHT_TRUCK', 0, '2026-08-01 09:00:00'),
+  ('seed-vh-2', 'なにわ800へ56-78', 'TRUCK', 0, '2026-08-01 09:00:00'),
+  ('seed-vh-3', '名古屋800へ90-12', 'HEAVY_TRUCK', 0, '2026-08-01 09:00:00')
   ON DUPLICATE KEY UPDATE
     number = VALUES(number),
     type = VALUES(type),
@@ -161,9 +158,9 @@ INSERT INTO inventory_record (id, name, warehouse_id, commodity_id, count, type,
 -- warehouse_id used to be `wid` and held the warehouse NAME, which is why the migration
 -- resolves it by name rather than renaming the column.
 -- from_* is the origin warehouse, to_* the destination, both WGS-84.
-INSERT INTO distribution (id, driver_id, vehicle_id, warehouse_id, phone, address, urgent, care, time, status, from_lat, from_lng, to_lat, to_lng) VALUES
-  ('seed-dis-1', 'seed-dr-1', 'seed-vh-1', 'seed-wh-tokyo', '090-0000-0011', '福岡県福岡市東区ロギ7-1-1',   1, '易碎,防潮,',  '2026-08-05 11:30:00', 'REVIEW_SUCCESS', 35.672000, 139.817000, 33.620000, 130.427000),
-  ('seed-dis-2', 'seed-dr-2', 'seed-vh-2', 'seed-wh-osaka', '090-0000-0012', '北海道札幌市白石区ロギ8-1-1', 0, '冷藏,防高温,', '2026-08-06 09:15:00', 'REVIEWING',      34.687000, 135.448000, 43.048000, 141.402000)
+INSERT INTO distribution (id, driver_id, vehicle_id, warehouse_id, phone, address, urgent, time, status, from_lat, from_lng, to_lat, to_lng) VALUES
+  ('seed-dis-1', 'seed-dr-1', 'seed-vh-1', 'seed-wh-tokyo', '090-0000-0011', '福岡県福岡市東区ロギ7-1-1',   1, '2026-08-05 11:30:00', 'REVIEW_SUCCESS', 35.672000, 139.817000, 33.620000, 130.427000),
+  ('seed-dis-2', 'seed-dr-2', 'seed-vh-2', 'seed-wh-osaka', '090-0000-0012', '北海道札幌市白石区ロギ8-1-1', 0, '2026-08-06 09:15:00', 'REVIEWING',      34.687000, 135.448000, 43.048000, 141.402000)
   ON DUPLICATE KEY UPDATE
     driver_id = VALUES(driver_id),
     vehicle_id = VALUES(vehicle_id),
@@ -171,13 +168,24 @@ INSERT INTO distribution (id, driver_id, vehicle_id, warehouse_id, phone, addres
     phone = VALUES(phone),
     address = VALUES(address),
     urgent = VALUES(urgent),
-    care = VALUES(care),
     time = VALUES(time),
     status = VALUES(status),
     from_lat = VALUES(from_lat),
     from_lng = VALUES(from_lng),
     to_lat = VALUES(to_lat),
     to_lng = VALUES(to_lng);
+
+-- Handling tags, one row each since V9. The primary key is (distribution_id, tag), so
+-- re-running this is a no-op rather than a duplicate -- but note it only ever adds: a tag
+-- removed from a seed row here would survive in a database that had already loaded it.
+-- Acceptable for seed data, and the reason this is stated rather than assumed.
+INSERT INTO distribution_care (distribution_id, tag) VALUES
+  ('seed-dis-1', 'FRAGILE'),
+  ('seed-dis-1', 'KEEP_DRY'),
+  ('seed-dis-2', 'REFRIGERATE'),
+  ('seed-dis-2', 'PROTECT_FROM_HEAT')
+  ON DUPLICATE KEY UPDATE
+    tag = VALUES(tag);
 
 -- distribution_track.location is the warehouse NAME as well; it is rendered
 -- verbatim in the tracking timeline, so an id here would show up as an id.

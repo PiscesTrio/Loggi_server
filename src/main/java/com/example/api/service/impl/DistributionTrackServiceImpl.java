@@ -1,6 +1,7 @@
 package com.example.api.service.impl;
 
 import com.example.api.exception.BizException;
+import com.example.api.exception.ErrorCode;
 import com.example.api.model.entity.Distribution;
 import com.example.api.model.entity.DistributionTrack;
 import com.example.api.repository.DistributionRepository;
@@ -43,7 +44,11 @@ public class DistributionTrackServiceImpl implements DistributionTrackService {
         Distribution parent =
                 distributionRepository
                         .findById(distributionId == null ? "" : distributionId)
-                        .orElseThrow(() -> new BizException(404, "不存在的配送单id: " + distributionId));
+                        .orElseThrow(
+                                () ->
+                                        new BizException(
+                                                ErrorCode.DISTRIBUTION_NOT_FOUND,
+                                                "no delivery order with id " + distributionId));
 
         track.setDistribution(parent);
         track.setTime(LocalDateTime.now());

@@ -4,8 +4,11 @@ import com.example.api.model.entity.Distribution;
 import com.example.api.model.entity.Driver;
 import com.example.api.model.entity.Vehicle;
 import com.example.api.model.entity.Warehouse;
+import com.example.api.model.enums.CareTag;
 import com.example.api.model.enums.DistributionStatus;
+import com.example.api.model.enums.VehicleType;
 import java.time.LocalDateTime;
+import java.util.List;
 
 /**
  * A delivery order, as the API describes one.
@@ -31,7 +34,7 @@ public record DistributionVo(
         String phone,
         String address,
         boolean urgent,
-        String care,
+        List<CareTag> care,
         LocalDateTime time,
         DistributionStatus status,
         double fromLat,
@@ -49,7 +52,7 @@ public record DistributionVo(
         }
     }
 
-    public record VehicleSummary(String id, String number, String type) {
+    public record VehicleSummary(String id, String number, VehicleType type) {
         static VehicleSummary from(Vehicle vehicle) {
             return vehicle == null
                     ? null
@@ -82,7 +85,7 @@ public record DistributionVo(
                 d.getPhone(),
                 d.getAddress(),
                 d.isUrgent(),
-                d.getCare(),
+                d.getCare().stream().sorted().toList(),
                 d.getTime(),
                 d.getStatus(),
                 d.getFromLat(),

@@ -1,5 +1,6 @@
 package com.example.api.controller;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -10,9 +11,13 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.example.api.annotation.DisableBaseResponse;
 import com.example.api.exception.BizException;
+import com.example.api.exception.ErrorCode;
 import com.example.api.handler.GlobalResponseHandler;
 import com.example.api.security.SecurityConfiguration;
 import com.example.api.utils.JwtTokenUtil;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import org.junit.jupiter.api.DisplayName;
@@ -71,7 +76,7 @@ class ErrorResponseTest {
 
         @GetMapping("/biz")
         public String biz() {
-            throw new BizException(409, "库存不足");
+            throw new BizException(ErrorCode.INSUFFICIENT_STOCK, "not enough stock");
         }
 
         @GetMapping("/not-found")
@@ -123,7 +128,11 @@ class ErrorResponseTest {
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.code").value(409))
                 .andExpect(jsonPath("$.status").value(false))
-                .andExpect(jsonPath("$.msg").value("库存不足"));
+                .andExpect(jsonPath("$.msg").value("not enough stock"))
+                // The code is what a client branches on; msg is what it falls back to. 409
+                // alone cannot separate "that driver is already out" from "that movement
+                // would go negative", and both are things a UI wants to phrase differently.
+                .andExpect(jsonPath("$.errorCode").value("INSUFFICIENT_STOCK"));
     }
 
     @Test
@@ -147,7 +156,8 @@ class ErrorResponseTest {
         mockMvc.perform(get("/api/test-errors/unexpected"))
                 .andExpect(status().isInternalServerError())
                 .andExpect(jsonPath("$.code").value(500))
-                .andExpect(jsonPath("$.msg").value("服务器内部错误"));
+                .andExpect(jsonPath("$.msg").value("internal server error"))
+                .andExpect(jsonPath("$.errorCode").value("INTERNAL_ERROR"));
     }
 
     @Test
@@ -160,7 +170,10 @@ class ErrorResponseTest {
         mockMvc.perform(get("/api/test-errors/ok"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value(200))
-                .andExpect(jsonPath("$.data").value("plain"));
+                .andExpect(jsonPath("$.data").value("plain"))
+                // Absent, not null. A key that appears only when it means something is
+                // easier to read and easier to branch on.
+                .andExpect(jsonPath("$.errorCode").doesNotExist());
     }
 
     @Test
@@ -191,7 +204,7 @@ class ErrorResponseTest {
         mockMvc.perform(get("/api/test-errors/does-not-exist"))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.code").value(404))
-                .andExpect(jsonPath("$.msg").value("请求的资源不存在"));
+                .andExpect(jsonPath("$.msg").value("not found"));
     }
 
     @Test
@@ -216,7 +229,7 @@ class ErrorResponseTest {
         mockMvc.perform(post("/api/test-errors/ok"))
                 .andExpect(status().isMethodNotAllowed())
                 .andExpect(jsonPath("$.code").value(405))
-                .andExpect(jsonPath("$.msg").value("不支持的请求方法"));
+                .andExpect(jsonPath("$.msg").value("method not allowed"));
     }
 
     @Test
@@ -255,5 +268,48 @@ class ErrorResponseTest {
         mockMvc.perform(delete("/api/test-errors/gone").with(csrf()))
                 .andExpect(status().isNoContent())
                 .andExpect(content().string(""));
+    }
+
+    @Test
+    @WithMockUser
+    @DisplayName("Every error code answers with the status it declares")
+    void everyCodeAgreesWithItsStatus() {
+        // The status used to be passed to the constructor at each throw site, so a 404 and a
+        // 409 for the same condition were one typo apart. It comes from the code now — this
+        // asserts the enum is internally sensible, which is the thing that made moving it
+        // there worth doing.
+        for (ErrorCode code : ErrorCode.values()) {
+            assertThat(code.getStatus()).as("%s", code).isBetween(400, 599);
+            assertThat(new BizException(code, "x").getStatus()).isEqualTo(code.getStatus());
+        }
+    }
+
+    @Test
+    @WithMockUser
+    @DisplayName("A response's status and its error code's declared status agree")
+    void statusAndCodeAgree() throws Exception {
+        // 415 first shipped naming MALFORMED_REQUEST, which declares 400 — so a client that
+        // looked the code up got a different status than the response carried. The enum was
+        // supposed to make that impossible; it only does for BizException, where the status
+        // comes *from* the code. Where the handler pairs them by hand, this is the check.
+        record Case(String path, String method, int status) {}
+
+        for (Case c :
+                List.of(
+                        new Case("/api/test-errors/biz", "GET", 409),
+                        new Case("/api/test-errors/not-found", "GET", 404),
+                        new Case("/api/test-errors/unexpected", "GET", 500),
+                        new Case("/api/nope", "GET", 404))) {
+            String body =
+                    mockMvc.perform(get(c.path())).andReturn().getResponse().getContentAsString();
+            JsonNode json = new ObjectMapper().readTree(body);
+            assertThat(json.get("code").asInt()).as("%s", c.path()).isEqualTo(c.status());
+
+            JsonNode code = json.get("errorCode");
+            assertThat(code).as("%s has no errorCode", c.path()).isNotNull();
+            assertThat(ErrorCode.valueOf(code.asText()).getStatus())
+                    .as("%s answered %d naming %s", c.path(), c.status(), code.asText())
+                    .isEqualTo(c.status());
+        }
     }
 }

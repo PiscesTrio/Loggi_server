@@ -1,6 +1,7 @@
 package com.example.api.handler;
 
 import com.example.api.exception.BizException;
+import com.example.api.exception.ErrorCode;
 import com.example.api.model.support.ResponseResult;
 import java.util.NoSuchElementException;
 import org.slf4j.Logger;
@@ -49,7 +50,7 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ResponseResult<Void>> handleBiz(BizException e) {
         log.debug("Business rule refused the request: {}", e.getMessage());
         return ResponseEntity.status(e.getStatus())
-                .body(new ResponseResult<>(e.getStatus(), e.getMessage()));
+                .body(new ResponseResult<>(e.getStatus(), e.getMessage(), e.getErrorCode()));
     }
 
     /**
@@ -62,7 +63,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(AccessDeniedException.class)
     public ResponseEntity<ResponseResult<Void>> handleAccessDenied(AccessDeniedException e) {
         return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                .body(new ResponseResult<>(403, "你没有访问权限"));
+                .body(new ResponseResult<>(403, "access denied", ErrorCode.ACCESS_DENIED));
     }
 
     /** Optional.get() on an absent record; the inventory paths reach it through a missing id. */
@@ -70,16 +71,16 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ResponseResult<Void>> handleNotFound(NoSuchElementException e) {
         log.debug("Requested record does not exist: {}", e.getMessage());
         return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                .body(new ResponseResult<>(404, "请求的资源不存在"));
+                .body(new ResponseResult<>(404, "not found", ErrorCode.NOT_FOUND));
     }
 
     /**
      * A request that failed its constraints, answered with the constraint that failed.
      *
      * <p>Without this it would reach the catch-all below, be recognised as an {@link
-     * ErrorResponse}, and come back as a flat "请求参数错误". That is true and useless: the DTO declares
-     * which field is wrong and why, and discarding that at the boundary means the caller has to
-     * guess which of five fields the server disliked.
+     * ErrorResponse}, and come back as a flat "the request could not be read". That is true and
+     * useless: the DTO declares which field is wrong and why, and discarding that at the boundary
+     * means the caller has to guess which of five fields the server disliked.
      *
      * <p>Only the first violation is returned. Validation order is not defined, so the set is not
      * stable between runs, and a caller fixing one field at a time gets a coherent conversation
@@ -92,9 +93,10 @@ public class GlobalExceptionHandler {
                 e.getBindingResult().getFieldErrors().stream()
                         .map(FieldError::getDefaultMessage)
                         .findFirst()
-                        .orElse("请求参数错误");
+                        .orElse("the request could not be read");
         log.debug("Request rejected by validation: {}", e.getBindingResult().getAllErrors());
-        return ResponseEntity.badRequest().body(new ResponseResult<>(400, message));
+        return ResponseEntity.badRequest()
+                .body(new ResponseResult<>(400, message, ErrorCode.VALIDATION_FAILED));
     }
 
     /**
@@ -118,7 +120,7 @@ public class GlobalExceptionHandler {
             DataIntegrityViolationException e) {
         log.debug("Database rejected the write: {}", e.getMostSpecificCause().getMessage());
         return ResponseEntity.status(HttpStatus.CONFLICT)
-                .body(new ResponseResult<>(409, "数据已存在，请检查是否重复"));
+                .body(new ResponseResult<>(409, "that already exists", ErrorCode.ALREADY_EXISTS));
     }
 
     /**
@@ -133,7 +135,10 @@ public class GlobalExceptionHandler {
     @ExceptionHandler({HttpMessageNotReadableException.class, TypeMismatchException.class})
     public ResponseEntity<ResponseResult<Void>> handleUnreadableRequest(Exception e) {
         log.debug("Request could not be read: {}", e.getMessage());
-        return ResponseEntity.badRequest().body(new ResponseResult<>(400, "请求参数错误"));
+        return ResponseEntity.badRequest()
+                .body(
+                        new ResponseResult<>(
+                                400, "the request could not be read", ErrorCode.MALFORMED_REQUEST));
     }
 
     /**
@@ -163,7 +168,8 @@ public class GlobalExceptionHandler {
         // The checked Exception the services still throw by hand, while `throws Exception`
         // remains in their signatures. Its message is written by us and is safe to return.
         log.debug("Request refused: {}", e.getMessage());
-        return ResponseEntity.badRequest().body(new ResponseResult<>(400, e.getMessage()));
+        return ResponseEntity.badRequest()
+                .body(new ResponseResult<>(400, e.getMessage(), ErrorCode.BAD_REQUEST));
     }
 
     /**
@@ -176,20 +182,34 @@ public class GlobalExceptionHandler {
     private ResponseEntity<ResponseResult<Void>> handleSpringMvc(
             Exception e, ErrorResponse errorResponse) {
         int status = errorResponse.getStatusCode().value();
-        String msg =
+        // The pair, not two switches: a status whose message says "not found" and whose code
+        // says BAD_REQUEST is worse than either alone, and two lists drift.
+        //
+        // Each named case picks a code whose own declared status equals this one — 415 first
+        // shipped as MALFORMED_REQUEST, which declares 400, so a client looking the code up
+        // got a different status than the response carried. The default branch is the one
+        // place that cannot promise this: the status is Spring's and can be any 4xx, and
+        // inventing a constant per HTTP status would be a second copy of a registry that
+        // already exists.
+        var answer =
                 switch (status) {
-                    case 404 -> "请求的资源不存在";
-                    case 405 -> "不支持的请求方法";
-                    case 415 -> "不支持的媒体类型";
+                    case 404 -> new Answer("not found", ErrorCode.NOT_FOUND);
+                    case 405 -> new Answer("method not allowed", ErrorCode.METHOD_NOT_ALLOWED);
+                    case 415 ->
+                            new Answer("unsupported media type", ErrorCode.UNSUPPORTED_MEDIA_TYPE);
                     default ->
-                            errorResponse.getStatusCode().is4xxClientError() ? "请求参数错误" : "服务器内部错误";
+                            errorResponse.getStatusCode().is4xxClientError()
+                                    ? new Answer(
+                                            "the request could not be read", ErrorCode.BAD_REQUEST)
+                                    : new Answer("internal server error", ErrorCode.INTERNAL_ERROR);
                 };
         if (errorResponse.getStatusCode().is5xxServerError()) {
             log.error("Spring MVC reported a server-side failure", e);
         } else {
             log.debug("Request rejected before the handler: {}", e.getMessage());
         }
-        return ResponseEntity.status(status).body(new ResponseResult<>(status, msg));
+        return ResponseEntity.status(status)
+                .body(new ResponseResult<>(status, answer.msg(), answer.code()));
     }
 
     /**
@@ -206,6 +226,9 @@ public class GlobalExceptionHandler {
     private ResponseEntity<ResponseResult<Void>> handleUnexpected(Exception e) {
         log.error("Unhandled exception while serving a request", e);
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(new ResponseResult<>(500, "服务器内部错误"));
+                .body(new ResponseResult<>(500, "internal server error", ErrorCode.INTERNAL_ERROR));
     }
+
+    /** A status's message and its code, chosen together. */
+    private record Answer(String msg, ErrorCode code) {}
 }

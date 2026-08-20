@@ -55,7 +55,7 @@ public class AdminController {
     @ResponseStatus(HttpStatus.CREATED)
     public AdminVo init(@Valid @RequestBody AdminRequest request) throws Exception {
         if (adminRepository.existsAdminByRolesContains(Role.ROLE_SUPER_ADMIN)) {
-            throw new Exception("系统已初始化");
+            throw new Exception("already initialised");
         }
         Admin admin = toEntity(request);
         // Whatever roles the request named are ignored. There is no sensible answer for the
@@ -121,9 +121,9 @@ public class AdminController {
     /**
      * The part both share: issue a token, and record the attempt either way.
      *
-     * <p>The old body wrapped everything in {@code catch (Exception e) { throw new
-     * Exception("邮箱或密码错误"); }}. That is the right answer for a credential mismatch and the wrong
-     * one for everything else it also caught: a rate-limit refusal, a mail server outage, a locked
+     * <p>The old body wrapped everything in {@code catch (Exception e) { throw new Exception("wrong
+     * email or password"); }}. That is the right answer for a credential mismatch and the wrong one
+     * for everything else it also caught: a rate-limit refusal, a mail server outage, a locked
      * account, a null pointer. The caller was told to check their password while the actual reason
      * was discarded — including the reasons they could have acted on. BizException already carries
      * a status and a message written to be shown, so it passes through; anything else still
@@ -146,7 +146,7 @@ public class AdminController {
             throw e;
         } catch (Exception e) {
             log.debug("Login refused for {}", dto.getEmail(), e);
-            throw new Exception("邮箱或密码错误");
+            throw new Exception("wrong email or password");
         } finally {
             loginLogService.recordLog(dto, admin, request);
         }
@@ -172,7 +172,7 @@ public class AdminController {
     public ResponseResult<Void> sendVerificationCode(@RequestParam String email) {
         adminService.sendEmail(email);
         ResponseResult<Void> res = new ResponseResult<>();
-        res.setMsg("如果该邮箱已注册，验证码已发送");
+        res.setMsg("if that address is registered, a code has been sent");
         res.setStatus(true);
         return res;
     }

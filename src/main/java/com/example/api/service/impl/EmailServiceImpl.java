@@ -2,6 +2,7 @@ package com.example.api.service.impl;
 
 import com.example.api.config.VerificationProperties;
 import com.example.api.exception.BizException;
+import com.example.api.exception.ErrorCode;
 import com.example.api.service.EmailService;
 import com.example.api.utils.RandomUtil;
 import jakarta.annotation.Resource;
@@ -73,17 +74,33 @@ public class EmailServiceImpl implements EmailService {
                                 "1",
                                 Duration.ofSeconds(properties.sendCooldownSeconds()));
         if (!Boolean.TRUE.equals(claimed)) {
-            throw new BizException(429, "请求过于频繁，请稍后再试");
+            throw new BizException(
+                    ErrorCode.CODE_REQUESTED_TOO_SOON, "a code was requested too recently");
         }
 
         String code = RandomUtil.next();
         long ttlSeconds = properties.codeTtlSeconds();
 
+        // The one user-facing string this server has to render itself.
+        //
+        // Everything else it sends is an identifier that the client turns into words in the
+        // reader's language — that is what A3 is for. An e-mail has no client: the server
+        // writes what the recipient reads, so it is the single place where "the server does
+        // not know the reader's language" is a real limitation rather than a design mistake.
+        //
+        // English, as the one language most likely to be understood by a recipient this demo
+        // knows nothing about. A real system would carry the account's language and render
+        // this in it; that is a column and a lookup, not a rewrite, and it is not here.
         SimpleMailMessage message = new SimpleMailMessage();
         message.setFrom(from);
         message.setTo(email);
-        message.setSubject("验证码");
-        message.setText("你的验证码为: " + code + " ，" + (ttlSeconds / 60) + " 分钟内有效。");
+        message.setSubject("Your verification code");
+        message.setText(
+                "Your verification code is "
+                        + code
+                        + ". It is valid for "
+                        + (ttlSeconds / 60)
+                        + " minutes.");
 
         try {
             mailSender.send(message);
@@ -92,7 +109,8 @@ public class EmailServiceImpl implements EmailService {
             // minute to retry punishes them for the mail server's failure.
             redis.delete(COOLDOWN_KEY + email);
             log.error("Could not send a verification code to {}", email, e);
-            throw new BizException(502, "验证码发送失败，请稍后再试");
+            throw new BizException(
+                    ErrorCode.CODE_DELIVERY_FAILED, "the verification code could not be sent");
         }
 
         // Only the hash is stored. Six digits is a million possibilities, so this is no
@@ -106,7 +124,8 @@ public class EmailServiceImpl implements EmailService {
     @Override
     public boolean checkVerificationCode(String email, String code) {
         if (Boolean.TRUE.equals(redis.hasKey(LOCK_KEY + email))) {
-            throw new BizException(429, "验证失败次数过多，请稍后再试");
+            throw new BizException(
+                    ErrorCode.CODE_ATTEMPTS_EXHAUSTED, "too many failed verification attempts");
         }
         if (code == null || code.isBlank()) {
             return false;

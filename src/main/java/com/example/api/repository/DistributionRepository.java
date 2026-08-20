@@ -17,8 +17,12 @@ public interface DistributionRepository extends JpaRepository<Distribution, Stri
      * proxies are touched after the transaction has closed and every request fails with
      * LazyInitializationException. Loading them one at a time instead would work and would issue
      * three queries per order, which is the N+1 this slice exists to remove.
+     *
+     * <p>{@code care} joined the list when it stopped being a column and became rows. It is the
+     * only collection here, so the join multiplies rows by the number of tags on an order and
+     * Hibernate folds them back; a second collection would need a different strategy.
      */
     @Override
-    @EntityGraph(attributePaths = {"driver", "vehicle", "warehouse"})
+    @EntityGraph(attributePaths = {"driver", "vehicle", "warehouse", "care"})
     List<Distribution> findAll();
 }

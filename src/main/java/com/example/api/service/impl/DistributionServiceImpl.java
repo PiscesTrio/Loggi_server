@@ -1,6 +1,7 @@
 package com.example.api.service.impl;
 
 import com.example.api.exception.BizException;
+import com.example.api.exception.ErrorCode;
 import com.example.api.model.entity.Distribution;
 import com.example.api.model.entity.Driver;
 import com.example.api.model.entity.Vehicle;
@@ -77,7 +78,11 @@ public class DistributionServiceImpl implements DistributionService {
             distribution.setWarehouse(
                     warehouseRepository
                             .findById(warehouseId)
-                            .orElseThrow(() -> new BizException(404, "不存在的仓库id: " + warehouseId)));
+                            .orElseThrow(
+                                    () ->
+                                            new BizException(
+                                                    ErrorCode.WAREHOUSE_NOT_FOUND,
+                                                    "no warehouse with id " + warehouseId)));
         }
     }
 
@@ -111,10 +116,11 @@ public class DistributionServiceImpl implements DistributionService {
         // approval is the case it also catches, and telling the caller the assignment did
         // not go through is safer than silently reassigning.
         if (driver.isDriving()) {
-            throw new BizException(409, "司机当前不可用");
+            throw new BizException(ErrorCode.DRIVER_UNAVAILABLE, "that driver is already assigned");
         }
         if (vehicle.isDriving()) {
-            throw new BizException(409, "货车当前不可用");
+            throw new BizException(
+                    ErrorCode.VEHICLE_UNAVAILABLE, "that vehicle is already assigned");
         }
 
         driverRepository.updateDriving(true, driver.getId());
@@ -130,13 +136,19 @@ public class DistributionServiceImpl implements DistributionService {
     private Driver requireDriver(String did) {
         return driverRepository
                 .findById(did == null ? "" : did)
-                .orElseThrow(() -> new BizException(404, "不存在的司机id: " + did));
+                .orElseThrow(
+                        () ->
+                                new BizException(
+                                        ErrorCode.DRIVER_NOT_FOUND, "no driver with id " + did));
     }
 
     private Vehicle requireVehicle(String vid) {
         return vehicleRepository
                 .findById(vid == null ? "" : vid)
-                .orElseThrow(() -> new BizException(404, "不存在的货车id: " + vid));
+                .orElseThrow(
+                        () ->
+                                new BizException(
+                                        ErrorCode.VEHICLE_NOT_FOUND, "no vehicle with id " + vid));
     }
 
     @Override

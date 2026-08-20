@@ -39,7 +39,7 @@ public class LoginLogServiceImpl implements LoginLogService {
         loginLog.setDate(LocalDateTime.now());
         loginLog.setEmail(loginDto.getEmail());
         // resolve the browser version
-        loginLog.setBrowser(BrowserUtil.getBrower(request));
+        loginLog.setBrowser(BrowserUtil.getBrowser(request));
         loginLog.setIp(IpUtil.getIpAddr(request));
         if (admin == null) {
             loginLog.setStatus(0);

@@ -1,6 +1,7 @@
 package com.example.api.model.entity;
 
 import com.example.api.model.enums.BusinessType;
+import com.example.api.model.enums.LogModule;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -24,8 +25,11 @@ public class SystemLog {
 
     // account
     private String account;
+
     // functional module
-    private String module;
+    @Enumerated(EnumType.STRING)
+    @Column(length = 30)
+    private LogModule module;
 
     // operation type
     /**

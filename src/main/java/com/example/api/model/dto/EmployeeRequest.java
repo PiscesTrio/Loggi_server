@@ -1,5 +1,6 @@
 package com.example.api.model.dto;
 
+import com.example.api.model.enums.Gender;
 import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
 
@@ -7,12 +8,12 @@ import lombok.Data;
 @Data
 public class EmployeeRequest {
 
-    @NotBlank(message = "姓名不能为空")
+    @NotBlank(message = "name is required")
     private String name;
 
-    private String gender;
+    private Gender gender;
 
-    @NotBlank(message = "联系电话不能为空")
+    @NotBlank(message = "phone is required")
     private String phone;
 
     private String address;

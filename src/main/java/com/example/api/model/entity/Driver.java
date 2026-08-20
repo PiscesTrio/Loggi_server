@@ -1,6 +1,10 @@
 package com.example.api.model.entity;
 
+import com.example.api.model.enums.Gender;
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
 import lombok.Data;
@@ -26,7 +30,9 @@ public class Driver extends Auditable {
 
     private String name;
 
-    private String gender;
+    @Enumerated(EnumType.STRING)
+    @Column(length = 10)
+    private Gender gender;
 
     private String phone;
 

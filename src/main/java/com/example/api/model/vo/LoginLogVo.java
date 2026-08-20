@@ -1,11 +1,12 @@
 package com.example.api.model.vo;
 
 import com.example.api.model.entity.LoginLog;
+import com.example.api.model.enums.Browser;
 import java.time.LocalDateTime;
 
 /** One login attempt, successful or not. */
 public record LoginLogVo(
-        String id, String email, Integer status, String ip, String browser, LocalDateTime date) {
+        String id, String email, Integer status, String ip, Browser browser, LocalDateTime date) {
 
     public static LoginLogVo from(LoginLog log) {
         return new LoginLogVo(

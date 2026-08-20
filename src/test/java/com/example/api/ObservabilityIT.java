@@ -2,6 +2,7 @@ package com.example.api;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.example.api.exception.ErrorCode;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -176,5 +177,22 @@ class ObservabilityIT {
         // documented as carrying an envelope while carrying nothing is the same class of
         // untruth in the other direction.
         assertThat(body).doesNotContain("ResponseResultVoidList");
+    }
+
+    @Test
+    @DisplayName("Every ErrorCode reaches the document, so a client can be told about all of them")
+    void openApiDocumentDeclaresEveryErrorCode() {
+        String body = client().get().uri("/v3/api-docs").retrieve().body(String.class);
+
+        // The app's error_messages_test reads this list out of the committed tool/openapi.json
+        // and fails until every code has a sentence in every language. That only works if the
+        // document carries the whole enum — a code springdoc failed to reach would be invisible
+        // on both sides at once: absent from the contract, so the client test stays green, and
+        // shipped by the server, so a user sees the fallback.
+        for (ErrorCode code : ErrorCode.values()) {
+            assertThat(body)
+                    .as("%s is missing from the OpenAPI document", code)
+                    .contains(code.name());
+        }
     }
 }

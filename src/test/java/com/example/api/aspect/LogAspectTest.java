@@ -10,6 +10,7 @@ import static org.mockito.Mockito.when;
 import com.example.api.annotation.Log;
 import com.example.api.model.entity.SystemLog;
 import com.example.api.model.enums.BusinessType;
+import com.example.api.model.enums.LogModule;
 import com.example.api.service.SystemLogService;
 import java.lang.reflect.Method;
 import org.aspectj.lang.ProceedingJoinPoint;
@@ -39,7 +40,7 @@ class LogAspectTest {
 
     /** Stands in for a controller method; only its annotation and name are read. */
     static class Fixture {
-        @Log(module = "测试模块", type = BusinessType.INSERT)
+        @Log(module = LogModule.COMMODITY, type = BusinessType.INSERT)
         public void annotated() {}
     }
 
@@ -74,13 +75,13 @@ class LogAspectTest {
         // Measured from the first version of this aspect and assigned to a local nobody
         // read, because SystemLog had no column to put it in.
         assertThat(recorded.getCostMs()).isNotNull().isGreaterThanOrEqualTo(0L);
-        assertThat(recorded.getModule()).isEqualTo("测试模块");
+        assertThat(recorded.getModule()).isEqualTo(LogModule.COMMODITY);
         // The enum, not its label. The aspect used to store annotation.type().getName() —
         // the Chinese display text — so the audit table held UI language and a reader had to
-        // map it back. The label is reachable through getName(); what changed is that it is
-        // a rendering of the value rather than the value itself - and since S10 the enum has
-        // no toString() override either, because Jackson 3 serialises through toString() and
-        // was therefore putting the label on the wire while the database held the name.
+        // map it back. S10 dropped the toString() override for the same reason (Jackson 3
+        // serialises through toString(), so the wire carried the label while the database
+        // held the name); the label field itself is gone as of S20, because after S10 nothing
+        // read it and the client maps the value to display text in its own locale.
         assertThat(recorded.getBusinessType()).isEqualTo(BusinessType.INSERT);
     }
 
