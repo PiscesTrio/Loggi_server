@@ -26,7 +26,13 @@ jobs:
       # rather than as whatever the compiler says next. `spotless:apply` fixes it.
       - name: Check formatting (Spotless)
         run: ./mvnw -B spotless:check
-      - name: Build & verify (单测 + *IT 集成测试[Testcontainers] + JaCoCo 门禁)
+      # Also the localisation and contract gates, which are tests rather than a CI script:
+      # NoDisplayTextTest asserts no CJK string literal under main/ (comments and SQL exempt,
+      # for reasons in its doc), ErrorCodeSnapshotTest makes a change to ErrorCode impossible
+      # to land without acknowledging the app-side steps it implies, and ObservabilityIT
+      # asserts every code reaches the OpenAPI document — without that, a code missing from the
+      # document is invisible on both sides at once.
+      - name: Build & verify (unit + *IT via Testcontainers + JaCoCo gate)
         run: ./mvnw -B verify -Dapi.version=1.44
       - name: Upload JaCoCo report
         if: always()
