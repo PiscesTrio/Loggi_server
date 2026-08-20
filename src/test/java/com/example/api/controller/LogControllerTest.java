@@ -11,6 +11,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.example.api.handler.GlobalResponseHandler;
 import com.example.api.model.entity.SystemLog;
 import com.example.api.model.enums.BusinessType;
+import com.example.api.model.enums.LogModule;
 import com.example.api.security.SecurityConfiguration;
 import com.example.api.service.LoginLogService;
 import com.example.api.service.SystemLogService;
@@ -52,7 +53,7 @@ class LogControllerTest {
         SystemLog log = new SystemLog();
         log.setId("log-1");
         log.setAccount("demo@loggi.example");
-        log.setModule("商品管理");
+        log.setModule(LogModule.COMMODITY);
         log.setBusinessType(BusinessType.QUERY);
         log.setIp("127.0.0.1");
         log.setMethod("controller.CommodityController.findAll");

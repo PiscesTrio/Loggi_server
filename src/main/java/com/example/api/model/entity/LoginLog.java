@@ -1,6 +1,10 @@
 package com.example.api.model.entity;
 
+import com.example.api.model.enums.Browser;
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
 import java.time.LocalDateTime;
@@ -32,5 +36,7 @@ public class LoginLog {
     private LocalDateTime date;
 
     // browser
-    private String browser;
+    @Enumerated(EnumType.STRING)
+    @Column(length = 20)
+    private Browser browser;
 }

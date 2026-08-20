@@ -9,6 +9,7 @@ import com.example.api.model.entity.Driver;
 import com.example.api.model.entity.Vehicle;
 import com.example.api.model.entity.Warehouse;
 import com.example.api.model.enums.BusinessType;
+import com.example.api.model.enums.LogModule;
 import com.example.api.model.vo.AvailableFleetVo;
 import com.example.api.model.vo.DistributionTrackVo;
 import com.example.api.model.vo.DistributionVo;
@@ -39,7 +40,7 @@ public class DistributionController {
 
     @Resource private VehicleRepository vehicleRepository;
 
-    @Log(module = "配送管理", type = BusinessType.INSERT)
+    @Log(module = LogModule.DISTRIBUTION, type = BusinessType.INSERT)
     @PostMapping("")
     @ResponseStatus(HttpStatus.CREATED)
     public DistributionVo save(@Valid @RequestBody DistributionRequest request) {
@@ -79,7 +80,7 @@ public class DistributionController {
         return entity;
     }
 
-    @Log(module = "配送管理", type = BusinessType.QUERY)
+    @Log(module = LogModule.DISTRIBUTION, type = BusinessType.QUERY)
     @GetMapping("")
     public List<DistributionVo> findAll() {
         return distributionService.findAll().stream().map(DistributionVo::from).toList();
@@ -99,7 +100,7 @@ public class DistributionController {
                 .toList();
     }
 
-    @Log(module = "运输状态", type = BusinessType.INSERT)
+    @Log(module = LogModule.DISTRIBUTION_TRACK, type = BusinessType.INSERT)
     @PostMapping("status")
     public DistributionTrackVo saveStatus(@Valid @RequestBody DistributionTrackRequest request) {
         DistributionTrack track = new DistributionTrack();

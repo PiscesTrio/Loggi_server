@@ -16,20 +16,21 @@ import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
 /**
- * V9 converts rows that already exist, and nothing else in this suite ever gives it one to convert.
+ * V9 and V10 convert rows that already exist, and nothing else in this suite ever gives them one to
+ * convert.
  *
- * <p>Every other container here starts empty, so Flyway runs V9 against zero drivers, zero vehicles
- * and zero orders: the CREATE TABLE and the ALTERs are exercised and the eight INSERT..SELECTs
- * match nothing. A green suite would therefore say nothing at all about whether a comma-joined care
- * list becomes the right rows — which is the only part of this migration that can silently destroy
- * data, and the one part no later script can undo.
+ * <p>Every other container here starts empty, so Flyway runs them against zero drivers, zero
+ * vehicles, zero orders and zero audit rows: the CREATE TABLE and the ALTERs are exercised and
+ * every conversion clause matches nothing. A green suite would therefore say nothing at all about
+ * whether a comma-joined care list becomes the right rows — which is the only part of this
+ * migration that can silently destroy data, and the one part no later script can undo.
  *
  * <p>This is the same hole a used database found the hard way once before: data.sql deleted its
  * seed rows on every boot, and the application stopped starting the moment anyone recorded a stock
  * movement, because CI always started from empty and never booted twice. "A fresh clone works" and
  * "an existing database survives" are different claims, and only one of them was being tested.
  *
- * <p>So: migrate to V8, write rows in the old shape by hand, then migrate to V9 and look.
+ * <p>So: migrate to V8, write rows in the old shape by hand, then migrate to the head and look.
  */
 @Testcontainers
 class WireValueMigrationIT {
@@ -41,7 +42,7 @@ class WireValueMigrationIT {
     static JdbcTemplate jdbc;
 
     @BeforeAll
-    static void migrateThroughV9() {
+    static void migrateThroughTheConversions() {
         DriverManagerDataSource ds = new DriverManagerDataSource();
         ds.setUrl(MYSQL.getJdbcUrl());
         ds.setUsername(MYSQL.getUsername());
@@ -50,7 +51,7 @@ class WireValueMigrationIT {
 
         migrateTo(ds, "8");
         seedLegacyRows();
-        migrateTo(ds, "9");
+        migrateTo(ds, "10");
     }
 
     private static void migrateTo(DataSource ds, String version) {
@@ -81,6 +82,20 @@ class WireValueMigrationIT {
         insertOrder("o-no-trailing-comma", "易碎");
         insertOrder("o-empty", "");
         insertOrder("o-null", null);
+
+        // V10's two audit columns. 'Chrome' and 谷歌浏览器 both existed: the old BrowserUtil
+        // wrote the bare English word on a match and the Chinese label when it gave up.
+        jdbc.update(
+                "INSERT INTO system_log (id, module, business_type, ip, method) VALUES"
+                        + " ('sl-1','商品管理','INSERT','127.0.0.1','save'),"
+                        + " ('sl-2','运输状态','INSERT','127.0.0.1','track'),"
+                        + " ('sl-3','駆逐管理','QUERY','127.0.0.1','odd')");
+        jdbc.update(
+                "INSERT INTO login_log (id, email, browser) VALUES"
+                        + " ('ll-1','a@example.com','谷歌浏览器'),"
+                        + " ('ll-2','b@example.com','Chrome'),"
+                        + " ('ll-3','c@example.com','火狐浏览器'),"
+                        + " ('ll-4','d@example.com','某个没见过的浏览器')");
     }
 
     private static void insertOrder(String id, String care) {
@@ -154,6 +169,33 @@ class WireValueMigrationIT {
                                 + " WHERE table_schema = DATABASE() AND table_name = 'distribution'");
         assertThat(columns.stream().map(c -> String.valueOf(c.get("COLUMN_NAME"))))
                 .doesNotContain("care");
+    }
+
+    @Test
+    @DisplayName("Audit modules become enum names, and an unmappable one is emptied")
+    void auditModulesConverted() {
+        assertThat(one("SELECT module FROM system_log WHERE id = 'sl-1'")).isEqualTo("COMMODITY");
+        assertThat(one("SELECT module FROM system_log WHERE id = 'sl-2'"))
+                .isEqualTo("DISTRIBUTION_TRACK");
+        // Not a LogModule name, so it cannot be read back as one — Hibernate would throw on the
+        // whole row. Emptied rather than guessed: the row still records who, what and when.
+        assertThat(one("SELECT module FROM system_log WHERE id = 'sl-3'")).isNull();
+    }
+
+    @Test
+    @DisplayName("Browser labels become enum names, and anything unmapped becomes UNKNOWN")
+    void browsersConverted() {
+        assertThat(one("SELECT browser FROM login_log WHERE id = 'll-1'")).isEqualTo("CHROME");
+        // The same destination as ll-1, and deliberately so: the old code wrote 谷歌浏览器 both
+        // when it matched Chrome and when it had no idea, so the information that would tell
+        // these two apart was never recorded. Losing it is honest; inventing it is not.
+        assertThat(one("SELECT browser FROM login_log WHERE id = 'll-2'")).isEqualTo("CHROME");
+        assertThat(one("SELECT browser FROM login_log WHERE id = 'll-3'")).isEqualTo("FIREFOX");
+        assertThat(one("SELECT browser FROM login_log WHERE id = 'll-4'")).isEqualTo("UNKNOWN");
+    }
+
+    private static String one(String sql) {
+        return jdbc.queryForObject(sql, String.class);
     }
 
     private static String genderOf(String table, String id) {

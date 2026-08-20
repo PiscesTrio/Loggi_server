@@ -2,6 +2,7 @@ package com.example.api.model.vo;
 
 import com.example.api.model.entity.SystemLog;
 import com.example.api.model.enums.BusinessType;
+import com.example.api.model.enums.LogModule;
 import java.time.LocalDateTime;
 
 /**
@@ -13,7 +14,7 @@ import java.time.LocalDateTime;
 public record SystemLogVo(
         String id,
         String account,
-        String module,
+        LogModule module,
         BusinessType businessType,
         String ip,
         String method,

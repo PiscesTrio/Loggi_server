@@ -4,6 +4,7 @@ import com.example.api.annotation.Log;
 import com.example.api.model.dto.EmployeeRequest;
 import com.example.api.model.entity.Employee;
 import com.example.api.model.enums.BusinessType;
+import com.example.api.model.enums.LogModule;
 import com.example.api.model.vo.EmployeeVo;
 import com.example.api.service.EmployeeService;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -25,26 +26,26 @@ public class EmployeeController {
 
     @Resource private EmployeeService employeeService;
 
-    @Log(module = "员工管理", type = BusinessType.QUERY)
+    @Log(module = LogModule.EMPLOYEE, type = BusinessType.QUERY)
     @GetMapping("")
     public List<EmployeeVo> findAll() {
         return employeeService.findAll().stream().map(EmployeeVo::from).toList();
     }
 
-    @Log(module = "员工管理", type = BusinessType.QUERY)
+    @Log(module = LogModule.EMPLOYEE, type = BusinessType.QUERY)
     @GetMapping("/{id}")
     public EmployeeVo findById(@PathVariable String id) {
         return EmployeeVo.from(employeeService.findById(id));
     }
 
-    @Log(module = "员工管理", type = BusinessType.INSERT)
+    @Log(module = LogModule.EMPLOYEE, type = BusinessType.INSERT)
     @PostMapping("")
     @ResponseStatus(HttpStatus.CREATED)
     public EmployeeVo save(@Valid @RequestBody EmployeeRequest request) {
         return EmployeeVo.from(employeeService.save(toEntity(request)));
     }
 
-    @Log(module = "员工管理", type = BusinessType.UPDATE)
+    @Log(module = LogModule.EMPLOYEE, type = BusinessType.UPDATE)
     // The id identifies the row, so it belongs in the path. It used to arrive inside the
     // body as part of the entity, which meant a caller chose which row an update applied to
     // by editing a field - and a body without one updated nothing while answering 200.
@@ -55,7 +56,7 @@ public class EmployeeController {
         employeeService.update(entity);
     }
 
-    @Log(module = "员工管理", type = BusinessType.DELETE)
+    @Log(module = LogModule.EMPLOYEE, type = BusinessType.DELETE)
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void delete(@PathVariable String id) {

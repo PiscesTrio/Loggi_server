@@ -4,6 +4,7 @@ import com.example.api.annotation.Log;
 import com.example.api.model.dto.CommodityRequest;
 import com.example.api.model.entity.Commodity;
 import com.example.api.model.enums.BusinessType;
+import com.example.api.model.enums.LogModule;
 import com.example.api.model.vo.CommodityVo;
 import com.example.api.service.CommodityService;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -22,21 +23,21 @@ public class CommodityController {
 
     @Resource private CommodityService commodityService;
 
-    @Log(module = "商品管理", type = BusinessType.INSERT)
+    @Log(module = LogModule.COMMODITY, type = BusinessType.INSERT)
     @PostMapping("")
     @ResponseStatus(HttpStatus.CREATED)
     public CommodityVo save(@Valid @RequestBody CommodityRequest request) {
         return CommodityVo.from(commodityService.save(toEntity(request)));
     }
 
-    @Log(module = "商品管理", type = BusinessType.DELETE)
+    @Log(module = LogModule.COMMODITY, type = BusinessType.DELETE)
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void delete(@PathVariable String id) {
         commodityService.delete(id);
     }
 
-    @Log(module = "商品管理", type = BusinessType.UPDATE)
+    @Log(module = LogModule.COMMODITY, type = BusinessType.UPDATE)
     // The id identifies the row, so it belongs in the path. It used to arrive inside the
     // body as part of the entity, which meant a caller chose which row an update applied to
     // by editing a field - and a body without one updated nothing while answering 200.
@@ -47,19 +48,19 @@ public class CommodityController {
         commodityService.update(entity);
     }
 
-    @Log(module = "商品管理", type = BusinessType.QUERY)
+    @Log(module = LogModule.COMMODITY, type = BusinessType.QUERY)
     @GetMapping("")
     public List<CommodityVo> findAll() {
         return commodityService.findAll().stream().map(CommodityVo::from).toList();
     }
 
-    @Log(module = "商品管理", type = BusinessType.QUERY)
+    @Log(module = LogModule.COMMODITY, type = BusinessType.QUERY)
     @GetMapping("/search/{name}")
     public List<CommodityVo> findByLikeName(@PathVariable String name) {
         return commodityService.findAllByLikeName(name).stream().map(CommodityVo::from).toList();
     }
 
-    // @Log(module = "商品管理",type = BusinessType.QUERY)
+    // @Log(module = LogModule.COMMODITY,type = BusinessType.QUERY)
     @GetMapping("/{id}")
     public CommodityVo findById(@PathVariable String id) {
         return CommodityVo.from(commodityService.findById(id));
