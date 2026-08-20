@@ -184,11 +184,19 @@ public class GlobalExceptionHandler {
         int status = errorResponse.getStatusCode().value();
         // The pair, not two switches: a status whose message says "not found" and whose code
         // says BAD_REQUEST is worse than either alone, and two lists drift.
+        //
+        // Each named case picks a code whose own declared status equals this one — 415 first
+        // shipped as MALFORMED_REQUEST, which declares 400, so a client looking the code up
+        // got a different status than the response carried. The default branch is the one
+        // place that cannot promise this: the status is Spring's and can be any 4xx, and
+        // inventing a constant per HTTP status would be a second copy of a registry that
+        // already exists.
         var answer =
                 switch (status) {
                     case 404 -> new Answer("not found", ErrorCode.NOT_FOUND);
                     case 405 -> new Answer("method not allowed", ErrorCode.METHOD_NOT_ALLOWED);
-                    case 415 -> new Answer("unsupported media type", ErrorCode.MALFORMED_REQUEST);
+                    case 415 ->
+                            new Answer("unsupported media type", ErrorCode.UNSUPPORTED_MEDIA_TYPE);
                     default ->
                             errorResponse.getStatusCode().is4xxClientError()
                                     ? new Answer(

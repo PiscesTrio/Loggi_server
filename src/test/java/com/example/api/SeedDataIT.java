@@ -95,7 +95,13 @@ class SeedDataIT {
         // comma-joined varchar and is rows in distribution_care since V9, so "the same
         // shape as a real row" is now enforced by the schema rather than by a convention
         // the seed file had to imitate.
-        assertThat(dis.get().getCare()).containsExactly(CareTag.FRAGILE, CareTag.KEEP_DRY);
+        // In any order: this is a Set, loaded as a Hibernate PersistentSet, and the join
+        // that fills it has no ORDER BY. It asserted an order and passed by luck until the
+        // entity graph changed and the rows came back the other way round. Wire order is
+        // stable for a different reason — DistributionVo.from sorts — and that is the layer
+        // where order is a promise.
+        assertThat(dis.get().getCare())
+                .containsExactlyInAnyOrder(CareTag.FRAGILE, CareTag.KEEP_DRY);
         assertThat(dis.get().getToLat()).isBetween(33.0, 34.0); // Fukuoka
     }
 

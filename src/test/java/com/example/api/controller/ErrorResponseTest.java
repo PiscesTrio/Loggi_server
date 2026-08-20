@@ -15,6 +15,9 @@ import com.example.api.exception.ErrorCode;
 import com.example.api.handler.GlobalResponseHandler;
 import com.example.api.security.SecurityConfiguration;
 import com.example.api.utils.JwtTokenUtil;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import org.junit.jupiter.api.DisplayName;
@@ -278,6 +281,35 @@ class ErrorResponseTest {
         for (ErrorCode code : ErrorCode.values()) {
             assertThat(code.getStatus()).as("%s", code).isBetween(400, 599);
             assertThat(new BizException(code, "x").getStatus()).isEqualTo(code.getStatus());
+        }
+    }
+
+    @Test
+    @WithMockUser
+    @DisplayName("A response's status and its error code's declared status agree")
+    void statusAndCodeAgree() throws Exception {
+        // 415 first shipped naming MALFORMED_REQUEST, which declares 400 — so a client that
+        // looked the code up got a different status than the response carried. The enum was
+        // supposed to make that impossible; it only does for BizException, where the status
+        // comes *from* the code. Where the handler pairs them by hand, this is the check.
+        record Case(String path, String method, int status) {}
+
+        for (Case c :
+                List.of(
+                        new Case("/api/test-errors/biz", "GET", 409),
+                        new Case("/api/test-errors/not-found", "GET", 404),
+                        new Case("/api/test-errors/unexpected", "GET", 500),
+                        new Case("/api/nope", "GET", 404))) {
+            String body =
+                    mockMvc.perform(get(c.path())).andReturn().getResponse().getContentAsString();
+            JsonNode json = new ObjectMapper().readTree(body);
+            assertThat(json.get("code").asInt()).as("%s", c.path()).isEqualTo(c.status());
+
+            JsonNode code = json.get("errorCode");
+            assertThat(code).as("%s has no errorCode", c.path()).isNotNull();
+            assertThat(ErrorCode.valueOf(code.asText()).getStatus())
+                    .as("%s answered %d naming %s", c.path(), c.status(), code.asText())
+                    .isEqualTo(c.status());
         }
     }
 }

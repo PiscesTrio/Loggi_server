@@ -55,6 +55,7 @@ public enum ErrorCode {
     // --- everything else ---------------------------------------------------------------
     ACCESS_DENIED(403),
     METHOD_NOT_ALLOWED(405),
+    UNSUPPORTED_MEDIA_TYPE(415),
     INTERNAL_ERROR(500);
 
     private final int status;
