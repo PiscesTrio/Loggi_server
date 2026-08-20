@@ -1,5 +1,6 @@
 package com.example.api.controller;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -10,6 +11,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.example.api.annotation.DisableBaseResponse;
 import com.example.api.exception.BizException;
+import com.example.api.exception.ErrorCode;
 import com.example.api.handler.GlobalResponseHandler;
 import com.example.api.security.SecurityConfiguration;
 import com.example.api.utils.JwtTokenUtil;
@@ -71,7 +73,7 @@ class ErrorResponseTest {
 
         @GetMapping("/biz")
         public String biz() {
-            throw new BizException(409, "库存不足");
+            throw new BizException(ErrorCode.INSUFFICIENT_STOCK, "库存不足");
         }
 
         @GetMapping("/not-found")
@@ -123,7 +125,11 @@ class ErrorResponseTest {
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.code").value(409))
                 .andExpect(jsonPath("$.status").value(false))
-                .andExpect(jsonPath("$.msg").value("库存不足"));
+                .andExpect(jsonPath("$.msg").value("库存不足"))
+                // The code is what a client branches on; msg is what it falls back to. 409
+                // alone cannot separate "that driver is already out" from "that movement
+                // would go negative", and both are things a UI wants to phrase differently.
+                .andExpect(jsonPath("$.errorCode").value("INSUFFICIENT_STOCK"));
     }
 
     @Test
@@ -147,7 +153,8 @@ class ErrorResponseTest {
         mockMvc.perform(get("/api/test-errors/unexpected"))
                 .andExpect(status().isInternalServerError())
                 .andExpect(jsonPath("$.code").value(500))
-                .andExpect(jsonPath("$.msg").value("服务器内部错误"));
+                .andExpect(jsonPath("$.msg").value("服务器内部错误"))
+                .andExpect(jsonPath("$.errorCode").value("INTERNAL_ERROR"));
     }
 
     @Test
@@ -160,7 +167,10 @@ class ErrorResponseTest {
         mockMvc.perform(get("/api/test-errors/ok"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value(200))
-                .andExpect(jsonPath("$.data").value("plain"));
+                .andExpect(jsonPath("$.data").value("plain"))
+                // Absent, not null. A key that appears only when it means something is
+                // easier to read and easier to branch on.
+                .andExpect(jsonPath("$.errorCode").doesNotExist());
     }
 
     @Test
@@ -255,5 +265,19 @@ class ErrorResponseTest {
         mockMvc.perform(delete("/api/test-errors/gone").with(csrf()))
                 .andExpect(status().isNoContent())
                 .andExpect(content().string(""));
+    }
+
+    @Test
+    @WithMockUser
+    @DisplayName("Every error code answers with the status it declares")
+    void everyCodeAgreesWithItsStatus() {
+        // The status used to be passed to the constructor at each throw site, so a 404 and a
+        // 409 for the same condition were one typo apart. It comes from the code now — this
+        // asserts the enum is internally sensible, which is the thing that made moving it
+        // there worth doing.
+        for (ErrorCode code : ErrorCode.values()) {
+            assertThat(code.getStatus()).as("%s", code).isBetween(400, 599);
+            assertThat(new BizException(code, "x").getStatus()).isEqualTo(code.getStatus());
+        }
     }
 }

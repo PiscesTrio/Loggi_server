@@ -1,6 +1,7 @@
 package com.example.api.service.impl;
 
 import com.example.api.exception.BizException;
+import com.example.api.exception.ErrorCode;
 import com.example.api.model.entity.Commodity;
 import com.example.api.model.entity.Inventory;
 import com.example.api.model.entity.InventoryRecord;
@@ -75,13 +76,13 @@ public class InventoryRecordServiceImpl implements InventoryRecordService {
                 inventoryRepository.findByWarehouseIdAndCommodityId(
                         idOf(record.getWarehouse()), idOf(record.getCommodity()));
         if (inventory == null) {
-            throw new BizException(404, "仓库内不存在该商品");
+            throw new BizException(ErrorCode.COMMODITY_NOT_IN_WAREHOUSE, "仓库内不存在该商品");
         }
         if (inventory.getCount() < record.getCount()) {
             // 409, not 400: the request is well formed and would be valid against a
             // different stock level. The caller's next move is to ask for less, not to fix
             // the request.
-            throw new BizException(409, "出库失败，库存数量不足");
+            throw new BizException(ErrorCode.INSUFFICIENT_STOCK, "出库失败，库存数量不足");
         }
 
         Commodity commodity = findCommodity(idOf(record.getCommodity()));
@@ -157,13 +158,15 @@ public class InventoryRecordServiceImpl implements InventoryRecordService {
     private Warehouse requireWarehouse(String wid) {
         return warehouseRepository
                 .findById(wid == null ? "" : wid)
-                .orElseThrow(() -> new BizException(404, "不存在的仓库id: " + wid));
+                .orElseThrow(
+                        () -> new BizException(ErrorCode.WAREHOUSE_NOT_FOUND, "不存在的仓库id: " + wid));
     }
 
     private Commodity findCommodity(String cid) {
         return commodityRepository
                 .findById(cid == null ? "" : cid)
-                .orElseThrow(() -> new BizException(404, "不存在的商品id: " + cid));
+                .orElseThrow(
+                        () -> new BizException(ErrorCode.COMMODITY_NOT_FOUND, "不存在的商品id: " + cid));
     }
 
     /**
@@ -174,7 +177,7 @@ public class InventoryRecordServiceImpl implements InventoryRecordService {
      */
     private void requirePositiveCount(InventoryRecord record) {
         if (record.getCount() == null || record.getCount() <= 0) {
-            throw new BizException(400, "数量必须大于 0");
+            throw new BizException(ErrorCode.QUANTITY_NOT_POSITIVE, "数量必须大于 0");
         }
     }
 }

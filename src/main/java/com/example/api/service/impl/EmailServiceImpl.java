@@ -2,6 +2,7 @@ package com.example.api.service.impl;
 
 import com.example.api.config.VerificationProperties;
 import com.example.api.exception.BizException;
+import com.example.api.exception.ErrorCode;
 import com.example.api.service.EmailService;
 import com.example.api.utils.RandomUtil;
 import jakarta.annotation.Resource;
@@ -73,7 +74,7 @@ public class EmailServiceImpl implements EmailService {
                                 "1",
                                 Duration.ofSeconds(properties.sendCooldownSeconds()));
         if (!Boolean.TRUE.equals(claimed)) {
-            throw new BizException(429, "请求过于频繁，请稍后再试");
+            throw new BizException(ErrorCode.CODE_REQUESTED_TOO_SOON, "请求过于频繁，请稍后再试");
         }
 
         String code = RandomUtil.next();
@@ -92,7 +93,7 @@ public class EmailServiceImpl implements EmailService {
             // minute to retry punishes them for the mail server's failure.
             redis.delete(COOLDOWN_KEY + email);
             log.error("Could not send a verification code to {}", email, e);
-            throw new BizException(502, "验证码发送失败，请稍后再试");
+            throw new BizException(ErrorCode.CODE_DELIVERY_FAILED, "验证码发送失败，请稍后再试");
         }
 
         // Only the hash is stored. Six digits is a million possibilities, so this is no
@@ -106,7 +107,7 @@ public class EmailServiceImpl implements EmailService {
     @Override
     public boolean checkVerificationCode(String email, String code) {
         if (Boolean.TRUE.equals(redis.hasKey(LOCK_KEY + email))) {
-            throw new BizException(429, "验证失败次数过多，请稍后再试");
+            throw new BizException(ErrorCode.CODE_ATTEMPTS_EXHAUSTED, "验证失败次数过多，请稍后再试");
         }
         if (code == null || code.isBlank()) {
             return false;
