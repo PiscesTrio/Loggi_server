@@ -72,7 +72,7 @@ ships:
 | Database | `DB_HOST` / `DB_PORT` / `DB_NAME` / `DB_USERNAME` / `DB_PASSWORD` | `localhost` / `3306` / `loggi` / `root` / placeholder |
 | Redis | `REDIS_HOST` / `REDIS_PORT` | `localhost` / `6379` |
 | JWT | `JWT_SECRET` | `CHANGE_ME` — **the application refuses to start on this**, or on anything shorter than 32 bytes |
-| Mail | `MAIL_USERNAME` / `MAIL_PASSWORD` | placeholders; the password is a QQ-mail authorization code, not the account password |
+| Mail | `MAIL_HOST` / `MAIL_PORT` / `MAIL_SSL_ENABLE` / `MAIL_STARTTLS_ENABLE` / `MAIL_USERNAME` / `MAIL_PASSWORD` | placeholders. The host defaults to a `.invalid` name that cannot resolve, so an unconfigured deployment fails clearly. Port and transport travel with the host: 465 with implicit TLS, or 587 with STARTTLS. The password is the provider's app-specific password, not the account password |
 | Profile | `SPRING_PROFILES_ACTIVE` | `dev` |
 | Verification codes | `VERIFICATION_CODE_TTL_SECONDS` / `VERIFICATION_SEND_COOLDOWN_SECONDS` / `VERIFICATION_MAX_ATTEMPTS` / `VERIFICATION_LOCK_SECONDS` | `300` / `60` / `5` / `900` |
 | Noise | `JPA_SHOW_SQL` / `MAIL_DEBUG` | off outside `dev` |

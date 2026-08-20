@@ -80,12 +80,16 @@ class VerificationCodeIT {
         r.add("spring.data.redis.port", () -> REDIS.getMappedPort(6379));
 
         // GreenMail speaks plain SMTP on a random-ish port; the production config points at
-        // smtp.qq.com over implicit SSL, which a test must not dial.
+        // a real mail provider over implicit TLS, which a test must not dial.
         r.add("spring.mail.host", () -> "127.0.0.1");
         r.add("spring.mail.port", () -> ServerSetupTest.SMTP.getPort());
         r.add("spring.mail.username", () -> SMTP_USER);
         r.add("spring.mail.password", () -> SMTP_PASSWORD);
+        // Both transport flags, explicitly. They are environment-settable now, and a
+        // MAIL_STARTTLS_ENABLE left over in a developer's shell would otherwise reach this
+        // test and make it fail against GreenMail for a reason nothing on screen explains.
         r.add("spring.mail.properties.mail.smtp.ssl.enable", () -> "false");
+        r.add("spring.mail.properties.mail.smtp.starttls.enable", () -> "false");
         r.add("spring.mail.properties.mail.smtp.auth", () -> "false");
     }
 

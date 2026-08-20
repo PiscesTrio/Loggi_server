@@ -45,14 +45,26 @@ spring:
     # environment where losing the database quietly is the helpful outcome.
     clean-disabled: true
   mail:
-    host: smtp.qq.com
+    # The provider is configuration, not a decision this repository makes. It used to name
+    # one mail service directly, which is a personal account's provider hardcoded into a
+    # public repository -- and it also pinned the two settings below to that provider's
+    # choices, so anyone whose mail service used the other convention could not switch by
+    # changing the host alone.
+    #
+    # .invalid is reserved by RFC 2606 and can never resolve, so an unconfigured deployment
+    # fails at DNS with an obvious name rather than timing out against something real.
+    host: ${MAIL_HOST:smtp.example.invalid}
     protocol: smtp
     default-encoding: UTF-8
     # sender address
     username: ${MAIL_USERNAME:your-email@example.com}
     # app-specific password, not the account password
     password: ${MAIL_PASSWORD:your-mail-password}
-    port: 465
+    # Port and transport travel with the host, which is why all three are settable. The two
+    # common shapes are implicit TLS on 465 (connection is encrypted from the first byte)
+    # and STARTTLS on 587 (plaintext connection upgraded by a command). Setting the wrong
+    # pair does not degrade gracefully: it hangs or reports a protocol error.
+    port: ${MAIL_PORT:465}
     properties:
       mail:
         # Off unless asked for. JavaMail's debug channel prints the whole SMTP
@@ -61,7 +73,9 @@ spring:
         debug: ${MAIL_DEBUG:false}
         smtp:
           ssl:
-            enable: true
+            enable: ${MAIL_SSL_ENABLE:true}
+          starttls:
+            enable: ${MAIL_STARTTLS_ENABLE:false}
   data:
     redis:
       host: ${REDIS_HOST:localhost}
