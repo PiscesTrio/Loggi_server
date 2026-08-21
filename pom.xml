@@ -317,16 +317,25 @@
                                             <counter>LINE</counter>
                                             <value>COVEREDRATIO</value>
                                             <!--
-                                              Measured, not guessed — both run modes:
-                                                ./mvnw verify -DskipITs -> 177/582 = 30.41% (28 unit tests)
-                                                ./mvnw verify           -> 208/582 = 35.74% (+6 Testcontainers ITs)
-                                              failsafe inherits jacoco's argLine, so *IT really does count.
-                                              The gate takes the lower bound so a local run with ITs skipped and a
-                                              full CI run both pass.
-                                              Ratchet: each later slice raises it one notch, never lowers it.
-                                              S00 0.18 -> S02 0.30. Part of the jump is the security tests, part is
-                                              the denominator: deleting ResponseUtil and the static JwtTokenUtil
-                                              took 179 lines out of the bundle.
+                                              Measured, not guessed. Ratchet: each slice that raises it raises it
+                                              one notch and nothing ever lowers it.
+
+                                                S00  0.18   verify -DskipITs 139/761 = 18.27%
+                                                S02  0.30   verify -DskipITs 177/582 = 30.41%
+                                                            verify           208/582 = 35.74%
+                                                S19  0.50   verify           2417/4559 = 53.02%
+
+                                              failsafe inherits jacoco's argLine, so *IT really does count, which is
+                                              why S02 recorded both run modes and took the lower bound — a local run
+                                              with ITs skipped and a full CI run both had to pass.
+
+                                              Two things the numbers do not show on their own. S02's denominator FELL
+                                              761 -> 582 because deleting ResponseUtil and the static JwtTokenUtil
+                                              took 179 lines out of the bundle, so part of that jump is arithmetic
+                                              rather than tests. And the gate is deliberately NOT pinned at the
+                                              measured figure: 53.02% measured, 0.50 set, because pinning it at
+                                              today's number turns an unrelated refactor that moves the denominator
+                                              into a red build.
                                             -->
                                             <minimum>0.50</minimum>
                                         </limit>
