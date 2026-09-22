@@ -1,5 +1,10 @@
 # Contract changes
 
+> **The gap this file was written for is closed.** From S18 the client's models are generated
+> from this API's OpenAPI document, and S20 moved both sides in the same slice. What follows is
+> kept as written: the record of what the contract was, measured at the time rather than
+> recalled afterwards.
+
 What the API sends changed in S09, and the Flutter client has not been updated. That is
 deliberate: S09 rebuilt the domain model, S10 puts a DTO/VO boundary in front of it, and the
 frontend is realigned in its own slice once the contract has settled. This file is what makes
