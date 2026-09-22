@@ -5,18 +5,14 @@
 [![Spring Boot](https://img.shields.io/badge/Spring%20Boot-4.1-informational)](https://spring.io/projects/spring-boot)
 [![License](https://img.shields.io/badge/License-MIT-informational)](LICENSE)
 
-> **A personal practice project, not production software.**
+[English](README.md) · [日本語](README.ja.md)
+
 > Not hardened for deployment; do not point it at real data.
 
 REST API for a logistics management system: warehouses and stock, commodities, delivery
 orders and their tracking, fleet and drivers, sales, administrators and audit logs.
 
 > Frontend repository: https://github.com/PiscesTrio/Loggi_app
-
-> **The Flutter client is currently out of step with this API, deliberately.** The domain
-> model and the API boundary were rebuilt in two slices, and the client is realigned in its
-> own. Every changed field, status code and shape is listed in
-> [`docs/contract-changes.md`](docs/contract-changes.md).
 
 ## Tech stack
 
@@ -73,7 +69,7 @@ ships:
 | Redis | `REDIS_HOST` / `REDIS_PORT` | `localhost` / `6379` |
 | JWT | `JWT_SECRET` | `CHANGE_ME` — **the application refuses to start on this**, or on anything shorter than 32 bytes |
 | Mail | `MAIL_HOST` / `MAIL_PORT` / `MAIL_SSL_ENABLE` / `MAIL_STARTTLS_ENABLE` / `MAIL_USERNAME` / `MAIL_PASSWORD` | placeholders. The host defaults to a `.invalid` name that cannot resolve, so an unconfigured deployment fails clearly. Port and transport travel with the host: 465 with implicit TLS, or 587 with STARTTLS. The password is the provider's app-specific password, not the account password |
-| Profile | `SPRING_PROFILES_ACTIVE` | `dev` |
+| Profile | `SPRING_PROFILES_ACTIVE` | `dev` — Spring's own variable rather than one of this service's, so it is not in `.env.example`; set it in the environment |
 | Verification codes | `VERIFICATION_CODE_TTL_SECONDS` / `VERIFICATION_SEND_COOLDOWN_SECONDS` / `VERIFICATION_MAX_ATTEMPTS` / `VERIFICATION_LOCK_SECONDS` | `300` / `60` / `5` / `900` |
 | Noise | `JPA_SHOW_SQL` / `MAIL_DEBUG` | off outside `dev` |
 
@@ -120,6 +116,10 @@ Everything is under `/api`, and every response carries the same envelope:
 `code` repeats the HTTP status rather than always saying 200 — a body that disagrees with
 its own status line is how a failure comes to look like a success. `204 No Content` is the
 one exception and carries no body at all.
+
+[`docs/contract-changes.md`](docs/contract-changes.md) records what this wire format looked
+like before and after the domain model was rebuilt, measured against a running server rather
+than read off the entities.
 
 ### Authentication
 
@@ -204,21 +204,6 @@ endpoint cannot be used to mint an administrator on a running system.
 
 The demo seed already contains one: `demo@loggi.example` / `demo1234`.
 
-## Two APIs with no screens
-
-`Sale` and `Employee` have a complete backend — controller, service, repository, entity,
-and their own `@PreAuthorize` roles — and no client calls them. The Flutter app has never
-had a screen for either.
-
-That is deliberate, and worth saying plainly, because **an API-only resource and an
-unfinished one look identical in a repository**. The decision was to keep and document them
-rather than build two more CRUD screens or delete two real parts of the domain: they are
-tagged `Sales (API only)` and `Employees (API only)` in the OpenAPI document, and a test
-asserts those tags are there — so removing this explanation breaks a build rather than
-quietly turning a decision back into an omission.
-
-If you are looking for the screens, there aren't any. That is the answer, not an omission.
-
 ## Database schema
 
 Owned by Flyway, not by Hibernate. Migrations live in `src/main/resources/db/migration` and
@@ -233,11 +218,14 @@ run before anything else touches the datasource:
 | `V5__distribution_associations.sql` | An order points at its driver, vehicle and warehouse |
 | `V6__inventory_and_track_associations.sql` | The remaining bare foreign keys become real ones |
 | `V7__roles_collection_and_log_enums.sql` | Roles become rows; the audit log stops storing display labels |
+| `V8__backfill_denormalised_commodity_names.sql` | The denormalised commodity name is filled in where a caller left it out |
+| `V9__wire_values_become_identifiers.sql` | Gender, vehicle type and care tags stop being Chinese display text and become identifiers |
+| `V10__audit_columns_stop_storing_labels.sql` | The audit log's module and browser columns become enum names |
 
 Two rules follow:
 
 - **An applied script is never edited.** Flyway stores a checksum per script; changing one
-  makes every existing database fail validation. Schema changes are appended as `V8`, `V9`, …
+  makes every existing database fail validation. Schema changes are appended as `V11`, `V12`, …
 - **`ddl-auto` is `validate` in every profile.** Hibernate no longer changes the database, it
   only checks that the entities and the migrations agree — and refuses to start if they do
   not, so a missing migration fails in CI rather than drifting in production.
