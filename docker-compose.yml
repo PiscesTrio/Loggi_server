@@ -1,6 +1,7 @@
-# S00 安全网：一键起后端 + MySQL8（可复现构建）。
-# 用法：cp .env.example .env && 填值 && docker compose up --build
-# 注：放在 Loggi_server/ 内（仓库根不是 git 仓库），故构建上下文为当前目录。
+# S00 safety net: bring up the backend and MySQL 8 in one command, reproducibly.
+# Usage: cp .env.example .env && fill in the values && docker compose up --build
+# This file lives inside Loggi_server/ (the repository root is not a git repository),
+# so the build context is the current directory.
 services:
   mysql:
     image: mysql:8.0
@@ -26,7 +27,8 @@ services:
       interval: 5s
       timeout: 3s
       retries: 10
-    # 无 volume:验证码与限流计数器都是短时数据,重启丢掉正是期望行为
+    # No volume. Verification codes and rate-limit counters are both short-lived; losing
+    # them on restart is the behaviour we want, not a cost.
 
   app:
     build:
@@ -41,7 +43,7 @@ services:
       - "8088:8088"
     depends_on:
       mysql:
-        condition: service_healthy   # 等 MySQL 健康再启动 app
+        condition: service_healthy   # wait for MySQL to be healthy before starting app
       redis:
         condition: service_healthy
 

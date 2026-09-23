@@ -11,6 +11,10 @@ package com.example.api.model.enums;
  * answered 谷歌浏览器 for anything it could not identify, so "Chrome" in this column meant either Chrome
  * or "we have no idea" and nothing could tell them apart. An audit record that invents a fact is
  * worse than one that admits it does not have it.
+ *
+ * <p>Three names V10 can still write are deliberately absent: LIEBAO, MAXTHON and THE_WORLD. V10 is
+ * applied and is never edited, so it still maps the old Chinese labels onto them; V11 folds them
+ * into {@link #UNKNOWN} directly afterwards.
  */
 public enum Browser {
     CHROME,
@@ -24,9 +28,6 @@ public enum Browser {
     SOGOU,
     BAIDU,
     QIHOO_360,
-    LIEBAO,
-    MAXTHON,
-    THE_WORLD,
     QUARK,
     KONQUEROR,
     CAMINO,

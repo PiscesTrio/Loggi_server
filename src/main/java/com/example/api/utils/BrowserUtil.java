@@ -51,9 +51,6 @@ public final class BrowserUtil {
                     // digits, so Chrome/120.0.6099.360 would have been logged as a 360 browser.
                     // The real agents carry QIHU 360SE or QIHU 360EE.
                     Map.entry(Browser.QIHOO_360, List.of("360SE", "360EE")),
-                    Map.entry(Browser.LIEBAO, List.of("LBBROWSER")),
-                    Map.entry(Browser.MAXTHON, List.of("Maxthon")),
-                    Map.entry(Browser.THE_WORLD, List.of("TheWorld")),
                     Map.entry(Browser.AVAST, List.of("Avast")),
                     Map.entry(Browser.QUARK, List.of("Quark")),
                     Map.entry(Browser.OPERA, List.of("OPR")),
