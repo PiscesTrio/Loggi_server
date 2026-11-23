@@ -60,7 +60,7 @@ public class CommodityController {
         return commodityService.findAllByLikeName(name).stream().map(CommodityVo::from).toList();
     }
 
-    // @Log(module = LogModule.COMMODITY,type = BusinessType.QUERY)
+    @Log(module = LogModule.COMMODITY, type = BusinessType.QUERY)
     @GetMapping("/{id}")
     public CommodityVo findById(@PathVariable String id) {
         return CommodityVo.from(commodityService.findById(id));

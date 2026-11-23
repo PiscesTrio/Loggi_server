@@ -89,7 +89,7 @@ combination of profile settings can produce an unsafe production.
 
 ```bash
 cp .env.example .env          # then fill in real values — at least JWT_SECRET
-docker compose up --build     # app + MySQL 8
+docker compose up --build     # app + MySQL 8 + Redis
 ```
 
 or, against a database you already have:
@@ -189,8 +189,9 @@ is.
 Requests and responses are DTOs and view types, never entities. No request type has an
 `id`: an id on a create is read by Hibernate as an existing row to update.
 
-Two lists are paginated — `GET /api/systemlog` and `GET /api/loginlog` — because they grow
-by a row per audited request and a row per login attempt, without bound:
+Three lists are paginated — `GET /api/systemlog`, its filtered form `GET /api/querySystemlog`,
+and `GET /api/loginlog` — because they grow by a row per audited request and a row per login
+attempt, without bound:
 
 ```json
 { "items": [ ], "page": 0, "size": 20, "totalItems": 137, "totalPages": 7 }

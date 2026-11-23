@@ -34,8 +34,8 @@ import org.springframework.test.web.servlet.MockMvc;
  * <p>Originally the answer was "everything": the filter chain ended in {@code
  * anyRequest().permitAll()}, so URL-level authorization did not exist and the only thing standing
  * between an anonymous caller and the data was whatever {@code @PreAuthorize} a controller happened
- * to carry. Seven of the thirteen controllers carry none, and WarehouseController's was commented
- * out.
+ * to carry. Four of the eleven controllers still carry none, and WarehouseController's was
+ * commented out.
  *
  * <p>These cases are the matrix itself, not a sample of it. A permit list is exactly the kind of
  * configuration where a wrong path silently opens or closes a door — the mistake produces a working

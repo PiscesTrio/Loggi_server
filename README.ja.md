@@ -86,7 +86,7 @@ export すること。
 
 ```bash
 cp .env.example .env          # その上で実際の値を入れる（少なくとも JWT_SECRET）
-docker compose up --build     # アプリ + MySQL 8
+docker compose up --build     # アプリ + MySQL 8 + Redis
 ```
 
 すでにデータベースがあるなら:
@@ -184,8 +184,9 @@ Redis は異常だからである。
 リクエストとレスポンスは DTO とビュー型であり、エンティティではない。リクエスト型はどれも
 `id` を持たない。作成時の id は、Hibernate には「更新すべき既存の行」と読まれるからである。
 
-ページングするリストは二つ — `GET /api/systemlog` と `GET /api/loginlog` — 監査対象のリクエスト
-ごと、ログイン試行ごとに一行ずつ、際限なく増えるためである:
+ページングするリストは三つ — `GET /api/systemlog`、その絞り込み版の `GET /api/querySystemlog`、
+`GET /api/loginlog` — 監査対象のリクエストごと、ログイン試行ごとに一行ずつ、際限なく増えるため
+である:
 
 ```json
 { "items": [ ], "page": 0, "size": 20, "totalItems": 137, "totalPages": 7 }

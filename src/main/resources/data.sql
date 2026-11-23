@@ -1,14 +1,15 @@
 -- Demo seed data (Japanese, WGS-84 coordinates).
 --
 -- Why this file exists at all: the project had NO data initialisation path
--- whatsoever. `ddl-auto: update` creates the tables and stops there, docker-compose
--- mounts no init scripts, and the only ApplicationRunner is empty -- so a fresh
+-- whatsoever. `ddl-auto: update` created the tables and stopped there, docker-compose
+-- mounted no init scripts, and the only ApplicationRunner was empty -- so a fresh
 -- clone came up against a completely empty database. Every row that ever existed
 -- was typed in by hand.
 --
--- Runs via `spring.sql.init.mode: always`, which requires
--- `spring.jpa.defer-datasource-initialization: true` so that Hibernate has created
--- the tables before this executes.
+-- Runs via `spring.sql.init.mode: always`. spring.sql.init scripts run after Flyway
+-- by default, so the migrations have built the tables before this executes; no
+-- defer-datasource-initialization is needed (application.yaml explains why it must
+-- stay off).
 --
 -- IDEMPOTENT AND NON-DESTRUCTIVE: every seeded row carries a `seed-` id prefix and is
 -- written with ON DUPLICATE KEY UPDATE. Re-running restores the documented values without
@@ -20,15 +21,15 @@
 -- on every boot, recording a single inventory movement was enough to stop the application
 -- from ever starting again -- a fresh clone worked, and using it was what broke it.
 --
--- A field-naming trap this file has to respect, inherited: distribution.wid holds
--- the warehouse *name* (see the warehouse dropdown), while inventory.wid and
--- inventory_record.wid hold the warehouse *id* -- same column name, different
--- meaning in different tables.
--- One trap this file used to have to respect is gone as of V9: distribution.care
--- was a comma-joined list with a trailing comma, and vehicle.type / driver.gender
--- held Chinese strings the client compared against character for character. All
--- three are closed sets of identifiers now, care is rows in distribution_care,
--- and an invalid value fails to load instead of quietly taking a wrong branch.
+-- A field-naming trap this file used to have to respect is gone as of V5 and V6:
+-- distribution.wid held the warehouse *name*, while inventory.wid and
+-- inventory_record.wid held the warehouse *id* -- same column name, different
+-- meaning in different tables. All three are warehouse_id foreign keys now.
+-- Another trap is gone as of V9: distribution.care was a comma-joined list with a
+-- trailing comma, and vehicle.type / driver.gender held Chinese strings the client
+-- compared against character for character. All three are closed sets of identifiers
+-- now, care is rows in distribution_care, and an invalid value fails to load instead
+-- of quietly taking a wrong branch.
 
 -- Order matters: these tables have real foreign keys between them, so a parent
 -- has to be written before its child. The sequence below is parent-first and load-bearing.

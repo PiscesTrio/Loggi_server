@@ -141,13 +141,11 @@ public class SecurityConfiguration {
                                                 "/swagger-ui.html",
                                                 "/swagger-ui/**")
                                         .permitAll()
-                                        // Default deny. Until now this line read permitAll(), so
-                                        // URL-level
-                                        // authorization did not exist and the only thing in front
-                                        // of the
-                                        // data was whatever @PreAuthorize a controller happened to
-                                        // carry —
-                                        // seven of the thirteen carry none.
+                                        // Default deny. Until now this line read permitAll(),
+                                        // so URL-level authorization did not exist and the only
+                                        // thing in front of the data was whatever @PreAuthorize
+                                        // a controller happened to carry — and four of the
+                                        // eleven controllers still carry none.
                                         .anyRequest()
                                         .authenticated())
                 .exceptionHandling(ex -> ex.authenticationEntryPoint(unauthorizedEntryPoint()))
