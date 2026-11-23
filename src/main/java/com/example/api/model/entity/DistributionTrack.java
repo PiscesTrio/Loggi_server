@@ -48,10 +48,10 @@ public class DistributionTrack {
      * track point could outlive the order it described, and the timeline query that reads them by
      * that column had no way to know.
      */
-    // The @JsonIdentityReference that used to sit here is gone with S10's view types. It
-    // existed to make an association serialise as a bare id while the entity was itself the
-    // wire format - a workaround for a problem the boundary removed, and it could only ever
-    // work in one direction: it wrote an id and could not read a lone one back.
+    // The @JsonIdentityReference that used to sit here went when responses became view
+    // types. It existed to make an association serialise as a bare id while the entity was
+    // itself the wire format - a workaround for a problem the boundary removed, and it could
+    // only ever work in one direction: it wrote an id and could not read a lone one back.
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "distribution_id")
     private Distribution distribution;

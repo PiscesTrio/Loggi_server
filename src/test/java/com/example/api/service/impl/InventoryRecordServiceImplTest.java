@@ -26,10 +26,10 @@ import org.mockito.junit.jupiter.MockitoExtension;
 /**
  * Stock in/out: what moves, and what refuses to move.
  *
- * <p>S00 wrote the first four of these as characterization tests and left a note that the source's
- * {@code if (optional == null)} was a dead branch — findById never returns null, so a missing
- * commodity fell through to {@code optional.get()} and NoSuchElementException — for the rewrite
- * slice to fix and assert. This is that slice; the note is now the test below it.
+ * <p>The first four of these began as characterization tests, with a note that the source's {@code
+ * if (optional == null)} was a dead branch — findById never returns null, so a missing commodity
+ * fell through to {@code optional.get()} and NoSuchElementException — for the rewrite to fix and
+ * assert. The rewrite has happened; the note is now the test below it.
  *
  * <p>The refusals carry a status apiece rather than the single flattened 400 they used to: a
  * missing id is 404, insufficient stock is 409, a nonsense quantity is 400.
@@ -171,8 +171,8 @@ class InventoryRecordServiceImplTest {
     @Test
     @DisplayName("A commodity id that does not exist is refused, not dereferenced")
     void in_whenCommodityMissing_throws404() {
-        // The branch S00 flagged. `if (optional == null)` could never be true, so the
-        // guard's message never reached anyone and the next line threw
+        // The branch the characterization tests flagged. `if (optional == null)` could never
+        // be true, so the guard's message never reached anyone and the next line threw
         // NoSuchElementException from inside the Optional instead — a guard that reads
         // like validation while the real failure walks straight past it.
         InventoryRecord rec = movement(1);

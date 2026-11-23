@@ -6,8 +6,8 @@ import java.security.SecureRandom;
  * Generates the one-time codes.
  *
  * <p>This class already existed and was never called — the service it was written for hardcoded
- * {@code "123456"} instead. The slice plan says to start calling it. Calling it as it stood would
- * have replaced a constant with something almost as bad: it used {@link java.util.Random}, a 48-bit
+ * {@code "123456"} instead. Fixing that meant calling it, and calling it as it stood would have
+ * replaced a constant with something almost as bad: it used {@link java.util.Random}, a 48-bit
  * linear congruential generator whose entire internal state can be recovered from a couple of
  * observed outputs, after which every subsequent value is arithmetic. For a shuffle that is fine.
  * For a credential someone is trying to guess, "unpredictable to a human" is not the requirement.

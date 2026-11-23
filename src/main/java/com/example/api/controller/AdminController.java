@@ -49,8 +49,8 @@ public class AdminController {
      *
      * <p>Deliberately anonymous: on a fresh install there is no account to authenticate as, so
      * requiring a token would make the system impossible to bootstrap. What stops it being an open
-     * door is the check below — until this slice there was none, and any caller could POST here at
-     * any time and mint themselves a super administrator on a running system.
+     * door is the check below — until it was added there was none, and any caller could POST here
+     * at any time and mint themselves a super administrator on a running system.
      */
     @PostMapping("/init")
     @ResponseStatus(HttpStatus.CREATED)

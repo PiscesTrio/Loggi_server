@@ -44,9 +44,9 @@ class ConfigurationSafetyTest {
         // prints the whole SMTP conversation, and that conversation contains the AUTH
         // line: the mail password, in the server log, on every send.
         //
-        // Placeholders rather than a dev/prod profile split on purpose - profiles are
-        // S08's subject, and this slice should not do that work twice with a different
-        // answer.
+        // Placeholders rather than a dev/prod profile split on purpose - profiles are a
+        // separate change, and doing that work here as well would risk two different
+        // answers.
         List<PropertySource<?>> sources =
                 new YamlPropertySourceLoader()
                         .load("application", new ClassPathResource("application.yaml"));

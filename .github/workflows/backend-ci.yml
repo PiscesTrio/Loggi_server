@@ -1,7 +1,7 @@
 name: backend-ci
 on:
   push:
-    branches: [ master, "slice/**" ]
+    branches: [ master ]
   pull_request:
 jobs:
   build:
@@ -20,7 +20,8 @@ jobs:
       # working-directory. ./mvnw, not setup-java's mvn: the wrapper pins Maven to 3.9.6.
       # -Dapi.version=1.44 was a Testcontainers 1.20.x trap: its docker-java sent API 1.32, but
       # Docker Engine 29+ needs >= 1.44 — "client version 1.32 is too old". Testcontainers 2.0
-      # (S01) raised that default, so it is redundant now but harmless; kept as a guard rail.
+      # (which came with the Spring Boot 4 upgrade) raised that default, so it is redundant now
+      # but harmless; kept as a guard rail.
       # Property name is api.version; docker-java ignores DOCKER_API_VERSION.
       # Before the build, so a formatting failure is reported as a formatting failure
       # rather than as whatever the compiler says next. `spotless:apply` fixes it.

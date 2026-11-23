@@ -32,8 +32,8 @@ import org.testcontainers.junit.jupiter.Testcontainers;
  * that the value in the store is not the value in the message, that a second send inside the
  * cooldown is refused, that the sixth wrong guess locks the address. Mocking {@code
  * StringRedisTemplate} would let all four assertions pass against a service that does nothing,
- * which is roughly the state this slice found the code in — {@code mailSender.send} had been
- * commented out and no test noticed for the life of the project.
+ * which is roughly the state the code was found in — {@code mailSender.send} had been commented out
+ * and no test noticed for the life of the project.
  *
  * <p>GreenMail is an in-process SMTP server, so "was the mail sent" is answered by reading the
  * mail.
@@ -70,7 +70,7 @@ class VerificationCodeIT {
         r.add("spring.datasource.username", MYSQL::getUsername);
         r.add("spring.datasource.password", MYSQL::getPassword);
         // No ddl-auto override. It used to say "update" to match production; production is
-        // Flyway plus validate since S08, so the honest way to match it is to let the real
+        // Flyway plus validate now, so the honest way to match it is to let the real
         // configuration run. These containers start empty, so Flyway applies V1 onwards and
         // Hibernate then validates the entities against what the migrations built — which
         // makes every one of these tests a check that the two still agree.

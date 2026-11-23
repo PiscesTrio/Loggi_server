@@ -27,12 +27,12 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.util.ReflectionTestUtils;
 
 /**
- * Passwords are hashed now, so these assertions replace the ones S00 wrote.
+ * Passwords are hashed now, so these assertions replace the original characterization tests.
  *
- * <p>S00 deliberately pinned the plaintext behaviour — a derived query comparing the raw password,
- * and a {@code save} that stored whatever it was handed — and said in its own comment that the
- * BCrypt slice would turn them red. It did. Those two tests are gone with the behaviour they
- * described.
+ * <p>Those deliberately pinned the plaintext behaviour — a derived query comparing the raw
+ * password, and a {@code save} that stored whatever it was handed — and said in their own comment
+ * that the switch to BCrypt would turn them red. It did. Those two tests are gone with the
+ * behaviour they described.
  *
  * <p>The encoder here is real, not a mock. Mocking it would assert that the service calls a method;
  * the question worth asking is whether what reaches the database can still be read back, and only a

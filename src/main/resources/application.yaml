@@ -36,7 +36,7 @@ spring:
     enabled: true
     locations: classpath:db/migration
     # For a database that already exists and has no history table — the shape every
-    # environment was in when this slice landed. Flyway stamps it as version 1 and starts
+    # environment was in when Flyway was introduced. Flyway stamps it as version 1 and starts
     # applying from V2, instead of refusing to touch a non-empty schema. An empty database
     # ignores this and runs V1 onwards normally.
     baseline-on-migrate: true
@@ -92,8 +92,8 @@ spring:
     # ran on Asia/Shanghai while the container actually runs on UTC, so a value written as
     # 09:00 came back as 10:00, and rows written by the application were stored an hour before
     # the moment they describe. The round trip was self-consistent, which is why nothing
-    # looked wrong until S09 turned the string columns into real datetimes and the seed's
-    # literal values stopped matching what the API returned.
+    # looked wrong until migration V3 turned the string columns into real datetimes and the
+    # seed's literal values stopped matching what the API returned.
     #
     # connectionTimeZone=SERVER + preserveInstants=false tells the driver to leave wall-clock
     # values alone. serverTimezone, which this replaces, is the deprecated spelling and was
@@ -106,9 +106,9 @@ spring:
       # Jackson 3 flipped FAIL_ON_NULL_FOR_PRIMITIVES from false to true, so an *explicit* null
       # landing on a primitive field is now a 400 where Jackson 2 substituted the default.
       # The Flutter client's toJson() emits every key unconditionally, so `remember` arrives as
-      # null rather than absent, and login broke on every attempt after the S01 upgrade — while
-      # curl sending {email,password} (field absent) still worked, which is why hand probing the
-      # API never saw it. A physical device did.
+      # null rather than absent, and login broke on every attempt after the Spring Boot 4
+      # upgrade — while curl sending {email,password} (field absent) still worked, which is why
+      # hand probing the API never saw it. A physical device did.
       # This is not one field: Distribution.urgent, Vehicle.driving, Driver.driving and Sale.pay
       # are all primitive booleans, so changing types one at a time is whack-a-mole. Restoring
       # the one default treats the cause.
@@ -128,7 +128,7 @@ spring:
     init:
       # The project had no data initialisation path at all: ddl-auto only creates tables,
       # compose mounts no init script, and the one ApplicationRunner it shipped was an empty
-      # shell (deleted in S07) — a fresh clone came up against an empty database. data.sql
+      # shell (since deleted) — a fresh clone came up against an empty database. data.sql
       # deletes-then-inserts by a `seed-` id prefix, so it is repeatable and never touches
       # rows created through the app.
       mode: always

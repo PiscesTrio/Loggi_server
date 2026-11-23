@@ -45,7 +45,7 @@ class SeedDataIT {
         r.add("spring.datasource.username", MYSQL::getUsername);
         r.add("spring.datasource.password", MYSQL::getPassword);
         // No ddl-auto override. It used to say "update" to match production; production is
-        // Flyway plus validate since S08, so the honest way to match it is to let the real
+        // Flyway plus validate now, so the honest way to match it is to let the real
         // configuration run. These containers start empty, so Flyway applies V1 onwards and
         // Hibernate then validates the entities against what the migrations built — which
         // makes every one of these tests a check that the two still agree.
@@ -88,7 +88,7 @@ class SeedDataIT {
 
         assertThat(dis).isPresent();
         // This assertion used to read getWid() and expect the warehouse NAME, because that
-        // is what the column held — the trap this slice removed. The seed now stores an id
+        // is what the column held — the trap migration V5 removed. The seed now stores an id
         // behind a real foreign key, and the name is read through the association.
         assertThat(dis.get().getWarehouse().getName()).isEqualTo("東京江東倉庫");
         // The trailing-comma trap this assertion used to guard is gone: care was a

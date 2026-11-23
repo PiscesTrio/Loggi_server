@@ -15,14 +15,14 @@ import org.junit.jupiter.api.Test;
 /**
  * No CJK string literal in {@code src/main/java}.
  *
- * <p>The count is zero and this keeps it there. It was 141 before this slice: Chinese in
- * {@code @Log(module=...)}, in {@link com.example.api.utils.BrowserUtil}, in the enums, in every
- * {@code BizException}, and in fifty-two Bean Validation messages. All of it ended up in one of two
- * places — a database column, or the {@code msg} field of a response — and both were the wrong
- * place for it.
+ * <p>The count is zero and this keeps it there. It was 141 before the server stopped sending
+ * display text: Chinese in {@code @Log(module=...)}, in {@link com.example.api.utils.BrowserUtil},
+ * in the enums, in every {@code BizException}, and in fifty-two Bean Validation messages. All of it
+ * ended up in one of two places — a database column, or the {@code msg} field of a response — and
+ * both were the wrong place for it.
  *
  * <p>The columns became identifiers (V9, V10). The responses gained an {@code errorCode}, which is
- * what a client turns into words in its reader's language (A3). Once both had happened, {@code msg}
+ * what a client turns into words in its reader's language. Once both had happened, {@code msg}
  * stopped being something a user reads: what is left of it is a line in the server log and a
  * fallback for a client that does not know a code. That is developer-facing text, and this project
  * writes developer-facing text in English — so the last step was not a translation, it was noticing

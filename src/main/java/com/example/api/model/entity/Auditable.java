@@ -31,7 +31,7 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
  *
  * <p>Column names stay {@code create_at} / {@code update_at}. They would read better as {@code
  * created_at}, but renaming them buys nothing here and costs a migration plus another change to a
- * JSON contract this slice already disturbs enough.
+ * JSON contract that moving these fields to auditing already disturbs enough.
  */
 @Getter
 @Setter

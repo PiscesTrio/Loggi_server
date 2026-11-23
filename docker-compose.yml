@@ -1,4 +1,4 @@
-# S00 safety net: bring up the backend and MySQL 8 in one command, reproducibly.
+# Bring up the backend and MySQL 8 in one command, reproducibly.
 # Usage: cp .env.example .env && fill in the values && docker compose up --build
 # This file lives inside Loggi_server/ (the repository root is not a git repository),
 # so the build context is the current directory.

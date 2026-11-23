@@ -15,7 +15,7 @@ import org.springframework.web.bind.annotation.*;
 @Tag(
         name = "Sales (API only)",
         description =
-                "No client calls these. The screens were never built, and after S10 that is a decision rather than an omission: the endpoints are documented here and left in place, because the domain is real and the API is the deliverable. See the backend README.")
+                "No client calls these. The screens were never built, and now that the API has its own DTO/VO boundary that is a decision rather than an omission: the endpoints are documented here and left in place, because the domain is real and the API is the deliverable. See the backend README.")
 @RestController
 @RequestMapping("/api/sale")
 @PreAuthorize("hasAnyRole('ROLE_SUPER_ADMIN' ,'ROLE_SALE')")

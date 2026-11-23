@@ -1,22 +1,23 @@
 # Contract changes
 
-> **The gap this file was written for is closed.** From S18 the client's models are generated
-> from this API's OpenAPI document, and S20 moved both sides in the same slice. What follows is
-> kept as written: the record of what the contract was, measured at the time rather than
-> recalled afterwards.
+> **The gap this file was written for is closed.** The client's models are now generated from
+> this API's OpenAPI document, and the change that stopped the server sending display labels
+> moved both sides together. What follows is kept as written: the record of what the contract
+> was, measured at the time rather than recalled afterwards.
 
-What the API sends changed in S09, and the Flutter client has not been updated. That is
-deliberate: S09 rebuilt the domain model, S10 puts a DTO/VO boundary in front of it, and the
-frontend is realigned in its own slice once the contract has settled. This file is what makes
-that gap survivable — without it, realigning the client becomes an exercise in discovering
-what broke rather than applying a list.
+What the API sends changed when the domain model was rebuilt (Flyway migrations V3–V7), and the
+Flutter client has not been updated. That is deliberate: the rebuild changed the model, the
+next change puts a DTO/VO boundary in front of it, and the client is updated separately once
+the contract has settled. This file is what makes that gap survivable — without it,
+realigning the client becomes an exercise in discovering what broke rather than applying a
+list.
 
 Every shape below was **measured** against a running server, not read off the entities.
 
 ## Why the client is not updated here
 
 The entities are still the wire format. Changing the model therefore changes the JSON, and
-there is no boundary yet at which to hold it steady. Adding one is exactly what the next slice
+there is no boundary yet at which to hold it steady. Adding one is exactly what the next change
 does — which is also why the awkward parts recorded here (see *Asymmetry* below) are worth
 leaving visible rather than papering over: they are the argument for that boundary.
 
@@ -124,15 +125,15 @@ request:   { "distribution": { "id": "seed-dis-1" }, … }
 `@JsonIdentityReference` can write an association as an id but cannot read a lone id back; it
 resolves ids only against objects already present in the same payload. This is not a decision
 so much as the limit of using an entity as a wire format, and it is one of the things the DTO
-boundary in the next slice exists to remove.
+boundary that follows exists to remove.
 
 ---
 
-# S10 changed it again, on purpose
+# The API boundary changed it again, on purpose
 
-S09 changed the wire because the entities *were* the wire. S10 puts a boundary in, so from
-here the shape is a decision rather than a consequence. Where S10 differs from S09, S10 is
-what the client should be written against.
+The model rebuild changed the wire because the entities *were* the wire. The DTO/VO boundary
+puts a layer in, so from here the shape is a decision rather than a consequence. Where the
+boundary differs from the rebuild, the boundary is what the client should be written against.
 
 ## Login
 
@@ -144,7 +145,7 @@ Requests are validated: a blank or malformed `email` comes back **400** with the
 
 ## `GET /api/distribution`
 
-| S09 | S10 |
+| After the model rebuild | Behind the boundary |
 | --- | --- |
 | `driver: {…the whole Driver row…}` | `driver: { id, name, phone }` |
 | `vehicle: {…the whole Vehicle row…}` | `vehicle: { id, number, type }` |
@@ -172,8 +173,8 @@ bounded to real latitudes and longitudes, which is what an origin of `0,0` was n
 ## `GET|POST /api/distribution/status`
 
 `distribution` becomes **`distributionId`**, and — the part that matters — the request now
-uses the same shape as the response. Under S09 the response carried a bare id while the
-request had to send an object.
+uses the same shape as the response. After the model rebuild the response carried a bare id
+while the request had to send an object.
 
 `POST` no longer accepts `time`. The server records when the sighting arrived; a
 client-supplied timestamp on a tracking record is the client asserting where a vehicle was
@@ -198,7 +199,7 @@ Every endpoint now speaks in request and view types. Beyond the transport ones a
 | all creates | no `createAt` / `updateAt` in the request - auditing overwrites them |
 | `Commodity`, `Employee` | `PUT /{id}` instead of `PUT` with the id inside the body |
 | all deletes | `DELETE /{id}` instead of `DELETE?id=x` |
-| `Sale.count` | already an integer since S09; the request now requires it to be positive |
+| `Sale.count` | already an integer since migration V4; the request now requires it to be positive |
 
 ## Status codes
 
@@ -226,10 +227,10 @@ find what it already had.
 
 ## `businessType` again
 
-S09 changed it from the Chinese label to the enum name in the database. S10 found the API
-was still sending the label: Jackson 3 serialises enums through `toString()` where Jackson
-2 used `name()`, and the enum had a `toString()` returning its label. The override is gone,
-so the wire and the database finally agree — `QUERY`, not `查询`.
+Migration V7 changed it from the Chinese label to the enum name in the database. The boundary
+work found the API was still sending the label: Jackson 3 serialises enums through
+`toString()` where Jackson 2 used `name()`, and the enum had a `toString()` returning its
+label. The override is gone, so the wire and the database finally agree — `QUERY`, not `查询`.
 
 ## Not changed
 

@@ -14,8 +14,8 @@
 -- written with ON DUPLICATE KEY UPDATE. Re-running restores the documented values without
 -- duplicating rows, and it never touches rows created through the app.
 --
--- It used to delete by that prefix and re-insert. That reads as equivalent and is not: S09
--- gave these tables real foreign keys, so an app-created inventory_record pointing at a
+-- It used to delete by that prefix and re-insert. That reads as equivalent and is not: these
+-- tables have real foreign keys, so an app-created inventory_record pointing at a
 -- seeded commodity does not get deleted, it *blocks* the delete. Because this script runs
 -- on every boot, recording a single inventory movement was enough to stop the application
 -- from ever starting again -- a fresh clone worked, and using it was what broke it.
@@ -30,7 +30,7 @@
 -- three are closed sets of identifiers now, care is rows in distribution_care,
 -- and an invalid value fails to load instead of quietly taking a wrong branch.
 
--- Order matters since S09: these tables have real foreign keys between them, so a parent
+-- Order matters: these tables have real foreign keys between them, so a parent
 -- has to be written before its child. The sequence below is parent-first and load-bearing.
 
 -- Demo login. Exists so a fresh clone can be logged into; it is not a credential.
@@ -47,7 +47,7 @@ INSERT INTO admin (id, email, password, create_at) VALUES
     password = VALUES(password),
     create_at = VALUES(create_at);
 
--- Roles are rows since S09; admin.roles used to be a semicolon-joined string.
+-- Roles are rows since migration V7; admin.roles used to be a semicolon-joined string.
 INSERT IGNORE INTO admin_roles (admin_id, role) VALUES ('seed-admin-1', 'ROLE_SUPER_ADMIN');
 
 -- Warehouses. Coordinates are WGS-84, which is what the map layer expects.
@@ -117,7 +117,7 @@ INSERT INTO commodity (id, name, price, description, count, create_at, update_at
     create_at = VALUES(create_at),
     update_at = VALUES(update_at);
 
--- Since S09 these are real foreign keys (warehouse_id / commodity_id); inventory.name is
+-- Since migration V6 these are real foreign keys (warehouse_id / commodity_id); inventory.name is
 -- still a denormalised copy of the commodity name, and it is that copy the UI renders.
 INSERT INTO inventory (id, warehouse_id, commodity_id, name, location, count) VALUES
   ('seed-inv-1', 'seed-wh-tokyo',  'seed-cm-1', '精密機器', 'A-01', 60),
@@ -133,7 +133,7 @@ INSERT INTO inventory (id, warehouse_id, commodity_id, name, location, count) VA
     location = VALUES(location),
     count = VALUES(count);
 
--- type is IN / OUT since S09; it was +1 / -1. The pie chart groups by
+-- type is IN / OUT since migration V6; it was +1 / -1. The pie chart groups by
 -- inventory_record.name, NOT by commodity.name -- so these rows are what the legend shows.
 INSERT INTO inventory_record (id, name, warehouse_id, commodity_id, count, type, description, create_at) VALUES
   ('seed-ir-1', '精密機器', 'seed-wh-tokyo',  'seed-cm-1', 80,  'IN', '初期入庫',       '2026-08-02 10:00:00'),
@@ -153,7 +153,7 @@ INSERT INTO inventory_record (id, name, warehouse_id, commodity_id, count, type,
     description = VALUES(description),
     create_at = VALUES(create_at);
 
--- Since S09 the order points at its driver, vehicle and origin warehouse by id, with real
+-- Since migration V5 the order points at its driver, vehicle and origin warehouse by id, with real
 -- foreign keys behind all three; the driver's name and the plate are no longer copied here.
 -- warehouse_id used to be `wid` and held the warehouse NAME, which is why the migration
 -- resolves it by name rather than renaming the column.

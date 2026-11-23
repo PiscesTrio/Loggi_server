@@ -18,12 +18,13 @@ import org.testcontainers.junit.jupiter.Testcontainers;
  * The most direct smoke test for a framework upgrade: boot the <b>whole</b> ApplicationContext.
  *
  * <p>Other tests each cover one slice — @WebMvcTest web, @DataJpaTest JPA, the two Mockito unit
- * tests never start Spring — so before S01 <b>nothing asserted</b> that AOP aspects, mail,
- * background tasks and the security filter chain all still wire together across the major-version
- * jump.
+ * tests never start Spring — so before the Spring Boot 4 upgrade <b>nothing asserted</b> that AOP
+ * aspects, mail, background tasks and the security filter chain all still wire together across the
+ * major-version jump.
  *
  * <p>RANDOM_PORT, not the default MOCK: it <b>actually starts the embedded web container</b>,
- * making the S01 acceptance item "`spring-boot:run` starts cleanly" a per-build regression.
+ * making the upgrade's own success criterion, "`spring-boot:run` starts cleanly", a per-build
+ * regression check.
  *
  * <p>*IT, not *Test: a full context needs a real datasource — failsafe plus Testcontainers.
  */
@@ -41,12 +42,12 @@ class ApplicationContextIT {
         r.add("spring.datasource.username", MYSQL::getUsername);
         r.add("spring.datasource.password", MYSQL::getPassword);
         // No ddl-auto override. It used to say "update" to match production; production is
-        // Flyway plus validate since S08, so the honest way to match it is to let the real
+        // Flyway plus validate now, so the honest way to match it is to let the real
         // configuration run. These containers start empty, so Flyway applies V1 onwards and
         // Hibernate then validates the entities against what the migrations built — which
         // makes every one of these tests a check that the two still agree.
         // Required, not incidental: JwtTokenUtil refuses to construct on the CHANGE_ME
-        // placeholder, so from S02 on the context cannot start without a real secret. That
+        // placeholder, so the context cannot start without a real secret. That
         // this line is necessary IS the fail-fast working.
         r.add("jwt.secret", () -> "integration-test-secret-at-least-32-bytes");
     }
@@ -62,8 +63,9 @@ class ApplicationContextIT {
     @Test
     @DisplayName("The security filter chain is still assembled by the rewritten configuration")
     void securityFilterChainIsRegistered() {
-        // S01 rewrote WebSecurityConfigurerAdapter into a SecurityFilterChain bean.
-        // Assert only that the chain got assembled — pinning down its rules belongs to S02.
+        // The Spring Boot 4 upgrade rewrote WebSecurityConfigurerAdapter into a
+        // SecurityFilterChain bean. Assert only that the chain got assembled — pinning down
+        // its rules belongs to AuthorizationMatrixTest and JwtAuthorizationFilterTest.
         assertThat(context.getBeansOfType(SecurityFilterChain.class)).isNotEmpty();
     }
 }

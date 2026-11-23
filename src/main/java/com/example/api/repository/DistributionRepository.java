@@ -22,7 +22,7 @@ public interface DistributionRepository extends JpaRepository<Distribution, Stri
      * and the controller maps the entity to a DistributionVo outside the transaction — so without
      * an entity graph the proxies are touched after it has closed and every request fails with
      * LazyInitializationException. Loading them one at a time instead would work and would issue
-     * three queries per order, which is the N+1 this slice exists to remove.
+     * three queries per order, which is the N+1 this entity graph exists to remove.
      *
      * <p>{@code care} joined the list when it stopped being a column and became rows. It is the
      * only collection here, so the join multiplies rows by the number of tags on an order and

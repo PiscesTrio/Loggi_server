@@ -28,11 +28,11 @@ import org.springframework.test.web.servlet.MockMvc;
 /**
  * What the filter does to a request, end to end through the real security chain.
  *
- * <p>The interesting assertions are the status codes. Before this slice a token that failed
- * verification escaped the filter as an uncaught exception — HTTP 500 with a stack trace — and an
- * expired one produced HTTP 200 whose body claimed 403. Neither is something a client can branch
- * on, and neither is visible from a unit test of the parsing code alone: it takes a request
- * travelling the whole chain to observe the status that actually reaches the caller.
+ * <p>The interesting assertions are the status codes. Before the JWT chain was rebuilt, a token
+ * that failed verification escaped the filter as an uncaught exception — HTTP 500 with a stack
+ * trace — and an expired one produced HTTP 200 whose body claimed 403. Neither is something a
+ * client can branch on, and neither is visible from a unit test of the parsing code alone: it takes
+ * a request travelling the whole chain to observe the status that actually reaches the caller.
  */
 @WebMvcTest(com.example.api.controller.AdminController.class)
 @Import({SecurityConfiguration.class, JwtAuthorizationFilterTest.RealTokenUtil.class})
@@ -123,7 +123,7 @@ class JwtAuthorizationFilterTest {
                         "alice", List.of("ROLE_ADMIN"), JwtTokenUtil.EXPIRATION_TIME);
 
         // Not a Bearer header, so it is ignored entirely: no authentication is established.
-        // Every token issued before this slice stops working, which is the cost of removing a
+        // Every token issued under the old prefix stops working, which is the cost of removing a
         // transport prefix that was standing in for a signature check.
         mockMvc.perform(get(OPEN).header("Authorization", "logistics:" + valid))
                 .andExpect(status().isOk());
@@ -143,10 +143,10 @@ class JwtAuthorizationFilterTest {
         // it. Contrast findAll_withoutAuth in AdminControllerTest, where the same endpoint answers
         // with code=403 in the body.
         //
-        // Note this contradicts pitfall #5 of the S02 plan, which claimed hasAnyRole would prepend
-        // a second ROLE_ and look for ROLE_ROLE_SUPER_ADMIN. It does not: getRoleWithDefaultPrefix
-        // returns the name unchanged when it already starts with the prefix. The plan's follow-up
-        // item to "fix the double prefix" is therefore a fix for a defect that does not exist —
+        // Note this contradicts the common claim that hasAnyRole would prepend a second ROLE_
+        // and look for ROLE_ROLE_SUPER_ADMIN. It does not: getRoleWithDefaultPrefix returns the
+        // name unchanged when it already starts with the prefix. "Fixing the double prefix"
+        // would therefore be a fix for a defect that does not exist —
         // and this assertion is what makes that checkable rather than arguable.
         when(adminService.findAll()).thenReturn(List.of());
 

@@ -84,9 +84,9 @@ public class EmailServiceImpl implements EmailService {
         // The one user-facing string this server has to render itself.
         //
         // Everything else it sends is an identifier that the client turns into words in the
-        // reader's language — that is what A3 is for. An e-mail has no client: the server
-        // writes what the recipient reads, so it is the single place where "the server does
-        // not know the reader's language" is a real limitation rather than a design mistake.
+        // reader's language — that is what error codes are for. An e-mail has no client: the
+        // server writes what the recipient reads, so it is the single place where "the server
+        // does not know the reader's language" is a real limitation rather than a design mistake.
         //
         // English, as the one language most likely to be understood by a recipient this demo
         // knows nothing about. A real system would carry the account's language and render

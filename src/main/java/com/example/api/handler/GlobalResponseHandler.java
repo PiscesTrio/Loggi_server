@@ -67,8 +67,8 @@ public class GlobalResponseHandler implements ResponseBodyAdvice<Object> {
             return null;
         }
 
-        // The envelope's code follows the real status rather than always saying 200. S06
-        // made the status line tell the truth about failures; a 201 arriving with code 200
+        // The envelope's code follows the real status rather than always saying 200. The
+        // status line already tells the truth about failures; a 201 arriving with code 200
         // in the body would reintroduce the same disagreement on the success path.
         ResponseResult<Object> wrapped =
                 body == null ? new ResponseResult<>() : new ResponseResult<>(body);

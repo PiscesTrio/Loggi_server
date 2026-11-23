@@ -38,9 +38,9 @@ import org.springframework.test.web.servlet.MockMvc;
 /**
  * The two logs are paginated, and the page says how much more there is.
  *
- * <p>Both endpoints returned every row before S10. These tables grow by a row per audited request
- * and a row per login attempt, so "every row" is a response that gets slower for the whole life of
- * the deployment and is unusable long before it gets slow enough to notice.
+ * <p>Both endpoints returned every row before they were paginated. These tables grow by a row per
+ * audited request and a row per login attempt, so "every row" is a response that gets slower for
+ * the whole life of the deployment and is unusable long before it gets slow enough to notice.
  */
 @WebMvcTest(LogController.class)
 @Import({SecurityConfiguration.class, GlobalResponseHandler.class})

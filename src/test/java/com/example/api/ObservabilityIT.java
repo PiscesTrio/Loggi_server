@@ -21,12 +21,12 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 /**
  * Health and API documentation, asserted over real HTTP.
  *
- * <p>Both are new in S10 and both have a failure mode that a green build would otherwise hide.
- * Health has to answer without a token, because an orchestrator probes it before the application
- * can issue one - and it has to answer UP, which it did not at first: Actuator's mail indicator
- * authenticates against SMTP, the credentials here are placeholders by design, and the failing
- * indicator dragged the aggregate to DOWN. A readiness probe would have kept the container out of
- * service forever, on a fresh clone, with the application itself working perfectly.
+ * <p>Both are recent additions, and both have a failure mode that a green build would otherwise
+ * hide. Health has to answer without a token, because an orchestrator probes it before the
+ * application can issue one - and it has to answer UP, which it did not at first: Actuator's mail
+ * indicator authenticates against SMTP, the credentials here are placeholders by design, and the
+ * failing indicator dragged the aggregate to DOWN. A readiness probe would have kept the container
+ * out of service forever, on a fresh clone, with the application itself working perfectly.
  *
  * <p>The rest of /actuator must stay closed. Exposing health publicly is a decision; letting
  * /actuator/metrics follow it out is an accident, and the two are one line apart in the security

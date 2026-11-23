@@ -11,8 +11,8 @@ import org.junit.jupiter.api.Test;
 /**
  * The generator behind the one-time code.
  *
- * <p>The slice plan said to start calling this class, which had existed unused while the service
- * hardcoded {@code "123456"}. Calling it as it stood would have swapped a constant for a {@link
+ * <p>This class had existed unused while the service hardcoded {@code "123456"}, and fixing that
+ * meant calling it. Calling it as it stood would have swapped a constant for a {@link
  * java.util.Random} — a 48-bit LCG whose whole state is recoverable from a couple of outputs, after
  * which the rest is arithmetic. These tests describe what a code generator has to be, so that a
  * future "simplification" back to {@code Random} has something to fail.

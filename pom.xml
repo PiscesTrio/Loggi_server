@@ -18,9 +18,9 @@
     </properties>
 
     <!--
-      S00's explicit testcontainers-bom import is gone: Spring Boot has managed org.testcontainers
+      The explicit testcontainers-bom import is gone: Spring Boot has managed org.testcontainers
       since 3.1, so re-importing it is one more pinned version drifting from the parent BOM
-      (S00's own comment already announced this slice would drop it).
+      (the comment that added it already said the Spring Boot upgrade would drop it).
     -->
 
     <dependencies>
@@ -89,7 +89,7 @@
         </dependency>
 
         <!--
-          The javax.xml.bind:jaxb-api that S01 pinned for jjwt 0.9.1 is gone with this upgrade.
+          The javax.xml.bind:jaxb-api once pinned for jjwt 0.9.1 is gone with this upgrade.
           The current jjwt serialises with Jackson and never touches
           javax.xml.bind.DatatypeConverter, so that lone javax artifact had no reason to remain in
           a codebase that has otherwise finished its jakarta migration.
@@ -121,7 +121,7 @@
             <version>3.0.0</version>
         </dependency>
 
-        <!--Flyway owns the schema from S08 on. Version comes from the parent BOM, never
+        <!--Flyway owns the schema, in place of ddl-auto. Version comes from the parent BOM, never
             pinned here: Flyway and the JDBC driver have to agree about the database, and the
             BOM is what keeps that pair consistent across a Spring Boot upgrade.
             flyway-mysql is a separate artifact - flyway-core alone knows no MySQL dialect and
@@ -168,7 +168,7 @@
           guide's one exception keeping its old groupId — so spring-boot-starter-web's JSON suffices.
         -->
 
-        <!-- ===== S00 safety net: test dependencies (test scope only, never in the production artifact) ===== -->
+        <!-- ===== Test dependencies (test scope only, never in the production artifact) ===== -->
         <!--
           SB4 split the test slices per technology: spring-boot-starter-test no longer brings
           @WebMvcTest / @DataJpaTest; instead pull the -test starter of each technology under test.
@@ -220,8 +220,8 @@
 
         <!--
           GreenMail: an in-process SMTP server, so a test can assert that a message was
-          actually sent and read the code out of its body. The whole reason this slice
-          exists is that `mailSender.send(...)` sat commented out and nothing noticed.
+          actually sent and read the code out of its body. The whole reason these tests
+          exist is that `mailSender.send(...)` sat commented out and nothing noticed.
         -->
         <dependency>
             <groupId>com.icegreen</groupId>
@@ -248,7 +248,7 @@
             </plugin>
 
             <!--
-              ===== S00 safety net: run *IT integration tests in the verify phase (needs Docker / Testcontainers) =====
+              ===== Run *IT integration tests in the verify phase (needs Docker / Testcontainers) =====
               spring-boot-starter-parent binds failsafe's integration-test and verify goals in
               <pluginManagement>, but pluginManagement only supplies defaults without activating the
               plugin, so the project must "declare" it here for *IT to run. Measured: deleting the
@@ -269,7 +269,7 @@
                 </executions>
             </plugin>
 
-            <!-- ===== S19: formatting is checked, not discussed =====
+            <!-- ===== Formatting is checked, not discussed =====
                  `mvn spotless:check` fails the build on a file that is not formatted, and
                  `mvn spotless:apply` fixes it. Not because the style is worth arguing about
                  — because arguing about it in review is worse than any style. -->
@@ -289,7 +289,7 @@
                 </configuration>
             </plugin>
 
-            <!-- ===== S00 safety net: JaCoCo coverage report + gate (threshold starts at 0, raised step by step in later slices) ===== -->
+            <!-- ===== JaCoCo coverage report + gate (the threshold started at 0 and is raised step by step) ===== -->
             <plugin>
                 <groupId>org.jacoco</groupId>
                 <artifactId>jacoco-maven-plugin</artifactId>
@@ -317,22 +317,22 @@
                                             <counter>LINE</counter>
                                             <value>COVEREDRATIO</value>
                                             <!--
-                                              Measured, not guessed. Ratchet: each slice that raises it raises it
+                                              Measured, not guessed. Ratchet: each change that raises it raises it
                                               one notch and nothing ever lowers it.
 
-                                                S00  0.18   verify -DskipITs 139/761 = 18.27%
-                                                S02  0.30   verify -DskipITs 177/582 = 30.41%
-                                                            verify           208/582 = 35.74%
-                                                S19  0.50   verify           2417/4559 = 53.02%
+                                                first test suite     0.18   verify -DskipITs 139/761 = 18.27%
+                                                JWT chain rebuilt    0.30   verify -DskipITs 177/582 = 30.41%
+                                                                            verify           208/582 = 35.74%
+                                                full IT suite        0.50   verify           2417/4559 = 53.02%
 
                                               failsafe inherits jacoco's argLine, so *IT really does count, which is
-                                              why S02 recorded both run modes and took the lower bound — a local run
-                                              with ITs skipped and a full CI run both had to pass.
+                                              why the 0.30 notch recorded both run modes and took the lower bound — a
+                                              local run with ITs skipped and a full CI run both had to pass.
 
-                                              Two things the numbers do not show on their own. S02's denominator FELL
-                                              761 -> 582 because deleting ResponseUtil and the static JwtTokenUtil
-                                              took 179 lines out of the bundle, so part of that jump is arithmetic
-                                              rather than tests. And the gate is deliberately NOT pinned at the
+                                              Two things the numbers do not show on their own. The 0.30 notch's
+                                              denominator FELL 761 -> 582 because deleting ResponseUtil and the static
+                                              JwtTokenUtil took 179 lines out of the bundle, so part of that jump is
+                                              arithmetic rather than tests. And the gate is deliberately NOT pinned at the
                                               measured figure: 53.02% measured, 0.50 set, because pinning it at
                                               today's number turns an unrelated refactor that moves the denominator
                                               into a red build.

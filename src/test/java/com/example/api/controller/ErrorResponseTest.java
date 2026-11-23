@@ -248,9 +248,9 @@ class ErrorResponseTest {
     @WithMockUser
     @DisplayName("A created resource answers 201, and the envelope says 201 too")
     void created_statusAndEnvelopeAgree() throws Exception {
-        // The envelope hardcoded code 200 for every success. S06 made the status line tell
-        // the truth about failures; a 201 arriving with 200 in its body would reintroduce
-        // exactly the disagreement that fixed, on the other half of the API.
+        // The envelope hardcoded code 200 for every success. The error-handling rework made
+        // the status line tell the truth about failures; a 201 arriving with 200 in its body
+        // would reintroduce exactly the disagreement that fixed, on the other half of the API.
         mockMvc.perform(post("/api/test-errors/created").with(csrf()))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.code").value(201))

@@ -13,12 +13,12 @@ import java.util.List;
 /**
  * A delivery order, as the API describes one.
  *
- * <p>This replaces serialising the entity, and it settles something S09 left awkward. Once the
- * order pointed at real rows, returning the entity meant returning whole Driver, Vehicle and
- * Warehouse objects nested inside every order - each with its own timestamps, its own id-card
- * number, its own everything - because Jackson serialises what the object graph holds, not what a
- * caller needs. The alternative available at the time was to emit a bare id, which took the
- * driver's name away from a screen that displays it.
+ * <p>This replaces serialising the entity, and it settles something the move to real associations
+ * (migration V5) left awkward. Once the order pointed at real rows, returning the entity meant
+ * returning whole Driver, Vehicle and Warehouse objects nested inside every order - each with its
+ * own timestamps, its own id-card number, its own everything - because Jackson serialises what the
+ * object graph holds, not what a caller needs. The alternative available at the time was to emit a
+ * bare id, which took the driver's name away from a screen that displays it.
  *
  * <p>A view type does not have to choose. Each reference becomes a summary carrying the two or
  * three fields a client actually renders, and the fields it does not need never leave the server.

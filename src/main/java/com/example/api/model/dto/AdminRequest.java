@@ -13,7 +13,7 @@ import lombok.Data;
  * <p>The password is write-only by construction here rather than by annotation: a request type has
  * no way to send one back, so there is no {@code @JsonProperty(WRITE_ONLY)} to forget to add.
  *
- * <p>A minimum length, because there was none. The column was widened in S09 to hold a bcrypt hash;
+ * <p>A minimum length, because there was none. The column was widened to hold a bcrypt hash;
  * nothing has ever constrained what goes into it.
  */
 @Data
