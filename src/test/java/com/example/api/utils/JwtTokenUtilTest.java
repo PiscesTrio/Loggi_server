@@ -92,6 +92,18 @@ class JwtTokenUtilTest {
     }
 
     @Test
+    @DisplayName("A long placeholder that merely starts with CHANGE_ME is refused too")
+    void constructor_longPlaceholderSecret_failsFast() {
+        // The value .env.example used to ship. 45 bytes, so the length check passed it, and
+        // the README promised the opposite.
+        assertThatThrownBy(() -> new JwtTokenUtil("CHANGE_ME_AT_LEAST_32_CHARS_LONG_SECRET_VALUE"))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("CHANGE_ME");
+        assertThatThrownBy(() -> new JwtTokenUtil("change_me-but-lowercase-and-long-enough-xx"))
+                .isInstanceOf(IllegalStateException.class);
+    }
+
+    @Test
     @DisplayName("The CHANGE_ME placeholder is refused at construction")
     void constructor_placeholderSecret_failsFast() {
         // Note this one would pass the length check if the placeholder were longer: it is
