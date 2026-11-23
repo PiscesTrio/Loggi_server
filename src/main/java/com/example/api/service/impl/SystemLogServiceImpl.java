@@ -51,7 +51,7 @@ public class SystemLogServiceImpl implements SystemLogService {
      * and joining them says the same thing once.
      *
      * <p>Both are substring matches, as they were. A leading wildcard cannot use an index, which is
-     * why S08 deliberately did not create one for these columns.
+     * why migration V2 deliberately did not create one for these columns.
      */
     @Override
     public Page<SystemLog> query(SystemLogQuery filter, Pageable pageable) {

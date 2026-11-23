@@ -58,7 +58,7 @@ public class GlobalExceptionHandler {
      *
      * <p>Matched with {@code instanceof}, not {@code getClass().equals()}: current Spring Security
      * raises AuthorizationDeniedException, a subclass, so an exact comparison misses it and
-     * "forbidden" silently became "bad request" — observed after S01.
+     * "forbidden" silently became "bad request" — observed after the Spring Boot 4 upgrade.
      */
     @ExceptionHandler(AccessDeniedException.class)
     public ResponseEntity<ResponseResult<Void>> handleAccessDenied(AccessDeniedException e) {
@@ -102,9 +102,9 @@ public class GlobalExceptionHandler {
     /**
      * A row the database refused: a duplicate where a unique constraint says there may be only one.
      *
-     * <p>Added with the constraints themselves in S08, because a constraint with no handler is
-     * worse than no constraint. Until V2 the uniqueness of an email, a commodity name or a number
-     * plate was checked in Java — read, then write — which two concurrent requests pass
+     * <p>Added with the constraints themselves (migration V2), because a constraint with no handler
+     * is worse than no constraint. Until V2 the uniqueness of an email, a commodity name or a
+     * number plate was checked in Java — read, then write — which two concurrent requests pass
      * simultaneously. Moving the check into the database closes that race, but it also changes how
      * a duplicate arrives: no longer a value the service inspected, but a
      * DataIntegrityViolationException thrown from the flush. That is a RuntimeException, so without

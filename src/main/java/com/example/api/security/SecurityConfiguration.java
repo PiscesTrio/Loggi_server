@@ -23,11 +23,11 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 /**
  * Component-based security configuration.
  *
- * <p>S01 turned the old {@code WebSecurityConfigurerAdapter} into a {@link SecurityFilterChain}
- * bean as the minimum needed to compile. This finishes the job: the JWT filter no longer borrows
- * {@code BasicAuthenticationFilter}, so the {@code AuthenticationManager} that existed only to
- * satisfy its constructor is gone. A stateless JWT application never authenticates a
- * username/password pair at the filter layer — it only reads tokens it issued earlier — so that
+ * <p>The Spring Boot 4 upgrade turned the old {@code WebSecurityConfigurerAdapter} into a {@link
+ * SecurityFilterChain} bean as the minimum needed to compile. This finishes the job: the JWT filter
+ * no longer borrows {@code BasicAuthenticationFilter}, so the {@code AuthenticationManager} that
+ * existed only to satisfy its constructor is gone. A stateless JWT application never authenticates
+ * a username/password pair at the filter layer — it only reads tokens it issued earlier — so that
  * manager had nothing to do.
  *
  * <p>Request-level authorization is a default-deny matrix: a short list of endpoints that must work
@@ -141,13 +141,11 @@ public class SecurityConfiguration {
                                                 "/swagger-ui.html",
                                                 "/swagger-ui/**")
                                         .permitAll()
-                                        // Default deny. Until now this line read permitAll(), so
-                                        // URL-level
-                                        // authorization did not exist and the only thing in front
-                                        // of the
-                                        // data was whatever @PreAuthorize a controller happened to
-                                        // carry —
-                                        // seven of the thirteen carry none.
+                                        // Default deny. Until now this line read permitAll(),
+                                        // so URL-level authorization did not exist and the only
+                                        // thing in front of the data was whatever @PreAuthorize
+                                        // a controller happened to carry — and four of the
+                                        // eleven controllers still carry none.
                                         .anyRequest()
                                         .authenticated())
                 .exceptionHandling(ex -> ex.authenticationEntryPoint(unauthorizedEntryPoint()))

@@ -14,6 +14,10 @@
 
 > フロントエンドのリポジトリ: https://github.com/PiscesTrio/Loggi_app
 
+![この API に接続した Flutter クライアント：倉庫、配送依頼、地図上の配送状況](docs/screenshots/app.jpeg)
+
+*この API に接続した [Flutter クライアント](https://github.com/PiscesTrio/Loggi_app)。*
+
 ## 技術スタック
 
 | | |
@@ -38,7 +42,10 @@
   `ROLE_EMPLOYEE`、`ROLE_SALE`、`ROLE_WAREHOUSE`）を、URL ではデフォルト拒否のチェーンで、
   メソッドでは `@PreAuthorize` が担う。
 - **倉庫と在庫** — 倉庫ごとの在庫数と、それを動かす入出庫。一つのトランザクションで書くので、
-  中途半端な移動が記録されることはない。
+  中途半端な移動が記録されることはない。在庫の確認は書き込みそのものに含まれている
+  （`update … set count = count - :n where … and count >= :n`）ので、同じ在庫を取り合う二つの
+  リクエストが両方成功することはない。`ConcurrentStockMovementIT` が実際の MySQL で競合させて
+  確かめている。
 - **商品と販売** — カタログと販売記録。
 - **配送依頼** — ドライバー・車両・出発倉庫を指す依頼と、その追跡履歴。依頼は
   `PATCH /api/distribution/{id}/status`（管理者のみ）で `REVIEWING → REVIEW_SUCCESS → END` と
@@ -86,7 +93,7 @@ export すること。
 
 ```bash
 cp .env.example .env          # その上で実際の値を入れる（少なくとも JWT_SECRET）
-docker compose up --build     # アプリ + MySQL 8
+docker compose up --build     # アプリ + MySQL 8 + Redis
 ```
 
 すでにデータベースがあるなら:
@@ -184,8 +191,9 @@ Redis は異常だからである。
 リクエストとレスポンスは DTO とビュー型であり、エンティティではない。リクエスト型はどれも
 `id` を持たない。作成時の id は、Hibernate には「更新すべき既存の行」と読まれるからである。
 
-ページングするリストは二つ — `GET /api/systemlog` と `GET /api/loginlog` — 監査対象のリクエスト
-ごと、ログイン試行ごとに一行ずつ、際限なく増えるためである:
+ページングするリストは三つ — `GET /api/systemlog`、その絞り込み版の `GET /api/querySystemlog`、
+`GET /api/loginlog` — 監査対象のリクエストごと、ログイン試行ごとに一行ずつ、際限なく増えるため
+である:
 
 ```json
 { "items": [ ], "page": 0, "size": 20, "totalItems": 137, "totalPages": 7 }
@@ -219,12 +227,13 @@ Redis は異常だからである。
 | `V8__backfill_denormalised_commodity_names.sql` | 呼び出し側が入れ忘れた非正規化済みの商品名を埋める |
 | `V9__wire_values_become_identifiers.sql` | 性別・車両種別・取扱注意が中国語の表示テキストをやめ、識別子になる |
 | `V10__audit_columns_stop_storing_labels.sql` | 監査ログのモジュール列とブラウザ列が列挙名になる |
+| `V11__drop_narrowest_browser_constants.sql` | 認識をやめた三つのブラウザ定数を、ログイン履歴上で `UNKNOWN` にする |
 
 ここから二つの規則が出てくる:
 
 - **適用済みのスクリプトは決して編集しない。** Flyway はスクリプトごとにチェックサムを持って
-  いるので、一つ変えれば既存のデータベースはすべて検証に失敗する。スキーマ変更は `V11`、
-  `V12`、… と追加していく。
+  いるので、一つ変えれば既存のデータベースはすべて検証に失敗する。スキーマ変更は `V12`、
+  `V13`、… と追加していく。
 - **`ddl-auto` はどのプロファイルでも `validate`。** Hibernate はもうデータベースを変更せず、
   エンティティとマイグレーションが一致しているかを確認するだけで、一致しなければ起動を拒否
   する。マイグレーションの漏れは本番で静かにずれるのではなく、CI で落ちる。
@@ -280,3 +289,12 @@ com.example.api/
 
 JaCoCo の HTML レポートは `target/site/jacoco/index.html`。`pom.xml` のカバレッジゲートは目標
 値ではなく、実際の実行から測った下限であり、下がることはない。
+
+## プロジェクトの経緯
+
+2023 年の大学の卒業設計として始まった。そのコードを 2026 年 4 月に一つのコミット
+（`init: project reupload`）としてここに取り込んだ。それ以前の履歴はこのリポジトリに含まれて
+おらず、ログがそこから始まるのはそのためである。2026 年 8 月からその上で作り直した —
+Spring Boot 2 → 4、Java 11 → 21、BCrypt と JWT による新しいセキュリティチェーン、
+`ddl-auto` に代わる Flyway、API 境界のリクエスト型とビュー型、エラーコード、そしてテスト一式。
+それ以降のコミットがその作業であり、履歴を書き換えて別の見た目にしてはいない。

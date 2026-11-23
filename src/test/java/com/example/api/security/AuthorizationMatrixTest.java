@@ -31,11 +31,11 @@ import org.springframework.test.web.servlet.MockMvc;
 /**
  * What an unauthenticated request may reach.
  *
- * <p>Until this slice the answer was "everything": the filter chain ended in {@code
+ * <p>Originally the answer was "everything": the filter chain ended in {@code
  * anyRequest().permitAll()}, so URL-level authorization did not exist and the only thing standing
  * between an anonymous caller and the data was whatever {@code @PreAuthorize} a controller happened
- * to carry. Seven of the thirteen controllers carry none, and WarehouseController's was commented
- * out.
+ * to carry. Four of the eleven controllers still carry none, and WarehouseController's was
+ * commented out.
  *
  * <p>These cases are the matrix itself, not a sample of it. A permit list is exactly the kind of
  * configuration where a wrong path silently opens or closes a door — the mistake produces a working
@@ -59,11 +59,11 @@ class AuthorizationMatrixTest {
     /**
      * The login and init cases need the service to return an administrator.
      *
-     * <p>They did not before S10, when the response was a Map that held whatever it was given and
-     * serialised a null admin without complaint. The response is a view type now, built from the
-     * entity, so an unstubbed mock returning null becomes a NullPointerException and a 500 - and
-     * these tests assert who may reach an endpoint, not what it answers, so a 500 tells them
-     * nothing they are asking about.
+     * <p>They did not while the response was a Map that held whatever it was given and serialised a
+     * null admin without complaint. The response is a view type now, built from the entity, so an
+     * unstubbed mock returning null becomes a NullPointerException and a 500 - and these tests
+     * assert who may reach an endpoint, not what it answers, so a 500 tells them nothing they are
+     * asking about.
      */
     @BeforeEach
     void authenticationSucceeds() throws Exception {
@@ -115,7 +115,7 @@ class AuthorizationMatrixTest {
     void init_isPublic() throws Exception {
         // Any 2xx, not a specific one. This case asks whether an anonymous caller may reach
         // the endpoint; which success code it answers with is a different question, decided
-        // in S10 (201, because it creates something) and asserted where that belongs.
+        // elsewhere (201, because it creates something) and asserted where that belongs.
         mockMvc.perform(
                         post("/api/admin/init")
                                 .contentType("application/json")
@@ -152,8 +152,8 @@ class AuthorizationMatrixTest {
     @Test
     @DisplayName("Business data is refused without a token: warehouse")
     void warehouse_requiresAuthentication() throws Exception {
-        // Its class-level @PreAuthorize was commented out, so before this slice an
-        // anonymous GET returned the warehouse list.
+        // Its class-level @PreAuthorize was commented out, so before default-deny
+        // authorization an anonymous GET returned the warehouse list.
         mockMvc.perform(get("/api/warehouse")).andExpect(status().isUnauthorized());
     }
 

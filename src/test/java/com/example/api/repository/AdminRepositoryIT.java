@@ -41,7 +41,7 @@ class AdminRepositoryIT {
         r.add("spring.datasource.username", MYSQL::getUsername);
         r.add("spring.datasource.password", MYSQL::getPassword);
         // No ddl-auto override. It used to say "update" to match production; production is
-        // Flyway plus validate since S08, so the honest way to match it is to let the real
+        // Flyway plus validate now, so the honest way to match it is to let the real
         // configuration run. These containers start empty, so Flyway applies V1 onwards and
         // Hibernate then validates the entities against what the migrations built — which
         // makes every one of these tests a check that the two still agree.
@@ -53,8 +53,8 @@ class AdminRepositoryIT {
     @DisplayName("The account is found by e-mail alone, and the column holds a full hash")
     void findAdminByEmail_returnsTheAccountAndItsStoredHash() {
         // Replaces a test that pinned findAdminByEmailAndPassword matching a plaintext
-        // password. S00 wrote that one knowing the BCrypt slice would delete the query it
-        // described; this is what took its place.
+        // password. That one was written knowing the switch to BCrypt would delete the query
+        // it described; this is what took its place.
         String hash = "{bcrypt}$2a$10$Qu7Ns1ky0lClGLYVviA1Fuuz2jEf4PiE/Nv7a9Kh9Sq8F30uStOxC";
         Admin a = new Admin();
         a.setEmail("admin@logi.com");

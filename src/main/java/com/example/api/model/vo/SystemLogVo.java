@@ -8,8 +8,8 @@ import java.time.LocalDateTime;
 /**
  * One audited operation.
  *
- * <p>{@code businessType} is the enum name since S09; it used to be the Chinese label, which put a
- * UI language into stored data. Rendering it belongs to whoever is displaying it.
+ * <p>{@code businessType} is the enum name since migration V7; it used to be the Chinese label,
+ * which put a UI language into stored data. Rendering it belongs to whoever is displaying it.
  */
 public record SystemLogVo(
         String id,

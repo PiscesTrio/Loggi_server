@@ -35,7 +35,7 @@ import org.springframework.test.web.servlet.MockMvc;
 /**
  * The delivery-track endpoints, asserted at the wire.
  *
- * <p>This slice renamed the entity behind them from {@code DistributionStatus} to {@link
+ * <p>The entity behind them was renamed from {@code DistributionStatus} to {@link
  * DistributionTrack}, which in JPA also renames its table. A rename is only safe if nothing outside
  * the JVM can tell, and the app depends on these two endpoints for the order timeline — so the
  * contract is pinned here rather than assumed: same paths, same JSON keys, same date format, in
@@ -45,11 +45,11 @@ import org.springframework.test.web.servlet.MockMvc;
  * itself. What it does is make the contract explicit from now on, and it was run against the
  * pre-rename tree first (with the old type name) to confirm it passed there too.
  *
- * <p><b>S09 changed this contract deliberately</b>, and this test is where that is recorded: {@code
- * disId} is now {@code distribution} (the same id, behind a real foreign key) and {@code status} is
- * the enum name rather than 0/1/2. The client has not been updated — the frontend realignment is
- * its own slice — so these assertions are the written form of what it will have to change to. See
- * docs/contract-changes.md.
+ * <p><b>The domain-model rebuild changed this contract deliberately</b>, and this test is where
+ * that is recorded: {@code disId} is now {@code distribution} (the same id, behind a real foreign
+ * key) and {@code status} is the enum name rather than 0/1/2. The client has not been updated — it
+ * is updated separately — so these assertions are the written form of what it will have to change
+ * to. See docs/contract-changes.md.
  */
 @WebMvcTest(DistributionController.class)
 @Import({SecurityConfiguration.class, GlobalResponseHandler.class})
@@ -90,7 +90,7 @@ class DistributionTrackContractTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value(200))
                 .andExpect(jsonPath("$.data[0].id").value("track-1"))
-                // disId in S07, `distribution` in S09, `distributionId` since S10. The column
+                // disId at first, then `distribution`, and `distributionId` now. The column
                 // was a bare string, became a real association, and is now a field on a view
                 // type - which is the shape it should have had all along, and the only one of
                 // the three that reads and writes the same way.
@@ -109,10 +109,11 @@ class DistributionTrackContractTest {
 
     @Test
     @WithMockUser
-    // The asymmetry is gone. Until S10 the response carried the parent as a bare id while a
-    // request had to send it as an object, because @JsonIdentityReference can write an id
-    // but cannot read a lone one back. A view type is not an entity and has no such
-    // constraint: one field, one shape, both directions. This test is where that is checked.
+    // The asymmetry is gone. Before the view types, the response carried the parent as a
+    // bare id while a request had to send it as an object, because @JsonIdentityReference
+    // can write an id but cannot read a lone one back. A view type is not an entity and has
+    // no such constraint: one field, one shape, both directions. This test is where that is
+    // checked.
     @DisplayName(
             "POST /api/distribution/status takes the parent id in the same shape it returns it")
     void saveStatus_bindsTheSameRequestBody() throws Exception {

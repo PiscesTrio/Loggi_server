@@ -27,9 +27,11 @@ import org.testcontainers.junit.jupiter.Testcontainers;
  * at DEBUG level, so a run that never happened and a run that succeeded look identical in the log.
  * "No error" is not evidence of execution — only reading the rows back is.
  *
- * <p>It also pins the two denormalisation traps the seed has to honour, because both are invisible
- * until something renders them: {@code distribution.wid} holds the warehouse NAME (while {@code
- * inventory.wid} holds the id), and {@code care} is comma-joined WITH a trailing comma.
+ * <p>It also reads back what replaced the two denormalisation traps the seed used to have to
+ * honour, both invisible until something rendered them: {@code distribution.wid} held the warehouse
+ * NAME (while {@code inventory.wid} held the id), and {@code care} was comma-joined WITH a trailing
+ * comma. The order now points at its warehouse through a real foreign key (V5), and care is rows in
+ * {@code distribution_care} (V9).
  */
 @Testcontainers
 @SpringBootTest
@@ -45,7 +47,7 @@ class SeedDataIT {
         r.add("spring.datasource.username", MYSQL::getUsername);
         r.add("spring.datasource.password", MYSQL::getPassword);
         // No ddl-auto override. It used to say "update" to match production; production is
-        // Flyway plus validate since S08, so the honest way to match it is to let the real
+        // Flyway plus validate now, so the honest way to match it is to let the real
         // configuration run. These containers start empty, so Flyway applies V1 onwards and
         // Hibernate then validates the entities against what the migrations built — which
         // makes every one of these tests a check that the two still agree.
@@ -81,14 +83,13 @@ class SeedDataIT {
     // takes this path — the controller reads through findAll, whose entity graph loads all
     // three — and the test below is the one that guards that.
     @Transactional
-    @DisplayName(
-            "A seeded distribution resolves its origin warehouse and keeps care's trailing comma")
+    @DisplayName("A seeded distribution resolves its origin warehouse and loads its care tags")
     void seededDistribution_resolvesItsWarehouseAndHonoursTheCareTrap() {
         Optional<Distribution> dis = distributionRepository.findById("seed-dis-1");
 
         assertThat(dis).isPresent();
         // This assertion used to read getWid() and expect the warehouse NAME, because that
-        // is what the column held — the trap this slice removed. The seed now stores an id
+        // is what the column held — the trap migration V5 removed. The seed now stores an id
         // behind a real foreign key, and the name is read through the association.
         assertThat(dis.get().getWarehouse().getName()).isEqualTo("東京江東倉庫");
         // The trailing-comma trap this assertion used to guard is gone: care was a

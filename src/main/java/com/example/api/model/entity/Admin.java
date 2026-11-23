@@ -47,8 +47,8 @@ public class Admin extends Auditable {
     @Column(length = 100, nullable = false)
     // Accepted on the way in, never sent on the way out. The entity is serialised
     // straight back by /login, /init and the admin list, so before this the login
-    // response handed the caller the stored password - plaintext until this slice,
-    // and a bcrypt hash after it. Neither belongs in a response body: a hash is
+    // response handed the caller the stored password - plaintext until passwords
+    // were hashed, and a bcrypt hash after that. Neither belongs in a response body: a hash is
     // still a credential-equivalent to anyone willing to spend GPU time on it.
     @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
     private String password;

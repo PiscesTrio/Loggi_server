@@ -36,16 +36,17 @@ import org.springframework.test.web.servlet.MockMvc;
  * GlobalExceptionHandler), so do NOT @Import GlobalResponseHandler (that would duplicate the bean
  * and trigger BeanDefinitionOverrideException). - SecurityConfiguration must be @Import-ed
  * explicitly. Under Spring Boot 2.7 the @WebMvcTest slice picked it up on its own (it was a
- * WebSecurityConfigurerAdapter, a type the slice filter includes). After S01 it is a
- * plain @Configuration that merely DECLARES a SecurityFilterChain bean, which the slice filter does
- * not match, so the slice fell back to auto-configured security (anyRequest().authenticated()) and
- * every unauthenticated request became 401. The @Import restores exactly the wiring these
- * assertions were written against — the assertions themselves are unchanged.
+ * WebSecurityConfigurerAdapter, a type the slice filter includes). Since the Spring Boot 4 upgrade
+ * it is a plain @Configuration that merely DECLARES a SecurityFilterChain bean, which the slice
+ * filter does not match, so the slice fell back to auto-configured security
+ * (anyRequest().authenticated()) and every unauthenticated request became 401. The @Import restores
+ * exactly the wiring these assertions were written against — the assertions themselves are
+ * unchanged.
  *
- * <p>WARNING: this is the highest-risk item in S00 (it depends on the Spring Web/Security slice
- * context loading). On first run, execute `mvn -Dtest=AdminControllerTest test`, observe the real
- * status codes, and tighten the assertions to match — the essence of a characterization test:
- * observe first, then freeze.
+ * <p>WARNING: this was the riskiest of the original characterization tests (it depends on the
+ * Spring Web/Security slice context loading). On first run, execute `mvn -Dtest=AdminControllerTest
+ * test`, observe the real status codes, and tighten the assertions to match — the essence of a
+ * characterization test: observe first, then freeze.
  */
 @WebMvcTest(AdminController.class)
 @Import(SecurityConfiguration.class)
@@ -74,8 +75,9 @@ class AdminControllerTest {
     @Test
     @DisplayName("findAll without a token is refused at the URL layer with 401")
     void findAll_withoutAuth_returns401() throws Exception {
-        // S00 pinned this as "HTTP 200 carrying code=403 in the body" and said in its own
-        // comment that the test would go red on purpose once a real status came back.
+        // The original characterization test pinned this as "HTTP 200 carrying code=403 in
+        // the body" and said in its own comment that the test would go red on purpose once a
+        // real status came back.
         // It has: authorizeHttpRequests now refuses the request before any handler runs,
         // and the entry point answers 401 because no credential was presented.
         mockMvc.perform(get("/api/admin"))
@@ -88,11 +90,12 @@ class AdminControllerTest {
     @WithMockUser(roles = {"NOBODY"})
     @DisplayName("An authenticated caller with the wrong role is refused with HTTP 403")
     void findAll_authenticatedButWrongRole_returns403() throws Exception {
-        // S00 pinned this as "HTTP 200 carrying code=403 in the body" and said the
-        // exception-handling slice would turn it red. It has. @PreAuthorize still denies
-        // the request inside the handler, but GlobalExceptionHandler now answers with a
-        // ResponseEntity, so the refusal reaches the client on the status line where every
-        // HTTP client already looks, instead of only as a JSON field none of them read.
+        // The original characterization test pinned this as "HTTP 200 carrying code=403 in
+        // the body" and said fixing the exception handling would turn it red. It has.
+        // @PreAuthorize still denies the request inside the handler, but
+        // GlobalExceptionHandler now answers with a ResponseEntity, so the refusal reaches the
+        // client on the status line where every HTTP client already looks, instead of only as
+        // a JSON field none of them read.
         //
         // The body is unchanged, which is the point: clients that were parsing $.code keep
         // working while clients that check the status finally see the truth.
@@ -137,10 +140,10 @@ class AdminControllerTest {
     @Test
     @DisplayName("A login without an e-mail is refused as a bad request, naming the field")
     void login_withBlankEmail_isRejectedWithTheFieldMessage() throws Exception {
-        // Before S10 nothing checked this. A blank address reached the repository, missed,
-        // and came back as "wrong e-mail or password" - the same answer a real address with
-        // a wrong password gets. A caller who simply left the field out was told their
-        // credentials were bad.
+        // Until the login request was validated, nothing checked this. A blank address reached
+        // the repository, missed, and came back as "wrong e-mail or password" - the same
+        // answer a real address with a wrong password gets. A caller who simply left the field
+        // out was told their credentials were bad.
         mockMvc.perform(
                         post("/api/admin/login/password")
                                 .contentType(MediaType.APPLICATION_JSON)

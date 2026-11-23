@@ -31,7 +31,7 @@ ENV TZ=Asia/Tokyo
 # in the same authority the image was built with.
 RUN groupadd --system loggi && useradd --system --gid loggi --no-create-home loggi
 
-COPY --from=builder --chown=loggi:loggi /build/target/loggi-server-0.0.1-SNAPSHOT.jar app.jar
+COPY --from=builder --chown=loggi:loggi /build/target/loggi-server-1.0.0.jar app.jar
 USER loggi
 
 EXPOSE 8088
