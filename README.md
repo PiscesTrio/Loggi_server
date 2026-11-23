@@ -14,6 +14,10 @@ orders and their tracking, fleet and drivers, sales, administrators and audit lo
 
 > Frontend repository: https://github.com/PiscesTrio/Loggi_app
 
+![The Flutter client running against this API: warehouses, delivery orders, and an order's tracking trail on a map](docs/screenshots/app.jpeg)
+
+*The [Flutter client](https://github.com/PiscesTrio/Loggi_app) running against this API.*
+
 ## Tech stack
 
 | | |
