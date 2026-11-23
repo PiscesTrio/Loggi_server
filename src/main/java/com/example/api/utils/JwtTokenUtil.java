@@ -7,6 +7,7 @@ import io.jsonwebtoken.security.WeakKeyException;
 import java.nio.charset.StandardCharsets;
 import java.util.Date;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import javax.crypto.SecretKey;
 import org.slf4j.Logger;
@@ -36,6 +37,9 @@ public class JwtTokenUtil {
     /** HS256 needs at least 256 bits of key material; jjwt refuses anything shorter. */
     private static final int MIN_SECRET_BYTES = 32;
 
+    /** Any secret starting with this is a placeholder someone forgot to replace. */
+    private static final String PLACEHOLDER = "CHANGE_ME";
+
     public static final String TOKEN_HEADER = "Authorization";
 
     /** Standard scheme. The token itself no longer carries an application prefix. */
@@ -49,9 +53,15 @@ public class JwtTokenUtil {
     private final SecretKey key;
 
     public JwtTokenUtil(@Value("${jwt.secret}") String secret) {
-        if (secret == null || secret.isBlank() || "CHANGE_ME".equals(secret)) {
+        // A prefix match, not an equality check. Comparing against "CHANGE_ME" alone let
+        // the placeholder the old .env.example shipped - CHANGE_ME_AT_LEAST_32_CHARS_LONG_...,
+        // 45 bytes - straight through the length check below, so following the README's
+        // quick start started the service on a secret printed in a public repository.
+        if (secret == null
+                || secret.isBlank()
+                || secret.strip().toUpperCase(Locale.ROOT).startsWith(PLACEHOLDER)) {
             throw new IllegalStateException(
-                    "jwt.secret is unset or still the CHANGE_ME placeholder. Refusing to start: "
+                    "jwt.secret is unset or still a CHANGE_ME placeholder. Refusing to start: "
                             + "a publicly known secret lets anyone mint an administrator token.");
         }
         byte[] bytes = secret.getBytes(StandardCharsets.UTF_8);

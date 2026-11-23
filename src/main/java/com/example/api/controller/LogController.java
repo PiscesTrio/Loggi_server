@@ -1,6 +1,9 @@
 package com.example.api.controller;
 
+import com.example.api.annotation.Log;
 import com.example.api.model.dto.SystemLogQuery;
+import com.example.api.model.enums.BusinessType;
+import com.example.api.model.enums.LogModule;
 import com.example.api.model.vo.LoginLogVo;
 import com.example.api.model.vo.PageVo;
 import com.example.api.model.vo.SystemLogVo;
@@ -12,6 +15,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -50,6 +54,16 @@ public class LogController {
         return PageVo.of(loginLogService.getAll(pageable), LoginLogVo::from);
     }
 
+    /**
+     * Deletes a login record. Super administrators only, and the deletion is itself audited.
+     *
+     * <p>Both delete endpoints were open to any signed-in account, which made the audit trail
+     * something its subjects could edit: the lowest-privileged user could remove the record of what
+     * they had done. Restricting them is half of it; the other half is that removing a record now
+     * leaves one.
+     */
+    @PreAuthorize("hasRole('ROLE_SUPER_ADMIN')")
+    @Log(module = LogModule.AUDIT_LOG, type = BusinessType.DELETE)
     @DeleteMapping("/loginlog/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void delLoginLog(@PathVariable String id) {
@@ -63,6 +77,9 @@ public class LogController {
         return PageVo.of(systemLogService.getAll(pageable), SystemLogVo::from);
     }
 
+    /** Deletes an operation record. Same rule as {@link #delLoginLog}. */
+    @PreAuthorize("hasRole('ROLE_SUPER_ADMIN')")
+    @Log(module = LogModule.AUDIT_LOG, type = BusinessType.DELETE)
     @DeleteMapping("/systemlog/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void deleteSystemLogById(@PathVariable String id) {

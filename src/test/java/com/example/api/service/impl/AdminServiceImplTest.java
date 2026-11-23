@@ -4,14 +4,17 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import com.example.api.exception.BizException;
+import com.example.api.exception.ErrorCode;
 import com.example.api.model.dto.LoginDto;
 import com.example.api.model.entity.Admin;
 import com.example.api.repository.AdminRepository;
+import com.example.api.security.PasswordAttemptLimiter;
 import com.example.api.service.EmailService;
 import com.example.api.utils.JwtTokenUtil;
 import org.junit.jupiter.api.DisplayName;
@@ -41,6 +44,7 @@ class AdminServiceImplTest {
     @Mock AdminRepository adminRepository;
     @Mock EmailService emailService;
     @Mock JwtTokenUtil jwtTokenUtil;
+    @Mock PasswordAttemptLimiter attemptLimiter;
 
     private final PasswordEncoder encoder =
             PasswordEncoderFactories.createDelegatingPasswordEncoder();
@@ -51,6 +55,7 @@ class AdminServiceImplTest {
         ReflectionTestUtils.setField(s, "emailService", emailService);
         ReflectionTestUtils.setField(s, "jwtTokenUtil", jwtTokenUtil);
         ReflectionTestUtils.setField(s, "passwordEncoder", encoder);
+        ReflectionTestUtils.setField(s, "attemptLimiter", attemptLimiter);
         return s;
     }
 
@@ -106,8 +111,30 @@ class AdminServiceImplTest {
         dto.setPassword("wrong");
 
         assertThatThrownBy(() -> service().loginByPassword(dto))
-                .isExactlyInstanceOf(Exception.class)
-                .hasMessage("wrong email or password");
+                .isInstanceOf(BizException.class)
+                .hasMessage("wrong email or password")
+                .extracting(e -> ((BizException) e).getStatus())
+                .isEqualTo(401);
+        verify(attemptLimiter).recordFailure("admin@loggi.example");
+    }
+
+    @Test
+    @DisplayName("A locked address is refused before its password is even checked")
+    void loginByPassword_whenLocked_refusesWithoutLookingUp() {
+        doThrow(new BizException(ErrorCode.LOGIN_ATTEMPTS_EXHAUSTED, "locked"))
+                .when(attemptLimiter)
+                .checkNotLocked("admin@loggi.example");
+
+        LoginDto dto = new LoginDto();
+        dto.setEmail("admin@loggi.example");
+        dto.setPassword("correct-horse");
+
+        // Refused even with the right password: the lock is what makes guessing finite, and
+        // a lock that a correct guess opens would only tell the guesser they were right.
+        assertThatThrownBy(() -> service().loginByPassword(dto))
+                .extracting(e -> ((BizException) e).getErrorCode())
+                .isEqualTo(ErrorCode.LOGIN_ATTEMPTS_EXHAUSTED);
+        verifyNoInteractions(adminRepository);
     }
 
     @Test
@@ -122,8 +149,12 @@ class AdminServiceImplTest {
         // Same message on purpose: a different one would tell an attacker which
         // e-mail addresses have accounts.
         assertThatThrownBy(() -> service().loginByPassword(dto))
-                .isExactlyInstanceOf(Exception.class)
-                .hasMessage("wrong email or password");
+                .isInstanceOf(BizException.class)
+                .hasMessage("wrong email or password")
+                .extracting(e -> ((BizException) e).getErrorCode())
+                .isEqualTo(ErrorCode.INVALID_CREDENTIALS);
+        // Counted too: guessing against an address with no account must cost the same.
+        verify(attemptLimiter).recordFailure("nobody@loggi.example");
     }
 
     @Test

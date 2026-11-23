@@ -66,7 +66,7 @@
 | --- | --- | --- |
 | データベース | `DB_HOST` / `DB_PORT` / `DB_NAME` / `DB_USERNAME` / `DB_PASSWORD` | `localhost` / `3306` / `loggi` / `root` / プレースホルダ |
 | Redis | `REDIS_HOST` / `REDIS_PORT` | `localhost` / `6379` |
-| JWT | `JWT_SECRET` | `CHANGE_ME` — **この値では起動を拒否する**。32 バイト未満でも同じ |
+| JWT | `JWT_SECRET` | `CHANGE_ME` — **この値では起動を拒否する**。`CHANGE_ME` で始まる値、32 バイト未満の値でも同じ。`openssl rand -base64 48` で生成する |
 | メール | `MAIL_HOST` / `MAIL_PORT` / `MAIL_SSL_ENABLE` / `MAIL_STARTTLS_ENABLE` / `MAIL_USERNAME` / `MAIL_PASSWORD` | いずれもプレースホルダ。ホストの既定値は解決できない `.invalid` 名なので、設定を忘れたデプロイははっきり失敗する。ポートと転送方式はホストと一緒に決まる — 暗黙 TLS なら 465、STARTTLS なら 587。パスワードはアカウントのものではなく、プロバイダのアプリパスワードである |
 | プロファイル | `SPRING_PROFILES_ACTIVE` | `dev` — これはこのサービスの変数ではなく Spring 自身の変数なので `.env.example` には無い。環境側で指定する |
 | 認証コード | `VERIFICATION_CODE_TTL_SECONDS` / `VERIFICATION_SEND_COOLDOWN_SECONDS` / `VERIFICATION_MAX_ATTEMPTS` / `VERIFICATION_LOCK_SECONDS` | `300` / `60` / `5` / `900` |
@@ -85,7 +85,7 @@ export すること。
 ### 実行
 
 ```bash
-cp .env.example .env          # その上で実際の値を入れる
+cp .env.example .env          # その上で実際の値を入れる（少なくとも JWT_SECRET）
 docker compose up --build     # アプリ + MySQL 8
 ```
 
@@ -127,6 +127,9 @@ Authorization: Bearer <token>
 ```
 
 発行元は `POST /api/admin/login/password` と `POST /api/admin/login/email` である。
+メールアドレスかパスワードが違うときは **401** `INVALID_CREDENTIALS` を返す。どちらが違っても同じ
+応答にして、登録済みのアドレスを探る手がかりにさせない。どちらの経路も失敗回数を Redis で数え、
+`VERIFICATION_MAX_ATTEMPTS` 回に達したアドレスを `VERIFICATION_LOCK_SECONDS` の間ロックする（**429**）。
 
 公開しているエンドポイントと、公開せざるを得ない理由:
 

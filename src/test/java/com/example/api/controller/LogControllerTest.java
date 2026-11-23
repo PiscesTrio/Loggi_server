@@ -4,6 +4,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -119,5 +121,23 @@ class LogControllerTest {
         verify(systemLogService).getAll(captor.capture());
         assertThat(captor.getValue().getPageNumber()).isEqualTo(2);
         assertThat(captor.getValue().getPageSize()).isEqualTo(5);
+    }
+
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    @DisplayName("An ordinary administrator cannot delete from the audit trail")
+    void deleteLog_withoutSuperAdmin_isForbidden() throws Exception {
+        // Open to every signed-in account before: the subjects of the audit trail could edit it.
+        mockMvc.perform(delete("/api/systemlog/log-1")).andExpect(status().isForbidden());
+        mockMvc.perform(delete("/api/loginlog/log-1")).andExpect(status().isForbidden());
+        verifyNoInteractions(systemLogService, loginLogService);
+    }
+
+    @Test
+    @WithMockUser(roles = "SUPER_ADMIN")
+    @DisplayName("A super administrator can delete an audit record")
+    void deleteLog_asSuperAdmin_isNoContent() throws Exception {
+        mockMvc.perform(delete("/api/systemlog/log-1")).andExpect(status().isNoContent());
+        verify(systemLogService).delete("log-1");
     }
 }

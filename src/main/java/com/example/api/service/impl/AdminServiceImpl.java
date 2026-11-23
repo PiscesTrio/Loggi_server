@@ -6,6 +6,7 @@ import com.example.api.model.dto.LoginDto;
 import com.example.api.model.entity.Admin;
 import com.example.api.model.enums.Role;
 import com.example.api.repository.AdminRepository;
+import com.example.api.security.PasswordAttemptLimiter;
 import com.example.api.service.AdminService;
 import com.example.api.service.EmailService;
 import com.example.api.utils.JwtTokenUtil;
@@ -26,6 +27,8 @@ public class AdminServiceImpl implements AdminService {
     @Resource private JwtTokenUtil jwtTokenUtil;
 
     @Resource private PasswordEncoder passwordEncoder;
+
+    @Resource private PasswordAttemptLimiter attemptLimiter;
 
     @Override
     public Admin save(Admin admin) throws Exception {
@@ -58,13 +61,16 @@ public class AdminServiceImpl implements AdminService {
     }
 
     @Override
-    public Admin loginByPassword(LoginDto dto) throws Exception {
+    public Admin loginByPassword(LoginDto dto) {
+        attemptLimiter.checkNotLocked(dto.getEmail());
         Admin one = adminRepository.findAdminByEmail(dto.getEmail());
         // One message for both branches on purpose: distinguishing "no such account"
         // from "wrong password" tells an attacker which addresses are registered.
         if (one == null || !passwordEncoder.matches(dto.getPassword(), one.getPassword())) {
-            throw new Exception("wrong email or password");
+            attemptLimiter.recordFailure(dto.getEmail());
+            throw new BizException(ErrorCode.INVALID_CREDENTIALS, "wrong email or password");
         }
+        attemptLimiter.recordSuccess(dto.getEmail());
         return one;
     }
 

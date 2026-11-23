@@ -9,6 +9,8 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
+import com.example.api.exception.BizException;
+import com.example.api.exception.ErrorCode;
 import com.example.api.model.entity.Admin;
 import com.example.api.model.enums.Role;
 import com.example.api.repository.AdminRepository;
@@ -162,6 +164,23 @@ class AdminControllerTest {
         // The point of validating at the boundary: the service is not consulted at all, so a
         // request that could never succeed costs no password hash and no login-log row.
         verify(adminService, never()).loginByPassword(any());
+    }
+
+    @Test
+    @DisplayName("Wrong credentials are a 401 carrying INVALID_CREDENTIALS, not a 400")
+    void login_withWrongCredentials_is401() throws Exception {
+        // It was 400 BAD_REQUEST: the service threw a checked Exception and the handler for
+        // those answers 400. The request was well formed; what failed was the credential.
+        when(adminService.loginByPassword(any()))
+                .thenThrow(
+                        new BizException(ErrorCode.INVALID_CREDENTIALS, "wrong email or password"));
+
+        mockMvc.perform(
+                        post("/api/admin/login/password")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content("{\"email\":\"a@b.c\",\"password\":\"nope\"}"))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.errorCode").value("INVALID_CREDENTIALS"));
     }
 
     @Test
