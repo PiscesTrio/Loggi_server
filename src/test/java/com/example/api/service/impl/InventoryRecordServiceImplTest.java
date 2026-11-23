@@ -1,6 +1,7 @@
 package com.example.api.service.impl;
 
 import static org.assertj.core.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 import com.example.api.exception.BizException;
@@ -55,37 +56,40 @@ class InventoryRecordServiceImplTest {
         return c;
     }
 
-    @Test
-    @DisplayName("out throws when stock is insufficient")
-    void out_whenStockInsufficient_throws() {
+    private static InventoryRecord movement(int count) {
         InventoryRecord rec = new InventoryRecord();
         rec.setWarehouse(warehouse("w1"));
         rec.setCommodity(commodity("c1"));
-        rec.setCount(10);
-        Inventory inv = new Inventory();
-        inv.setCount(3);
-        when(inventoryRepository.findByWarehouseIdAndCommodityId("w1", "c1")).thenReturn(inv);
+        rec.setCount(count);
+        return rec;
+    }
+
+    @Test
+    @DisplayName("out throws when stock is insufficient")
+    void out_whenStockInsufficient_throws() {
+        // The conditional UPDATE changed nothing, but the row exists: so there was not enough.
+        when(inventoryRepository.withdraw(eq("w1"), eq("c1"), eq(10), any())).thenReturn(0);
+        when(inventoryRepository.findByWarehouseIdAndCommodityId("w1", "c1"))
+                .thenReturn(new Inventory());
 
         // 409: the request is well formed, and would be valid against a different stock
         // level. Flattened into 400 the client could not tell it apart from a malformed
         // body, which is the difference between "ask for fewer" and "fix your code".
-        assertThatThrownBy(() -> service.out(rec))
+        assertThatThrownBy(() -> service.out(movement(10)))
                 .isInstanceOf(BizException.class)
                 .hasMessage("not enough stock to send out")
                 .extracting(e -> ((BizException) e).getStatus())
                 .isEqualTo(409);
+        verifyNoInteractions(commodityRepository, recordRepository);
     }
 
     @Test
     @DisplayName("out throws when the warehouse has no such item")
     void out_whenItemNotInWarehouse_throws() {
-        InventoryRecord rec = new InventoryRecord();
-        rec.setWarehouse(warehouse("w1"));
-        rec.setCommodity(commodity("c1"));
-        rec.setCount(1);
+        when(inventoryRepository.withdraw(eq("w1"), eq("c1"), eq(1), any())).thenReturn(0);
         when(inventoryRepository.findByWarehouseIdAndCommodityId("w1", "c1")).thenReturn(null);
 
-        assertThatThrownBy(() -> service.out(rec))
+        assertThatThrownBy(() -> service.out(movement(1)))
                 .isInstanceOf(BizException.class)
                 .hasMessage("the warehouse does not hold that commodity")
                 .extracting(e -> ((BizException) e).getStatus())
@@ -93,47 +97,50 @@ class InventoryRecordServiceImplTest {
     }
 
     @Test
-    @DisplayName(
-            "out sets type=-1 and decrements both the commodity total and the warehouse inventory")
-    void out_happyPath_setsTypeOutAndDecrementsBothCounters() throws Exception {
-        // The counterpart of in_newItem_...: without this, the whole out-direction
-        // mutation block (InventoryRecordServiceImpl:67-79) has zero coverage, and the
-        // InventoryRecord rewrite slice could flip the sign or drop a decrement
-        // without any test going red.
-        InventoryRecord rec = new InventoryRecord();
-        rec.setWarehouse(warehouse("w1"));
-        rec.setCommodity(commodity("c1"));
-        rec.setCount(4);
-        Inventory inv = new Inventory();
-        inv.setCount(10);
-        Commodity c = new Commodity();
-        c.setCount(10);
-        when(inventoryRepository.findByWarehouseIdAndCommodityId("w1", "c1")).thenReturn(inv);
-        when(commodityRepository.findById("c1")).thenReturn(Optional.of(c));
-        when(recordRepository.save(any())).thenAnswer(a -> a.getArgument(0));
+    @DisplayName("out refuses when the commodity total disagrees with the warehouse")
+    void out_whenCommodityTotalWouldGoNegative_throws() {
+        // The warehouse row had the stock but the total did not. Throwing is what rolls the
+        // withdrawal back; carrying on would make the disagreement permanent.
+        when(inventoryRepository.withdraw(eq("w1"), eq("c1"), eq(4), any())).thenReturn(1);
+        when(commodityRepository.adjustCount(eq("c1"), eq(-4), any())).thenReturn(0);
 
-        InventoryRecord saved = service.out(rec);
-
-        assertThat(saved.getType()).isEqualTo(InventoryType.OUT); // pin it: out => OUT
-        // createAt: see AuditingIT — filled by the auditing listener, not by this service.
-        assertThat(c.getCount()).isEqualTo(6); // commodity total: 10 - 4
-        assertThat(inv.getCount()).isEqualTo(6); // warehouse inventory: 10 - 4
-        verify(commodityRepository).save(c);
-        verify(inventoryRepository).save(inv);
+        assertThatThrownBy(() -> service.out(movement(4)))
+                .isInstanceOf(BizException.class)
+                .extracting(e -> ((BizException) e).getErrorCode())
+                .isEqualTo(ErrorCode.INSUFFICIENT_STOCK);
+        verifyNoInteractions(recordRepository);
     }
 
     @Test
-    @DisplayName("in sets type=+1 and creates inventory for a new item")
-    void in_newItem_setsTypeInAndCreatesInventory() throws Exception {
-        InventoryRecord rec = new InventoryRecord();
-        rec.setWarehouse(warehouse("w1"));
-        rec.setCommodity(commodity("c1"));
-        rec.setCount(5);
-        rec.setName("牛奶");
-        Commodity c = new Commodity();
-        c.setCount(0);
+    @DisplayName("out sets type OUT and decrements both counters in the database, not in memory")
+    void out_happyPath_setsTypeOutAndDecrementsBothCounters() {
+        // The decrement is the database's arithmetic now, so what this pins is that both
+        // conditional UPDATEs are issued with the right sign. Whether they hold under
+        // concurrency is ConcurrentStockMovementIT's question; a mock cannot answer it.
+        Commodity c = commodity("c1");
+        c.setName("牛奶");
+        when(inventoryRepository.withdraw(eq("w1"), eq("c1"), eq(4), any())).thenReturn(1);
+        when(commodityRepository.adjustCount(eq("c1"), eq(-4), any())).thenReturn(1);
         when(commodityRepository.findById("c1")).thenReturn(Optional.of(c));
-        when(inventoryRepository.findByWarehouseIdAndCommodityId("w1", "c1")).thenReturn(null);
+        when(recordRepository.save(any())).thenAnswer(a -> a.getArgument(0));
+
+        InventoryRecord saved = service.out(movement(4));
+
+        assertThat(saved.getType()).isEqualTo(InventoryType.OUT); // pin it: out => OUT
+        assertThat(saved.getName()).isEqualTo("牛奶");
+        // createAt: see AuditingIT — filled by the auditing listener, not by this service.
+        verify(inventoryRepository, never()).save(any());
+        verify(commodityRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("in sets type IN and creates inventory for a new item")
+    void in_newItem_setsTypeInAndCreatesInventory() {
+        InventoryRecord rec = movement(5);
+        rec.setName("牛奶");
+        when(commodityRepository.findById("c1")).thenReturn(Optional.of(commodity("c1")));
+        // No row to add to: the warehouse has never held this commodity.
+        when(inventoryRepository.deposit(eq("w1"), eq("c1"), eq(5), any())).thenReturn(0);
         // Creating the inventory row now resolves the warehouse instead of copying an id
         // string into it, so a warehouse that does not exist can no longer be referenced.
         when(warehouseRepository.findById("w1")).thenReturn(Optional.of(warehouse("w1")));
@@ -143,7 +150,22 @@ class InventoryRecordServiceImplTest {
 
         assertThat(saved.getType()).isEqualTo(InventoryType.IN); // pin it: in => IN
         // createAt: see AuditingIT — filled by the auditing listener, not by this service.
-        verify(inventoryRepository).save(any(Inventory.class));
+        verify(inventoryRepository).saveAndFlush(argThat(i -> i.getCount() == 5));
+        verify(commodityRepository).adjustCount(eq("c1"), eq(5), any());
+    }
+
+    @Test
+    @DisplayName("in adds to an existing row without creating another")
+    void in_existingItem_depositsWithoutInsert() {
+        when(commodityRepository.findById("c1")).thenReturn(Optional.of(commodity("c1")));
+        when(inventoryRepository.deposit(eq("w1"), eq("c1"), eq(5), any())).thenReturn(1);
+        when(recordRepository.save(any())).thenAnswer(a -> a.getArgument(0));
+
+        service.in(movement(5));
+
+        verify(inventoryRepository, never()).saveAndFlush(any());
+        verifyNoInteractions(warehouseRepository);
+        verify(commodityRepository).adjustCount(eq("c1"), eq(5), any());
     }
 
     @Test
@@ -153,10 +175,8 @@ class InventoryRecordServiceImplTest {
         // guard's message never reached anyone and the next line threw
         // NoSuchElementException from inside the Optional instead — a guard that reads
         // like validation while the real failure walks straight past it.
-        InventoryRecord rec = new InventoryRecord();
-        rec.setWarehouse(warehouse("w1"));
+        InventoryRecord rec = movement(1);
         rec.setCommodity(commodity("ghost"));
-        rec.setCount(1);
         when(commodityRepository.findById("ghost")).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> service.in(rec))
@@ -174,10 +194,7 @@ class InventoryRecordServiceImplTest {
     void in_whenCountNegative_throwsAndWritesNothing() {
         // Unguarded, this drains stock through the method called "in" and leaves a
         // movement record claiming the opposite of what happened.
-        InventoryRecord rec = new InventoryRecord();
-        rec.setWarehouse(warehouse("w1"));
-        rec.setCommodity(commodity("c1"));
-        rec.setCount(-5);
+        InventoryRecord rec = movement(-5);
 
         assertThatThrownBy(() -> service.in(rec))
                 .isInstanceOf(BizException.class)
