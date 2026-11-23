@@ -2,6 +2,7 @@ package com.example.api.controller;
 
 import com.example.api.annotation.Log;
 import com.example.api.model.dto.DistributionRequest;
+import com.example.api.model.dto.DistributionStatusChange;
 import com.example.api.model.dto.DistributionTrackRequest;
 import com.example.api.model.entity.Distribution;
 import com.example.api.model.entity.DistributionTrack;
@@ -23,6 +24,7 @@ import jakarta.validation.Valid;
 import java.util.List;
 import java.util.function.BiConsumer;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 @Tag(
@@ -44,14 +46,33 @@ public class DistributionController {
     @PostMapping("")
     @ResponseStatus(HttpStatus.CREATED)
     public DistributionVo save(@Valid @RequestBody DistributionRequest request) {
-        return DistributionVo.from(distributionService.save(toEntity(request)));
+        return DistributionVo.from(distributionService.create(toEntity(request)));
+    }
+
+    /**
+     * Moves an existing order along REVIEWING → REVIEW_SUCCESS → END.
+     *
+     * <p>Approving takes the order's driver and vehicle and completing it releases them, so this is
+     * restricted to administrators. Any other move - skipping review, reopening a finished order,
+     * or approving an order someone else approved a moment ago - is a 409 {@code
+     * INVALID_STATUS_TRANSITION}.
+     *
+     * <p>There was no such endpoint before. The client "approved" an order by posting it again, and
+     * since a POST has no id to name, that filed a copy and left the original under review.
+     */
+    @Log(module = LogModule.DISTRIBUTION, type = BusinessType.UPDATE)
+    @PreAuthorize("hasAnyRole('ROLE_SUPER_ADMIN','ROLE_ADMIN')")
+    @PatchMapping("{id}/status")
+    public DistributionVo changeStatus(
+            @PathVariable String id, @Valid @RequestBody DistributionStatusChange request) {
+        return DistributionVo.from(distributionService.changeStatus(id, request.getStatus()));
     }
 
     /**
      * The request, as the entity the service works with.
      *
      * <p>References become entities holding nothing but an id, which is exactly what {@code
-     * DistributionServiceImpl.save} expects: it resolves each one against the database before
+     * DistributionServiceImpl.create} expects: it resolves each one against the database before
      * writing, so a bad id is a 404 naming it rather than a foreign-key violation that cannot say
      * which of the three was wrong.
      */
