@@ -52,6 +52,11 @@ public enum ErrorCode {
     // alone could not tell them apart.
     AUTHENTICATION_REQUIRED(401),
     TOKEN_INVALID(401),
+    // Sign-in refused. 401 rather than the 400 it used to be: the request was well formed, the
+    // credential was not accepted. One code for "no such account" and "wrong password" alike, so
+    // the response cannot be used to find out which addresses are registered.
+    INVALID_CREDENTIALS(401),
+    LOGIN_ATTEMPTS_EXHAUSTED(429),
 
     // --- everything else ---------------------------------------------------------------
     ACCESS_DENIED(403),

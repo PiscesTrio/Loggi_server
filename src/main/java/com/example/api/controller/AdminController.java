@@ -1,6 +1,7 @@
 package com.example.api.controller;
 
 import com.example.api.exception.BizException;
+import com.example.api.exception.ErrorCode;
 import com.example.api.model.dto.AdminRequest;
 import com.example.api.model.dto.LoginDto;
 import com.example.api.model.entity.Admin;
@@ -146,7 +147,7 @@ public class AdminController {
             throw e;
         } catch (Exception e) {
             log.debug("Login refused for {}", dto.getEmail(), e);
-            throw new Exception("wrong email or password");
+            throw new BizException(ErrorCode.INVALID_CREDENTIALS, "wrong email or password");
         } finally {
             loginLogService.recordLog(dto, admin, request);
         }

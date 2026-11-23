@@ -22,5 +22,7 @@ public enum LogModule {
     DRIVER,
     VEHICLE,
     DISTRIBUTION,
-    DISTRIBUTION_TRACK
+    DISTRIBUTION_TRACK,
+    // The audit trail itself: deleting a record from it is an operation worth a record.
+    AUDIT_LOG
 }

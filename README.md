@@ -130,7 +130,10 @@ Send the token as a standard bearer credential:
 Authorization: Bearer <token>
 ```
 
-Obtain one from `POST /api/admin/login/password` or `POST /api/admin/login/email`.
+Obtain one from `POST /api/admin/login/password` or `POST /api/admin/login/email`. A wrong
+e-mail or password is a **401** `INVALID_CREDENTIALS`, the same answer for both so it cannot
+be used to find registered addresses. Both paths count failures in Redis and lock the address
+for `VERIFICATION_LOCK_SECONDS` after `VERIFICATION_MAX_ATTEMPTS` of them (**429**).
 
 Public endpoints, and why each has to be:
 

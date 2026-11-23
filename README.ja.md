@@ -127,6 +127,9 @@ Authorization: Bearer <token>
 ```
 
 発行元は `POST /api/admin/login/password` と `POST /api/admin/login/email` である。
+メールアドレスかパスワードが違うときは **401** `INVALID_CREDENTIALS` を返す。どちらが違っても同じ
+応答にして、登録済みのアドレスを探る手がかりにさせない。どちらの経路も失敗回数を Redis で数え、
+`VERIFICATION_MAX_ATTEMPTS` 回に達したアドレスを `VERIFICATION_LOCK_SECONDS` の間ロックする（**429**）。
 
 公開しているエンドポイントと、公開せざるを得ない理由:
 
