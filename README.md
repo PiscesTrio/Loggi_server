@@ -38,7 +38,10 @@ orders and their tracking, fleet and drivers, sales, administrators and audit lo
   `ROLE_EMPLOYEE`, `ROLE_SALE`, `ROLE_WAREHOUSE`), enforced at the URL by a default-deny
   chain and at the method by `@PreAuthorize`.
 - **Warehouses and stock** — stock levels per warehouse and the movements that change them,
-  written in one transaction so a partial move cannot be recorded.
+  written in one transaction so a partial move cannot be recorded. The stock check is part of
+  the write (`update … set count = count - :n where … and count >= :n`), so two requests
+  racing for the same units cannot both succeed — `ConcurrentStockMovementIT` races them
+  against a real MySQL.
 - **Commodities and sales** — catalogue and sales records.
 - **Delivery orders** — orders pointing at a driver, a vehicle and an origin warehouse, with
   a tracking trail. An order moves `REVIEWING → REVIEW_SUCCESS → END` through
@@ -226,11 +229,12 @@ run before anything else touches the datasource:
 | `V8__backfill_denormalised_commodity_names.sql` | The denormalised commodity name is filled in where a caller left it out |
 | `V9__wire_values_become_identifiers.sql` | Gender, vehicle type and care tags stop being Chinese display text and become identifiers |
 | `V10__audit_columns_stop_storing_labels.sql` | The audit log's module and browser columns become enum names |
+| `V11__drop_narrowest_browser_constants.sql` | Three browser constants the server no longer recognises become `UNKNOWN` in the login log |
 
 Two rules follow:
 
 - **An applied script is never edited.** Flyway stores a checksum per script; changing one
-  makes every existing database fail validation. Schema changes are appended as `V11`, `V12`, …
+  makes every existing database fail validation. Schema changes are appended as `V12`, `V13`, …
 - **`ddl-auto` is `validate` in every profile.** Hibernate no longer changes the database, it
   only checks that the entities and the migrations agree — and refuses to start if they do
   not, so a missing migration fails in CI rather than drifting in production.
@@ -285,3 +289,13 @@ migrations built — so each is also a check that the schema and the model still
 
 JaCoCo HTML report: `target/site/jacoco/index.html`. The coverage gate in `pom.xml` is a
 floor measured from a real run rather than a target; it only ever goes up.
+
+## Project history
+
+This began as a university graduation project in 2023 (卒業設計). That code was imported here
+as a single commit in April 2026 (`init: project reupload`); its earlier history is not part
+of this repository, which is why the log starts there. From August 2026 it was rebuilt on top
+of that import — Spring Boot 2 → 4 and Java 11 → 21, a new security chain with BCrypt and
+JWT, Flyway in place of `ddl-auto`, request and view types at the API boundary, error codes,
+and the test suite — and the commits since then are that work. The history has not been
+rewritten to look otherwise.
