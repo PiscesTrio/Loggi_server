@@ -1,23 +1,29 @@
 package com.example.api.model.enums;
 
-import lombok.Getter;
-import lombok.Setter;
-
-/** Distribution order status */
+/**
+ * Where a delivery order is in its life, and where it may go next.
+ *
+ * <p>The transitions are declared here, on the type, rather than as branches in a service, because
+ * they are a property of the status and not of any one caller: an order under review can be
+ * approved, an approved order can be completed, and nothing else. A completed order is final.
+ */
 public enum DistributionStatus {
 
-    // Under review
-    REVIEWING(0),
+    /** Filed, waiting for someone to approve it. Every order starts here. */
+    REVIEWING,
 
-    // Review passed
-    REVIEW_SUCCESS(1),
+    /** Approved: its driver and vehicle are out on it. */
+    REVIEW_SUCCESS,
 
-    // Order completed
-    END(2);
+    /** Delivered: its driver and vehicle are free again. */
+    END;
 
-    @Getter @Setter private Integer code;
-
-    DistributionStatus(Integer code) {
-        this.code = code;
+    /** Whether an order in this status may move to {@code next}. */
+    public boolean canMoveTo(DistributionStatus next) {
+        return switch (this) {
+            case REVIEWING -> next == REVIEW_SUCCESS;
+            case REVIEW_SUCCESS -> next == END;
+            case END -> false;
+        };
     }
 }

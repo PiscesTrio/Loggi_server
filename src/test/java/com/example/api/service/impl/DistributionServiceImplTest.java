@@ -3,6 +3,9 @@ package com.example.api.service.impl;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -26,181 +29,215 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 /**
- * Approving an order takes a driver and a truck; completing it gives them back.
+ * An order is filed under review, approved, then completed - and nothing else.
  *
- * <p>The driver/vehicle validation existed in this service as four commented-out lines. It was not
- * restored where it was found: it sat in the <em>completion</em> branch and read "if the driver is
- * driving, refuse", and a driver completing a delivery is driving by definition, having been marked
- * so on approval. Uncommenting it would have rejected every completion the system can produce —
- * which is the likeliest reason it was commented out.
+ * <p>Approving takes the order's driver and truck; completing gives them back. Both used to happen
+ * inside the one save method the API had, keyed on whatever status the request carried, so filing
+ * an order as END released a driver who might be out on another delivery, and re-posting an order
+ * to approve it filed a copy. These pin the split: {@code create} only files, {@code changeStatus}
+ * only moves, and every move is checked against the state machine on {@link DistributionStatus}.
  *
- * <p>So the two halves went where each is true: existence is checked on both transitions,
- * availability only on approval. The first two tests below are what keeps them there.
+ * <p>What a mock cannot show is two of these racing; that is DistributionStatusIT's job.
  */
 @ExtendWith(MockitoExtension.class)
 class DistributionServiceImplTest {
-
-    private static final DistributionStatus STATUS_APPROVED = DistributionStatus.REVIEW_SUCCESS;
-    private static final DistributionStatus STATUS_COMPLETED = DistributionStatus.END;
 
     @Mock DistributionRepository distributionRepository;
     @Mock DriverRepository driverRepository;
     @Mock VehicleRepository vehicleRepository;
     @InjectMocks DistributionServiceImpl service;
 
-    /**
-     * An order naming a driver and a vehicle by id, which is all a request carries.
-     *
-     * <p>Since S09 these are associations rather than the strings did/vid, so the reference arrives
-     * as an entity holding nothing but an id — and the service replaces it with the row it names
-     * before doing anything else. That is what the repository stubs below are standing in for.
-     */
-    private Distribution order(DistributionStatus status) {
+    /** An order naming a driver and a vehicle by id, which is all a request carries. */
+    private static Distribution order(DistributionStatus status) {
         Distribution d = new Distribution();
-        d.setDriver(reference(new Driver(), "d1"));
-        d.setVehicle(reference(new Vehicle(), "v1"));
+        d.setId("o1");
+        Driver driver = new Driver();
+        driver.setId("d1");
+        Vehicle vehicle = new Vehicle();
+        vehicle.setId("v1");
+        d.setDriver(driver);
+        d.setVehicle(vehicle);
         d.setStatus(status);
         return d;
     }
 
-    private static <T> T reference(T entity, String id) {
-        if (entity instanceof Driver driver) driver.setId(id);
-        if (entity instanceof Vehicle vehicle) vehicle.setId(id);
-        return entity;
+    /** The order as the database currently holds it. */
+    private void stored(DistributionStatus status) {
+        when(distributionRepository.findById("o1")).thenReturn(Optional.of(order(status)));
     }
 
-    private Driver driver(boolean driving) {
+    private static Driver driver() {
         Driver d = new Driver();
         d.setId("d1");
-        d.setDriving(driving);
         return d;
     }
 
-    private Vehicle vehicle(boolean driving) {
+    private static Vehicle vehicle() {
         Vehicle v = new Vehicle();
         v.setId("v1");
-        v.setDriving(driving);
         return v;
     }
 
+    private static ErrorCode codeOf(Throwable e) {
+        return ((BizException) e).getErrorCode();
+    }
+
+    // --- create --------------------------------------------------------------------------
+
     @Test
-    @DisplayName("Approval marks the driver and vehicle as driving")
-    void approve_marksBothAsDriving() throws Exception {
-        when(driverRepository.findById("d1")).thenReturn(Optional.of(driver(false)));
-        when(vehicleRepository.findById("v1")).thenReturn(Optional.of(vehicle(false)));
+    @DisplayName("A new order is filed under review, dispatches nobody, but checks who it names")
+    void create_underReview_validatesButAssignsNobody() {
+        when(driverRepository.findById("d1")).thenReturn(Optional.of(driver()));
+        when(vehicleRepository.findById("v1")).thenReturn(Optional.of(vehicle()));
         when(distributionRepository.save(any())).thenAnswer(a -> a.getArgument(0));
 
-        Distribution saved = service.save(order(STATUS_APPROVED));
+        service.create(order(DistributionStatus.REVIEWING));
 
-        assertThat(saved.getStatus()).isEqualTo(STATUS_APPROVED);
-        verify(driverRepository).updateDriving(true, "d1");
-        verify(vehicleRepository).updateDriving(true, "v1");
+        verify(driverRepository, never()).switchDriving(anyString(), anyBoolean(), anyBoolean());
+        verify(vehicleRepository, never()).switchDriving(anyString(), anyBoolean(), anyBoolean());
     }
 
     @Test
-    @DisplayName("Completion releases a driver who is - necessarily - currently driving")
-    void complete_releasesADrivingDriver() throws Exception {
-        // The exact case the commented-out check would have rejected. Both are driving,
-        // because approval marked them so, and completion must still go through.
-        when(driverRepository.findById("d1")).thenReturn(Optional.of(driver(true)));
-        when(vehicleRepository.findById("v1")).thenReturn(Optional.of(vehicle(true)));
-        when(distributionRepository.save(any())).thenAnswer(a -> a.getArgument(0));
+    @DisplayName("A new order cannot be filed as already finished, and so cannot free anyone")
+    void create_asEnd_isRefusedAndReleasesNobody() {
+        // The hole this closes: filing an order as END used to release whichever driver and
+        // vehicle it named, whether or not they were out on another delivery.
+        assertThatThrownBy(() -> service.create(order(DistributionStatus.END)))
+                .extracting(DistributionServiceImplTest::codeOf)
+                .isEqualTo(ErrorCode.INVALID_STATUS_TRANSITION);
 
-        service.save(order(STATUS_COMPLETED));
-
-        verify(driverRepository).updateDriving(false, "d1");
-        verify(vehicleRepository).updateDriving(false, "v1");
+        verifyNoInteractions(driverRepository, vehicleRepository, distributionRepository);
     }
 
     @Test
-    @DisplayName("Approval refuses a driver who is already out on another delivery")
-    void approve_whenDriverBusy_throws409AndAssignsNothing() {
-        when(driverRepository.findById("d1")).thenReturn(Optional.of(driver(true)));
-        // Both lookups happen before either availability check, so the truck has to exist
-        // for this test to be about the driver.
-        when(vehicleRepository.findById("v1")).thenReturn(Optional.of(vehicle(false)));
-
-        assertThatThrownBy(() -> service.save(order(STATUS_APPROVED)))
-                .isInstanceOf(BizException.class)
-                .hasMessage("that driver is already assigned")
-                .extracting(e -> ((BizException) e).getStatus())
-                .isEqualTo(409);
-
-        verify(driverRepository, never()).updateDriving(any(Boolean.class), any());
-        verifyNoInteractions(distributionRepository);
-    }
-
-    @Test
-    @DisplayName("Approval refuses a truck that is already out, without having taken the driver")
-    void approve_whenVehicleBusy_leavesTheDriverFree() {
-        // The order of the two writes is why this matters. updateDriving on the driver used
-        // to run before anything looked at the vehicle, and without a transaction it
-        // committed - so a rejected order still left a driver marked busy for a trip that
-        // was never recorded, and /api/distribution/can hid them from every later dispatch.
-        when(driverRepository.findById("d1")).thenReturn(Optional.of(driver(false)));
-        when(vehicleRepository.findById("v1")).thenReturn(Optional.of(vehicle(true)));
-
-        assertThatThrownBy(() -> service.save(order(STATUS_APPROVED)))
-                .isInstanceOf(BizException.class)
-                .hasMessage("that vehicle is already assigned");
-
-        verify(driverRepository, never()).updateDriving(any(Boolean.class), any());
-        verifyNoInteractions(distributionRepository);
-    }
-
-    @Test
-    @DisplayName("An id that matches no driver is refused, not written through")
-    void approve_whenDriverIdUnknown_throws404() {
-        // updateDriving is a bulk UPDATE. A wrong id matched no rows and reported success,
-        // so the order was saved pointing at a driver who does not exist.
+    @DisplayName("A new order naming a driver that does not exist is a 404, not a write")
+    void create_whenDriverIdUnknown_throws404() {
         when(driverRepository.findById("d1")).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> service.save(order(STATUS_APPROVED)))
-                .isInstanceOf(BizException.class)
-                // The code, not the sentence. The status says 404 and the sentence says which
-                // 404 — but only one of the two is something a client can branch on, and it
-                // is the one worth pinning.
-                .extracting(e -> ((BizException) e).getErrorCode())
+        assertThatThrownBy(() -> service.create(order(DistributionStatus.REVIEWING)))
+                .extracting(DistributionServiceImplTest::codeOf)
                 .isEqualTo(ErrorCode.DRIVER_NOT_FOUND);
-
         verifyNoInteractions(distributionRepository);
     }
 
+    // --- changeStatus --------------------------------------------------------------------
+
     @Test
-    @DisplayName("A newly created order dispatches nobody, but does check who it names")
-    void create_underReview_validatesButAssignsNobody() throws Exception {
-        // REVIEWING: the order exists, nothing is dispatched yet.
-        //
-        // It does look both up, which it did not before S09. Creation used to check nothing
-        // at all - only approval and completion did - so an order could be filed against a
-        // driver who was never hired, and the bare string column was happy to store it. With
-        // a real foreign key the database would now refuse that write, and a constraint
-        // violation cannot tell the caller which of the three ids was wrong; resolving here
-        // makes it a 404 that names one.
-        when(driverRepository.findById("d1")).thenReturn(Optional.of(driver(false)));
-        when(vehicleRepository.findById("v1")).thenReturn(Optional.of(vehicle(false)));
-        when(distributionRepository.save(any())).thenAnswer(a -> a.getArgument(0));
+    @DisplayName("Approval moves the same order and takes its driver and vehicle")
+    void approve_movesTheOrderAndTakesBoth() {
+        stored(DistributionStatus.REVIEWING);
+        when(distributionRepository.moveStatus(
+                        eq("o1"),
+                        eq(DistributionStatus.REVIEWING),
+                        eq(DistributionStatus.REVIEW_SUCCESS),
+                        any()))
+                .thenReturn(1);
+        when(driverRepository.switchDriving("d1", false, true)).thenReturn(1);
+        when(vehicleRepository.switchDriving("v1", false, true)).thenReturn(1);
+        when(distributionRepository.findWithAssociationsById("o1"))
+                .thenReturn(Optional.of(order(DistributionStatus.REVIEW_SUCCESS)));
 
-        service.save(order(DistributionStatus.REVIEWING));
+        Distribution result = service.changeStatus("o1", DistributionStatus.REVIEW_SUCCESS);
 
-        verify(driverRepository, never()).updateDriving(any(Boolean.class), any());
-        verify(vehicleRepository, never()).updateDriving(any(Boolean.class), any());
+        // The same row moved, not a new one filed beside it.
+        assertThat(result.getId()).isEqualTo("o1");
+        assertThat(result.getStatus()).isEqualTo(DistributionStatus.REVIEW_SUCCESS);
+        verify(distributionRepository, never()).save(any());
     }
 
     @Test
-    @DisplayName("A null status is saved rather than throwing a NullPointerException")
-    void save_withNullStatus_doesNotUnboxNull() throws Exception {
-        // `distribution.getStatus() == 2` unboxed an Integer. The client always sends a
-        // status, so this never fired in practice - which is exactly the kind of NPE that
-        // waits for the one caller who does not. The comparison is against an enum constant
-        // now, so a null status simply matches neither branch.
-        Distribution d = order(DistributionStatus.REVIEWING);
-        d.setStatus(null);
-        when(driverRepository.findById("d1")).thenReturn(Optional.of(driver(false)));
-        when(vehicleRepository.findById("v1")).thenReturn(Optional.of(vehicle(false)));
-        when(distributionRepository.save(any())).thenAnswer(a -> a.getArgument(0));
+    @DisplayName("Approval refuses a driver who is already out, and never reaches the vehicle")
+    void approve_whenDriverBusy_throws409() {
+        stored(DistributionStatus.REVIEWING);
+        when(distributionRepository.moveStatus(any(), any(), any(), any())).thenReturn(1);
+        when(driverRepository.switchDriving("d1", false, true)).thenReturn(0);
 
-        assertThat(service.save(d)).isSameAs(d);
-        verify(driverRepository, never()).updateDriving(any(Boolean.class), any());
+        assertThatThrownBy(() -> service.changeStatus("o1", DistributionStatus.REVIEW_SUCCESS))
+                .extracting(DistributionServiceImplTest::codeOf)
+                .isEqualTo(ErrorCode.DRIVER_UNAVAILABLE);
+        verifyNoInteractions(vehicleRepository);
+    }
+
+    @Test
+    @DisplayName("Approval refuses a truck that is already out")
+    void approve_whenVehicleBusy_throws409() {
+        // The driver was taken a statement earlier; the throw is what makes the transaction
+        // give them back. DistributionStatusIT checks that against a real database.
+        stored(DistributionStatus.REVIEWING);
+        when(distributionRepository.moveStatus(any(), any(), any(), any())).thenReturn(1);
+        when(driverRepository.switchDriving("d1", false, true)).thenReturn(1);
+        when(vehicleRepository.switchDriving("v1", false, true)).thenReturn(0);
+
+        assertThatThrownBy(() -> service.changeStatus("o1", DistributionStatus.REVIEW_SUCCESS))
+                .extracting(DistributionServiceImplTest::codeOf)
+                .isEqualTo(ErrorCode.VEHICLE_UNAVAILABLE);
+    }
+
+    @Test
+    @DisplayName("Completion releases the driver and vehicle the order took")
+    void complete_releasesBoth() {
+        stored(DistributionStatus.REVIEW_SUCCESS);
+        when(distributionRepository.moveStatus(
+                        eq("o1"),
+                        eq(DistributionStatus.REVIEW_SUCCESS),
+                        eq(DistributionStatus.END),
+                        any()))
+                .thenReturn(1);
+        when(distributionRepository.findWithAssociationsById("o1"))
+                .thenReturn(Optional.of(order(DistributionStatus.END)));
+
+        service.changeStatus("o1", DistributionStatus.END);
+
+        verify(driverRepository).switchDriving("d1", true, false);
+        verify(vehicleRepository).switchDriving("v1", true, false);
+    }
+
+    @Test
+    @DisplayName("An order under review cannot skip straight to finished")
+    void complete_withoutApproval_isRefused() {
+        stored(DistributionStatus.REVIEWING);
+
+        assertThatThrownBy(() -> service.changeStatus("o1", DistributionStatus.END))
+                .extracting(DistributionServiceImplTest::codeOf)
+                .isEqualTo(ErrorCode.INVALID_STATUS_TRANSITION);
+        verify(distributionRepository, never()).moveStatus(any(), any(), any(), any());
+        verifyNoInteractions(driverRepository, vehicleRepository);
+    }
+
+    @Test
+    @DisplayName("A finished order is final")
+    void finishedOrder_cannotMove() {
+        stored(DistributionStatus.END);
+
+        for (DistributionStatus next : DistributionStatus.values()) {
+            assertThatThrownBy(() -> service.changeStatus("o1", next))
+                    .extracting(DistributionServiceImplTest::codeOf)
+                    .isEqualTo(ErrorCode.INVALID_STATUS_TRANSITION);
+        }
+        verifyNoInteractions(driverRepository, vehicleRepository);
+    }
+
+    @Test
+    @DisplayName("An order moved by someone else since it was read is refused, not moved twice")
+    void approve_whenOrderMovedConcurrently_isRefused() {
+        // The read said REVIEWING; by the time of the write another approval had moved it.
+        // The conditional UPDATE changes no row, and the driver is never touched.
+        stored(DistributionStatus.REVIEWING);
+        when(distributionRepository.moveStatus(any(), any(), any(), any())).thenReturn(0);
+
+        assertThatThrownBy(() -> service.changeStatus("o1", DistributionStatus.REVIEW_SUCCESS))
+                .extracting(DistributionServiceImplTest::codeOf)
+                .isEqualTo(ErrorCode.INVALID_STATUS_TRANSITION);
+        verifyNoInteractions(driverRepository, vehicleRepository);
+    }
+
+    @Test
+    @DisplayName("Moving an order that does not exist is a 404")
+    void changeStatus_whenOrderUnknown_throws404() {
+        when(distributionRepository.findById("ghost")).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> service.changeStatus("ghost", DistributionStatus.END))
+                .extracting(DistributionServiceImplTest::codeOf)
+                .isEqualTo(ErrorCode.DISTRIBUTION_NOT_FOUND);
     }
 }

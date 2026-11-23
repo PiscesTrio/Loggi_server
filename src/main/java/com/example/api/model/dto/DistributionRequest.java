@@ -12,7 +12,8 @@ import java.util.Set;
 import lombok.Data;
 
 /**
- * What a caller sends to file or update a delivery order.
+ * What a caller sends to file a delivery order. Moving an order afterwards is {@link
+ * DistributionStatusChange}.
  *
  * <p>References arrive as plain ids. The entity was accepted directly before, which meant a request
  * had to name a driver as {@code {"driver": {"id": "..."}}} - an object standing in for an id,
@@ -54,6 +55,10 @@ public class DistributionRequest {
     @NotNull(message = "time is required")
     private LocalDateTime time;
 
+    /**
+     * Must be REVIEWING: a new order cannot start further along than review. Anything else is a 409
+     * INVALID_STATUS_TRANSITION.
+     */
     @NotNull(message = "status is required")
     private DistributionStatus status;
 

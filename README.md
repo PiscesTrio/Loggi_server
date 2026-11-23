@@ -41,8 +41,9 @@ orders and their tracking, fleet and drivers, sales, administrators and audit lo
   written in one transaction so a partial move cannot be recorded.
 - **Commodities and sales** — catalogue and sales records.
 - **Delivery orders** — orders pointing at a driver, a vehicle and an origin warehouse, with
-  a tracking trail; approving an order takes the driver and vehicle, completing it releases
-  them.
+  a tracking trail. An order moves `REVIEWING → REVIEW_SUCCESS → END` through
+  `PATCH /api/distribution/{id}/status` (administrators only): approving takes the driver and
+  vehicle, completing releases them, and any other move is a 409.
 - **Audit logs** — every audited call and every login attempt, recorded by an aspect,
   paginated on the way out.
 

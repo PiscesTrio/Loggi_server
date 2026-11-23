@@ -32,6 +32,7 @@ public enum ErrorCode {
     VEHICLE_UNAVAILABLE(409),
     INSUFFICIENT_STOCK(409),
     ALREADY_EXISTS(409),
+    INVALID_STATUS_TRANSITION(409),
 
     // --- bad requests ------------------------------------------------------------------
     QUANTITY_NOT_POSITIVE(400),
